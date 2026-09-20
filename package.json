@@ -1,0 +1,30 @@
+{
+  "name": "ai-cam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI CNC CAM Platform — AI 自动完成 CAM 编程（Phase 0 工程骨架）",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.5.3",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test --filter=./packages/* --filter=./services/*",
+    "format": "prettier --write .",
+    "audit": "pnpm audit --prod"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0"
+  }
+}

@@ -16,6 +16,7 @@ export const FANUC_PROFILE: ControllerProfile = {
   programPrefix: "O",
   coolantCodes: { FLOOD: "M08", MIST: "M07", THROUGH: "M08", OFF: "M09" },
   homeAtEnd: true,
+  homeCode: "G28",
 };
 
 export const ISO_GENERIC_PROFILE: ControllerProfile = {
@@ -29,10 +30,50 @@ export const ISO_GENERIC_PROFILE: ControllerProfile = {
   programPrefix: "O",
   coolantCodes: { FLOOD: "M08", MIST: "M07", THROUGH: "M08", OFF: "M09" },
   homeAtEnd: true,
+  homeCode: "G28",
 };
 
-export function makeProfile(dialect: "FANUC" | "ISO_GENERIC"): ControllerProfile {
-  return dialect === "FANUC" ? { ...FANUC_PROFILE } : { ...ISO_GENERIC_PROFILE };
+/** SYNTEC（新代）：类 FANUC 方言，无 G43 H 刀长补偿（v1 保守不带），保留钻孔循环 */
+export const SYNTEC_PROFILE: ControllerProfile = {
+  dialect: "SYNTEC",
+  post_version: "0.1.0",
+  capabilities: ["DRILLING_CYCLES", "CANNED_CYCLES"],
+  lineStep: 5,
+  decimals: 3,
+  toolLengthComp: false,
+  drillingCycles: true,
+  programPrefix: "O",
+  coolantCodes: { FLOOD: "M08", MIST: "M07", THROUGH: "M08", OFF: "M09" },
+  homeAtEnd: true,
+  homeCode: "G28",
+};
+
+/** MITSUBISHI M80：类 FANUC，尾部 G30 回第二参考点（三菱惯例），保留 G43 H */
+export const MITSUBISHI_PROFILE: ControllerProfile = {
+  dialect: "MITSUBISHI",
+  post_version: "0.1.0",
+  capabilities: ["DRILLING_CYCLES", "CANNED_CYCLES", "TOOL_LENGTH_COMP"],
+  lineStep: 5,
+  decimals: 3,
+  toolLengthComp: true,
+  drillingCycles: true,
+  programPrefix: "O",
+  coolantCodes: { FLOOD: "M08", MIST: "M07", THROUGH: "M08", OFF: "M09" },
+  homeAtEnd: true,
+  homeCode: "G30",
+};
+
+export function makeProfile(dialect: ControllerProfile["dialect"]): ControllerProfile {
+  switch (dialect) {
+    case "FANUC":
+      return { ...FANUC_PROFILE };
+    case "SYNTEC":
+      return { ...SYNTEC_PROFILE };
+    case "MITSUBISHI":
+      return { ...MITSUBISHI_PROFILE };
+    default:
+      return { ...ISO_GENERIC_PROFILE };
+  }
 }
 
 /** 由 IR 确定性派生程序号（4 位） */
@@ -115,7 +156,7 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
     state.coolant = "OFF";
   }
   if (profile.homeAtEnd) {
-    w.emit("G91 G28 Z0.");
+    w.emit(`G91 ${profile.homeCode} Z0.`);
     w.emit("G90");
   }
   w.emit("M30");

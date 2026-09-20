@@ -25,8 +25,10 @@ export interface ControllerProfile {
   programPrefix: string;
   /** 冷却 M 代码映射 */
   coolantCodes: Record<string, string>;
-  /** 是否输出 G28 回零 */
+  /** 是否输出回零 */
   homeAtEnd: boolean;
+  /** 回零 G 代码（FANUC/SYNTEC=G28，MITSUBISHI=G30 第二参考点） */
+  homeCode: "G28" | "G30";
 }
 
 // ---------- Modal State ----------

@@ -140,7 +140,7 @@ export function simulate(input: SimulateInput): SimulationReport {
         // 切削段：刀底 z 到刀顶 z+直径（FLAT/BALL/BULL/DRILL 圆柱近似）
         grid.cutCylinder(p.x, p.y, p.z, p.z + Math.max(radius * 2, 4), radius);
         // Gouge：切削刀底低于"该 op 允许最低面"（由特征 bbox 底面/孔深推导）
-        const gougeZ = allowedBottomZ(op);
+        const gougeZ = allowedBottomZ(op, cam);
         if (gougeZ != null && p.z < gougeZ - 0.3) {
           opEvents.push({ kind: "GOUGE", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `刀底 ${round2(p.z)}mm 低于允许底面 ${round2(gougeZ)}mm` });
         }
@@ -217,12 +217,12 @@ export function simulate(input: SimulateInput): SimulationReport {
 }
 
 /** op 关联特征允许的最低切削面（无特征/无法推导 → null） */
-function allowedBottomZ(op: Operation): number | null {
-  // 由 cam-kernel planner 的命名约定推导：POCKET_<featureId> / FACE_<id> / DRILL_<id>
-  // 精确特征面在 sim 输入未传；用 op 语义容差近似（v1）：
-  // - DRILL 允许过穿 0.5；POCKET 切到底面；FACE 在顶面以上。
+function allowedBottomZ(op: Operation, cam: CamIR): number | null {
+  // DRILL 允许底面 = 毛坯底面 + 过穿余量 0.5mm（通孔钻穿合规；盲孔刀底 ≥ 特征底 > 毛坯底，不误报）
+  // 修正：旧实现用 safeZ-60 近似，对低矮零件（高 <60mm）会误判通孔 GOUGE。
   if (op.type === "DRILL") {
-    return op.safe_z_mm != null ? op.safe_z_mm - 60 : null; // 保守：仅当有 safeZ 时给下限
+    const stockBottom = (cam.stock.origin?.z ?? 0) - (cam.stock.dimensions?.z ?? 0) / 2;
+    return stockBottom - 0.5;
   }
   return null; // v1：无特征面模型，交由残料与碰撞检查兜底
 }

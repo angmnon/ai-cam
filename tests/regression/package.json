@@ -1,0 +1,17 @@
+{
+  "name": "@ai-cam/regression",
+  "version": "0.1.0",
+  "private": true,
+  "description": "H-1 golden-300 全量回归自动化",
+  "type": "module",
+  "scripts": {
+    "regression": "node run-regression.mjs"
+  },
+  "dependencies": {
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/dfm": "workspace:*",
+    "@ai-cam/nc-validator": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/stock-sim": "workspace:*"
+  }
+}

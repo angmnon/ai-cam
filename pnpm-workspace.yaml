@@ -3,6 +3,7 @@ packages:
   - "packages/*"
   - "services/*"
   - "benchmarks"
+  - "tests/regression"
 
 allowBuilds:
   esbuild: true

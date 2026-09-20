@@ -836,6 +836,24 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  tests/regression:
+    dependencies:
+      '@ai-cam/cam-kernel':
+        specifier: workspace:*
+        version: link:../../packages/cam-kernel
+      '@ai-cam/dfm':
+        specifier: workspace:*
+        version: link:../../packages/dfm
+      '@ai-cam/nc-validator':
+        specifier: workspace:*
+        version: link:../../packages/nc-validator
+      '@ai-cam/post-core':
+        specifier: workspace:*
+        version: link:../../packages/post-core
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../../packages/stock-sim
+
 packages:
 
   '@babel/code-frame@7.29.7':

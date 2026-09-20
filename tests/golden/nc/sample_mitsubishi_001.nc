@@ -1,0 +1,34 @@
+%
+O1001 (M80 BRACKET - MITSUBISHI)
+(Source: Calibration Table MITSUBISHI Family - Constructed Sample)
+(Part: steel_bracket_45  Material: 45# Steel  Machine: VMC850II)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T1 M06
+G00 G90 G54 X-60. Y-40.
+G43 H1 Z50. M08
+S6000 M03
+G00 Z2.
+G01 Z-5. F700.
+G41 D1 X-50. Y-30. F900.
+Y30.
+X50.
+Y-30.
+X-50.
+G40 X-60. Y-40.
+G00 Z25.
+(--- DRILL G83 PECK 2MM ---)
+T2 M06
+G43 H2 Z50.
+S4000 M03
+G99 G83 X-40. Y-20. Z-15. Q2. R5. F350.
+X40.
+Y20.
+X-40.
+G80 Z25.
+M05
+M09
+G91 G28 Z0.
+G28 Y0.
+M30
+%

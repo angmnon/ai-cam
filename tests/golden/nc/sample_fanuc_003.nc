@@ -1,0 +1,41 @@
+%
+O1003 (MOLD INSERT - FANUC 31i-B5)
+(Source: Calibration Table FANUC Family - Constructed Sample)
+(Part: mold_insert_P20  Material: P20 Steel  Machine: VMC850HS)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T5 M06
+G0 G90 G54 X-100. Y-60.
+G43 H5 Z50. M08
+S12000 M03
+G0 Z2.
+(--- HIGH SPEED CONTOUR ---)
+G1 Z-8. F800.
+G41 D5 X-80. Y-40. F1500.
+Y40.
+X80.
+Y-40.
+X-80.
+G40 X-100. Y-60.
+G0 Z20.
+(--- DRILL G83 DEEP ---)
+T6 M06
+G43 H6 Z50.
+S4000 M03
+G98 G83 X-50. Y-30. Z-40. Q2.5 R5. F350.
+X50.
+Y30.
+X-50.
+G80 Z20.
+(--- TAP ---)
+T7 M06
+G43 H7 Z50.
+S1500 M03
+G98 G84 X0. Y0. Z-15. R5. F750.
+G80 Z20.
+M05
+M09
+G91 G28 Z0.
+G28 Y0.
+M30
+%

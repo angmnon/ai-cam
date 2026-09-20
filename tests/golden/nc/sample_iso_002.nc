@@ -1,0 +1,41 @@
+%
+O1002 (GENIC BRACKET - ISO GENERIC)
+(Source: Calibration Table ISO_GENERIC Family - Constructed Sample)
+(Part: bracket_steel  Material: 45#  Machine: VMC1160)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T3 M06
+G00 G90 G54 X-80. Y-50.
+G43 H3 Z50. M08
+S6000 M03
+G00 Z2.
+(--- POCKET ---)
+G01 Z-8. F800.
+G41 D3 X-70. Y-40. F1000.
+Y40.
+X70.
+Y-40.
+X-70.
+G40 X-80. Y-50.
+G00 Z25.
+(--- ARC R25 ---)
+G00 X0. Y-30.
+G01 Z-5. F600.
+G41 D3 X25. Y-5. F800.
+G03 X0. Y20. R25.
+G03 X-25. Y-5. R25.
+G40 G01 X0. Y-30.
+G00 Z25.
+(--- DRILL G81 ---)
+T4 M06
+G43 H4 Z50.
+S2500 M03
+G99 G81 X-40. Y0. Z-10. R5. F300.
+X40.
+G80 Z25.
+M05
+M09
+G91 G28 Z0.
+G28 X0.
+M30
+%

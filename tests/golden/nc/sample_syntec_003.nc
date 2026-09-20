@@ -1,0 +1,34 @@
+%
+O1003 (M528A BOX COVER - LNC M528A)
+(Source: Calibration Table SYNTEC Family - Constructed Sample)
+(Part: box_cover  Material: AL6061  Machine: VMC850)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T1 M6
+G0 G90 G54 X-60. Y-40.
+G43 H1 Z50. M08
+S8000 M03
+G0 Z2.
+G1 Z-4. F750.
+G41 D1 X-50. Y-30. F900.
+Y30.
+X50.
+Y-30.
+X-50.
+G40 X-60. Y-40.
+G0 Z25.
+(--- DRILL G73 4X ---)
+T2 M6
+G43 H2 Z50.
+S6000 M03
+G99 G73 X-35. Y-20. Z-10. Q3. R5. F450.
+X35.
+Y20.
+X-35.
+G80 Z25.
+M05
+M09
+G91 G28 Z0.
+G28 Y0.
+M30
+%

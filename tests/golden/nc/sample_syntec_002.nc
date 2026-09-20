@@ -1,0 +1,41 @@
+%
+O1002 (DIE CAST PLATE - SYNTEC 22MA PLUS)
+(Source: Calibration Table SYNTEC Family - Constructed Sample)
+(Part: diecast_plate  Material: ADC12  Machine: T-V850M)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T3 M6
+G0 G90 G54 X-70. Y-40.
+G43 H3 Z50. M08
+S8000 M03
+G0 Z2.
+(--- FACE MILL ---)
+G1 Z-2. F750.
+G41 D3 X-60. Y-30. F900.
+Y30.
+X60.
+Y-30.
+X-60.
+G40 X-70. Y-40.
+G0 Z25.
+(--- ARC POCKET ---)
+G0 X0. Y-20.
+G1 Z-6. F600.
+G41 D3 X15. Y-5. F800.
+G3 X0. Y10. R15.
+G3 X-15. Y-5. R15.
+G40 G1 X0. Y-20.
+G0 Z25.
+(--- DRILL G73 ---)
+T4 M6
+G43 H4 Z50.
+S5000 M03
+G99 G73 X-40. Y0. Z-12. Q3. R5. F400.
+X40.
+G80 Z25.
+M05
+M09
+G91 G28 Z0.
+G28 X0.
+M30
+%

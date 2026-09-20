@@ -1,0 +1,34 @@
+%
+O1001 (GENIC PLATE - ISO GENERIC)
+(Source: Calibration Table ISO_GENERIC Family - Constructed Sample)
+(Part: flat_plate  Material: Q235  Machine: VMC850)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T1 M06
+G00 G90 G54 X-60. Y-40.
+G43 H1 Z50. M08
+S5000 M03
+G00 Z2.
+G01 Z-5. F800.
+G41 D1 X-50. Y-30. F1000.
+Y30.
+X50.
+Y-30.
+X-50.
+G40 X-60. Y-40.
+G00 Z25.
+(--- DRILL G83 ---)
+T2 M06
+G43 H2 Z50.
+S3000 M03
+G99 G83 X-40. Y-20. Z-12. Q2.5 R5. F400.
+X40.
+Y20.
+X-40.
+G80 Z25.
+M05
+M09
+G91 G28 Z0.
+G28 Y0.
+M30
+%

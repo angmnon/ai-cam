@@ -1,0 +1,34 @@
+%
+O1001 (FLANGE PLATE - FANUC 0i-MF)
+(Source: Calibration Table FANUC Family - Constructed Sample)
+(Part: flange_plate_6061  Material: AL6061  Machine: VMC850)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T1 M06
+G0 G90 G54 X-60. Y-40.
+G43 H1 Z50. M08
+S8000 M03
+G0 Z2.
+G1 Z-5. F800.
+G41 D1 X-50. Y-30. F1200.
+Y30.
+X50.
+Y-30.
+X-50.
+G40 X-60. Y-40.
+G0 Z20.
+(--- DRILL 4X HOLES M6 ---)
+T2 M06
+G43 H2 Z50.
+S6000 M03
+G99 G83 X-40. Y-20. Z-15. Q2.5 R5. F400.
+X40.
+Y20.
+X-40.
+G80 Z20.
+M05
+M09
+G91 G28 Z0.
+G28 Y0.
+M30
+%

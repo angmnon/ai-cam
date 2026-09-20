@@ -1,0 +1,41 @@
+%
+O1002 (BRACKET - FANUC 0i-MF Plus)
+(Source: Calibration Table FANUC Family - Constructed Sample)
+(Part: steel_bracket_45  Material: 45# Steel  Machine: VMC1160)
+G90 G21 G94 G17 G40 G49 G80
+G28 Z0.
+T3 M06
+G0 G90 G54 X-80. Y-50.
+G43 H3 Z50. M08
+S6000 M03
+G0 Z2.
+(--- POCKET ROUGHING ---)
+G1 Z-10. F600.
+G41 D3 X-70. Y-40. F900.
+Y40.
+X70.
+Y-40.
+X-70.
+G40 X-80. Y-50.
+G0 Z20.
+(--- ARC MILLING R20 ---)
+G0 X0. Y-30.
+G1 Z-5. F500.
+G41 D3 X20. Y-10. F800.
+G3 X0. Y10. R20.
+G3 X-20. Y-10. R20.
+G40 G1 X0. Y-30.
+G0 Z20.
+(--- DRILL G81 2X ---)
+T4 M06
+G43 H4 Z50.
+S3000 M03
+G99 G81 X-30. Y0. Z-12. R5. F300.
+X30.
+G80 Z20.
+M05
+M09
+G91 G28 Z0.
+G28 X0.
+M30
+%

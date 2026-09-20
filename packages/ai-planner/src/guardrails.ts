@@ -6,7 +6,9 @@ import { z } from "zod";
 
 export const PlannerStrategySchema = z.enum(["rough_then_finish", "finish_priority"]);
 export const SetupPreferenceSchema = z.enum(["single_side_z", "two_side_z"]);
+export type SetupPreference = z.infer<typeof SetupPreferenceSchema>;
 export const ProcessOrderSchema = z.enum(["FACE_FIRST", "DRILL_LAST", "DEFAULT"]);
+export type ProcessOrder = z.infer<typeof ProcessOrderSchema>;
 
 export const PlannerOutputSchema = z.object({
   strategy: PlannerStrategySchema,

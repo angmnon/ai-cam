@@ -1,2 +1,5 @@
-/** ai-planner 公共导出（当前：P4-4 Guardrails；后续 P4-5~P4-8 追加） */
+/** ai-planner 公共导出 */
 export * from "./guardrails.js";
+export * from "./setup.js";
+export * from "./process.js";
+export * from "./tool.js";

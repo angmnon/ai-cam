@@ -77,9 +77,23 @@ export interface SimulateInput {
 
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
+/**
+ * H-4 分辨率自适应：未显式指定 voxelSize 时按毛坯最大边长选体素尺寸，
+ * 控制体素总数（约 10^6 量级），避免大零件仿真退化到分钟级。
+ */
+export function autoVoxelSize(cam: CamIR): number {
+  const dims = cam.stock?.dimensions ?? { x: 100, y: 100, z: 40 };
+  const maxL = Math.max(dims.x ?? 100, dims.y ?? 100, dims.z ?? 40);
+  if (maxL <= 150) return 2;
+  if (maxL <= 300) return 3;
+  if (maxL <= 500) return 4;
+  return 5;
+}
+
 export function simulate(input: SimulateInput): SimulationReport {
   const { cam } = input;
-  const voxelOpt = input.voxel ?? {};
+  const voxelOpt = { ...(input.voxel ?? {}) };
+  if (voxelOpt.voxelSize == null) voxelOpt.voxelSize = autoVoxelSize(cam);
   const grid = voxelizeStock(cam, voxelOpt);
   const voxel = grid.voxel;
   const thresholds: Required<SimThresholds> = {

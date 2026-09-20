@@ -1,0 +1,15 @@
+{
+  "name": "@ai-cam/beta-sample",
+  "version": "0.1.0",
+  "private": true,
+  "description": "H-6 封闭测试采样（AI Proposal 采集）",
+  "type": "module",
+  "scripts": {
+    "sample": "node beta-sample.mjs"
+  },
+  "dependencies": {
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/stock-sim": "workspace:*"
+  }
+}

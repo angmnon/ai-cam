@@ -1,0 +1,452 @@
+{
+ "benchmark": "工厂零件验证（H-2）：真实 Golden 零件 → CAM → NC → 车间安全检查",
+ "date": "2026-09-20T13:18:13.882Z",
+ "total": 20,
+ "pass": 19,
+ "fail": 1,
+ "pass_rate": 95,
+ "per_part": [
+  {
+   "file": "boss_block.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 103,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 99,
+     "rapid_blocks": 18,
+     "cutting_blocks": 81,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 52,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "box.json",
+   "features": 1,
+   "ops": 2,
+   "dfm_blockers": [],
+   "nc_lines": 76,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 72,
+     "rapid_blocks": 12,
+     "cutting_blocks": 60,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "chamfered_block.json",
+   "features": 3,
+   "ops": 4,
+   "dfm_blockers": [
+    "DFM-0106"
+   ],
+   "nc_lines": 142,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 138,
+     "rapid_blocks": 28,
+     "cutting_blocks": 110,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": false
+  },
+  {
+   "file": "circular_plate.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 89,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 85,
+     "rapid_blocks": 16,
+     "cutting_blocks": 69,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 40,
+     "min_cut_z_mm": -0.5
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "corner_boss_block.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 103,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 99,
+     "rapid_blocks": 18,
+     "cutting_blocks": 81,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "counterbore_block.json",
+   "features": 3,
+   "ops": 4,
+   "dfm_blockers": [],
+   "nc_lines": 86,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 82,
+     "rapid_blocks": 18,
+     "cutting_blocks": 64,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 40,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "cross_block.json",
+   "features": 5,
+   "ops": 6,
+   "dfm_blockers": [],
+   "nc_lines": 146,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 142,
+     "rapid_blocks": 18,
+     "cutting_blocks": 124,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 40,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "deep_pocket_block.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 439,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 435,
+     "rapid_blocks": 32,
+     "cutting_blocks": 403,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "flange.json",
+   "features": 6,
+   "ops": 7,
+   "dfm_blockers": [],
+   "nc_lines": 115,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 111,
+     "rapid_blocks": 30,
+     "cutting_blocks": 81,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 35,
+     "min_cut_z_mm": -0.5
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "l_bracket.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 105,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 101,
+     "rapid_blocks": 18,
+     "cutting_blocks": 83,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "plate_4holes.json",
+   "features": 5,
+   "ops": 6,
+   "dfm_blockers": [],
+   "nc_lines": 89,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 85,
+     "rapid_blocks": 24,
+     "cutting_blocks": 61,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 35,
+     "min_cut_z_mm": -0.5
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "plate_with_blind_hole.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 73,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 69,
+     "rapid_blocks": 13,
+     "cutting_blocks": 56,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 35,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "plate_with_hole.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 75,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 71,
+     "rapid_blocks": 14,
+     "cutting_blocks": 57,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 35,
+     "min_cut_z_mm": -0.5
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "pocket_block.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 143,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 139,
+     "rapid_blocks": 16,
+     "cutting_blocks": 123,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 45,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "ring.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 89,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 85,
+     "rapid_blocks": 16,
+     "cutting_blocks": 69,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 40,
+     "min_cut_z_mm": -0.5
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "side_hole_block.json",
+   "features": 1,
+   "ops": 2,
+   "dfm_blockers": [],
+   "nc_lines": 86,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 82,
+     "rapid_blocks": 14,
+     "cutting_blocks": 68,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 60,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "slot_block.json",
+   "features": 3,
+   "ops": 4,
+   "dfm_blockers": [],
+   "nc_lines": 100,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 96,
+     "rapid_blocks": 18,
+     "cutting_blocks": 78,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 40,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "slot_plate.json",
+   "features": 5,
+   "ops": 6,
+   "dfm_blockers": [],
+   "nc_lines": 127,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 123,
+     "rapid_blocks": 24,
+     "cutting_blocks": 99,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 35,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "stepped_block.json",
+   "features": 2,
+   "ops": 3,
+   "dfm_blockers": [],
+   "nc_lines": 101,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 97,
+     "rapid_blocks": 18,
+     "cutting_blocks": 79,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 45,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  },
+  {
+   "file": "two_step_block.json",
+   "features": 3,
+   "ops": 4,
+   "dfm_blockers": [],
+   "nc_lines": 164,
+   "shop_floor": {
+    "status": "PASS",
+    "items": [
+     "SFC-0106:INFO"
+    ],
+    "stats": {
+     "blocks": 160,
+     "rapid_blocks": 18,
+     "cutting_blocks": 142,
+     "m01_blocks": 0,
+     "max_z_retract_mm": 50,
+     "min_cut_z_mm": 0
+    }
+   },
+   "pass": true
+  }
+ ]
+}

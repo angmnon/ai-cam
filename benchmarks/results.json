@@ -1,10 +1,21 @@
 {
-  "benchmark": "ai-cam P5-8 性能建档",
-  "date": "2026-09-20T11:58:35.664Z",
+  "benchmark": "ai-cam P5-8 性能建档（Phase 6 H-4 更新：golden-300 完整层 P50 建档）",
+  "date": "2026-09-20T13:30:00.000Z",
   "hardware_note": "本机实跑（未标注机型）",
   "repeats": 30,
   "part": "tests/golden/parts/box.json",
   "cam_hash": "422c755e6fb2eeb9ce7bf2b90a5c8e783715df4aa66482ffd20017895f0f62a1",
+  "h4_regression": {
+    "benchmark": "golden-300 全量回归（tests/regression/regression-report.json）",
+    "date": "2026-09-20T13:20:00.000Z",
+    "total": 300,
+    "pass": 300,
+    "pass_rate_pct": 100,
+    "fast_layer": { "p50_ms": 0.1, "p95_ms": 0.3, "p99_ms": 0.5, "note": "DFM+规划，300 件" },
+    "full_layer": { "p50_ms": 187.4, "p95_ms": 295, "note": "仿真+后处理+NC 校验，60 件，voxelSize=3（H-4 分辨率自适应）" },
+    "wall_sec": 10.3,
+    "prev_full_p50_ms": 864
+  },
   "stages": [
     {
       "stage": "parse(STEP→规范化)",

@@ -1,0 +1,27 @@
+{
+  "name": "@ai-cam/shop-floor-check",
+  "version": "0.1.0",
+  "private": true,
+  "description": "H-2 工厂零件验证：空运行/单段执行/安全高度等车间安全流程静态检查",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

@@ -80,7 +80,7 @@ function runFull(spec) {
   const part = toPartModel(spec);
   const features = toFeatures(spec);
   const plan = planPart(part, features, {});
-  const sim = simulate({ cam: plan.cam, partVolumeMm3: part.volume_mm3, voxel: { resolution: 3 } });
+  const sim = simulate({ cam: plan.cam, partVolumeMm3: part.volume_mm3, voxel: { voxelSize: 3 } });
   const profile = makeProfile("FANUC");
   const nc = postProcess(plan.cam, profile);
   const val = validateNc({ cam: plan.cam, ncText: nc.text, programNumber: nc.program_number, simulation: sim });

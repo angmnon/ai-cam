@@ -4,6 +4,8 @@ packages:
   - "services/*"
   - "benchmarks"
   - "tests/regression"
+  - "tests/factory-validation"
+  - "tests/beta"
 
 allowBuilds:
   esbuild: true

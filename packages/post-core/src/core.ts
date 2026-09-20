@@ -29,6 +29,14 @@ export interface ControllerProfile {
   homeAtEnd: boolean;
   /** 回零 G 代码（FANUC/SYNTEC=G28，MITSUBISHI=G30 第二参考点） */
   homeCode: "G28" | "G30";
+  // ---- H-3 校准字段（可选用；由 calibrateProfile 注入真实机床参数） ----
+  rapidWord?: string;
+  safeHeightMm?: number;
+  programHeaderTemplate?: string;
+  toolChangeTemplate?: string;
+  defaultFeedMmMin?: number;
+  drillCycle?: "G81" | "G83" | "G73";
+  peckIncrementMm?: number;
 }
 
 // ---------- Modal State ----------

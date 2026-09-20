@@ -1,0 +1,18 @@
+{
+  "name": "@ai-cam/factory-validation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "H-2 工厂零件验证：真实 Golden 零件 → CAM → NC → 车间安全流程检查",
+  "type": "module",
+  "scripts": {
+    "factory-check": "node run-factory-check.mjs"
+  },
+  "dependencies": {
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/dfm": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/shop-floor-check": "workspace:*"
+  }
+}

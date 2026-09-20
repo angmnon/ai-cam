@@ -7,7 +7,7 @@ import { ok, paged } from "../plugins/response.js";
 import fp from "../plugins/fp.js";
 import { planPart } from "@ai-cam/cam-kernel";
 import { mustLatest } from "../cam/cam-store.js";
-import { runJob } from "@ai-cam/job-runner";
+import { runJob, buildJobReport } from "@ai-cam/job-runner";
 
 const CreatePartBody = z.object({
   filename: z.string().min(1).max(255).regex(/\.(step|stp)$/i, "仅支持 .step/.stp"),
@@ -170,6 +170,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     }
     try {
       const job = runJob({ part: part.analysis.part, partName: id, features: part.analysis.features.features });
+      if (!app.cams.latest(orgId, id)) app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: job.cam });
       const run = app.jobRuns.createRun({
         orgId,
         partId: id,
@@ -183,11 +184,12 @@ const partRoutes: FastifyPluginAsync = async (app) => {
       });
       const ncRec = app.jobRuns.createNc({ orgId, partId: id, jobRunId: run.id, nc: job.nc });
       const valRec = app.jobRuns.createValidation({ orgId, partId: id, jobRunId: run.id, ncProgramId: ncRec.id, report: job.validation });
+      app.jobRuns.createSimulation({ orgId, partId: id, jobRunId: run.id, report: job.simulation });
       return reply.status(201).send(
         ok({
           job: { id: run.id, status: run.status, validated: run.validated, pipeline: run.pipeline },
           nc: { program_number: ncRec.program_number, dialect: ncRec.dialect, line_count: ncRec.line_count, move_count: ncRec.move_count, tool_changes: ncRec.tool_changes },
-          simulation: { status: job.simulation.status, removed_volume_mm3: job.simulation.removed_volume_mm3, residual_volume_mm3: job.simulation.residual_volume_mm3, events: job.simulation.events.length },
+          simulation: { status: job.simulation.status, removed_volume_mm3: job.simulation.removed_volume_mm3, residual_volume_mm3: job.simulation.residual_volume_mm3, events: job.simulation.events.length, frames: job.simulation.frames },
           validation: { id: valRec.id, status: valRec.status, layers: valRec.layers.map((l) => ({ layer: l.layer, status: l.status, checks: l.checks.length })) },
         }),
       );
@@ -232,6 +234,33 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run yet.", stage: "jobs", retryable: false });
     const val = app.jobRuns.getValidation(orgId, id, run.id);
     return ok(val.report);
+  });
+
+  // Job 报告（P3-9：工艺单/刀具清单/Setup Sheet/仿真摘要）
+  app.get("/:id/job/report", async (request) => {
+    const { id } = request.params as { id: string };
+    const orgId = request.user!.org_id;
+    const run = app.jobRuns.latestRun(orgId, id);
+    if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run yet.", stage: "jobs", retryable: false });
+    const bundle = app.jobRuns.getBundle(orgId, id, run.id);
+    if (!bundle) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Job bundle incomplete.", stage: "jobs", retryable: false });
+    const camRev = app.cams.latest(orgId, id);
+    if (!camRev) throw new ApiError({ code: ErrorCodes.CAM_REVISION_NOT_FOUND, message: "CAM revision not found.", stage: "cam", retryable: false });
+    const report = buildJobReport({
+      cam: camRev.cam,
+      simulation: bundle.simulation.report,
+      nc: {
+        program_number: bundle.nc.program_number,
+        dialect: bundle.nc.dialect,
+        post_version: bundle.nc.engine_version,
+        controller_id: bundle.nc.controller_id,
+        text: bundle.nc.nc_text,
+        lines: bundle.nc.nc_text.split("\n"),
+        metadata: { ir_id: camRev.cam.ir_id, job_id: camRev.cam.job_id, part_id: id, machine_id: camRev.cam.machine.machine_id, operation_count: camRev.cam.operations.length, tool_changes: bundle.nc.tool_changes, move_count: bundle.nc.move_count, generated_by: "post-core", generator_version: bundle.nc.engine_version },
+      },
+      validation: bundle.validation.report,
+    });
+    return ok(report);
   });
 
   // 网格（OBJ）

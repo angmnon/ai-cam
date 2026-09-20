@@ -114,6 +114,32 @@ export interface CamIr {
   metadata: { generated_by: string; generator_version: string; created_at: string };
 }
 
+// ---- Phase 3 Job / 仿真（P3-4/P3-8/P3-9） ----
+export interface SimFrame {
+  operation_id: string;
+  step: number;
+  snapshot: Array<{ x: number; y: number; z: number; solid: boolean }>;
+}
+
+export interface JobSummary {
+  job: { id: string; status: "PASS" | "WARN" | "FAIL"; validated: boolean; pipeline: Array<{ stage: string; status: "PASS" | "WARN" | "FAIL"; detail: string }> };
+  nc: { program_number: string; dialect: string; line_count: number; move_count: number; tool_changes: number };
+  simulation: { status: "PASS" | "WARN" | "FAIL"; removed_volume_mm3: number; residual_volume_mm3: number; events: number; frames?: SimFrame[] };
+  validation: { id: string; status: "PASS" | "WARN" | "FAIL"; layers: Array<{ layer: string; status: string; checks: number }> };
+}
+
+export interface ValidationReport {
+  schema_version: string;
+  report_id: string;
+  nc_program: string;
+  ir_id: string;
+  job_id: string;
+  part_id: string;
+  validator_version: string;
+  status: "PASS" | "WARN" | "FAIL";
+  layers: Array<{ layer: string; status: string; checks: Array<{ code: string; severity: string; message: string; layer: string; line?: number }> }>;
+}
+
 class ApiErrorClient extends Error {
   constructor(
     public code: string,
@@ -185,6 +211,14 @@ export const api = {
 
   getToolpath: (id: string) =>
     request<{ data: { revision_id: string; revision_no: number; engine_version: string; cam: CamIr } }>("GET", `/api/v1/parts/${id}/toolpath`),
+
+  runJob: (id: string) => request<{ data: JobSummary }>("POST", `/api/v1/parts/${id}/job`),
+
+  getJob: (id: string) => request<{ data: unknown }>("GET", `/api/v1/parts/${id}/job`),
+
+  getJobNc: (id: string) => request<{ data: unknown }>("GET", `/api/v1/parts/${id}/job/nc`),
+
+  getJobValidation: (id: string) => request<{ data: ValidationReport }>("GET", `/api/v1/parts/${id}/job/validation`),
 };
 
 export { BASE };

@@ -1,7 +1,8 @@
-/** 零件信息面板：BBox/体积/特征列表/DFM 摘要 + CAM 刀路工作台 + 3D 视图 */
+/** 零件信息面板：BBox/体积/特征列表/DFM 摘要 + CAM 刀路工作台 + 仿真播放 + 一键 Job + 3D 视图 */
 import { useEffect, useState } from "react";
-import { api, type CamIr, type DfmReport, type Feature, type PartSummary } from "../api.js";
+import { api, BASE, type CamIr, type DfmReport, type Feature, type JobSummary, type PartSummary } from "../api.js";
 import { Viewer } from "../viewer/Viewer.js";
+import { SimPlayer } from "./SimPlayer.js";
 
 const SEVERITY_COLOR: Record<string, string> = { INFO: "#38bdf8", WARNING: "#f59e0b", BLOCKER: "#ef4444" };
 const OP_COLOR: Record<string, string> = { FACE: "#38bdf8", POCKET: "#f59e0b", DRILL: "#34d399", CONTOUR: "#f472b6", CHAMFER: "#fbbf24" };
@@ -16,6 +17,11 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
   const [showToolpaths, setShowToolpaths] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [job, setJob] = useState<JobSummary | null>(null);
+  const [jobError, setJobError] = useState<string | null>(null);
+  const [jobBusy, setJobBusy] = useState(false);
+  const [showNc, setShowNc] = useState(false);
+  const [ncText, setNcText] = useState<string | null>(null);
 
   const load = async () => {
     setBusy(true);
@@ -50,6 +56,30 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
       setCamRevision(res.data.revision.revision_no);
     } catch (err) {
       setCamError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const runJob = async () => {
+    setJobBusy(true);
+    setJobError(null);
+    setNcText(null);
+    try {
+      const res = await api.runJob(partId);
+      setJob(res.data);
+    } catch (err) {
+      setJobError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setJobBusy(false);
+    }
+  };
+
+  const loadNc = async () => {
+    if (ncText) return;
+    try {
+      const res = await fetch(`${BASE}/api/v1/parts/${partId}/job/nc`, { headers: { authorization: `Bearer ${localStorage.getItem("ai_cam_token") ?? ""}` } });
+      if (res.ok) setNcText(await res.text());
+    } catch {
+      /* noop */
     }
   };
 
@@ -201,6 +231,74 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
               </>
             )}
           </section>
+
+          <section style={{ marginBottom: 20 }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+              Job 一键 Validated NC <span style={{ color: "#64748b", fontWeight: 400 }}>P3-8</span>
+            </h3>
+            {part.status === "ANALYZED" && (
+              <button
+                onClick={() => void runJob()}
+                disabled={jobBusy}
+                style={{ padding: "7px 14px", cursor: jobBusy ? "wait" : "pointer", fontSize: 13, background: "#16a34a", border: "none", color: "#fff", borderRadius: 6, marginBottom: 10 }}
+              >
+                {jobBusy ? "生成中（plan→sim→post→validate）…" : job ? "重新生成 Validated NC" : "一键生成 Validated NC"}
+              </button>
+            )}
+            {jobError && <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>生成失败：{jobError}</div>}
+            {job && (
+              <>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, fontSize: 12 }}>
+                  <span style={{ color: job.job.validated ? "#86efac" : "#fca5a5", fontWeight: 600 }}>{job.job.validated ? "✔ VALIDATED" : "✘ NOT VALIDATED"}</span>
+                  <span style={{ color: "#94a3b8" }}>{job.nc.program_number} · {job.nc.dialect} · {job.nc.line_count} 行 · {job.nc.tool_changes} 次换刀</span>
+                </div>
+                <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse", marginBottom: 8 }}>
+                  <tbody>
+                    {job.job.pipeline.map((p) => (
+                      <tr key={p.stage} style={{ borderBottom: "1px solid #1e293b" }}>
+                        <td style={{ padding: "5px 8px", color: "#94a3b8", fontWeight: 600 }}>{p.stage}</td>
+                        <td style={{ padding: "5px 8px", color: p.status === "PASS" ? "#86efac" : p.status === "WARN" ? "#fbbf24" : "#f87171" }}>{p.status}</td>
+                        <td style={{ padding: "5px 8px", color: "#64748b" }}>{p.detail}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>
+                  仿真：{job.simulation.status} · 切除 {job.simulation.removed_volume_mm3.toLocaleString()} mm³ · 残料 {job.simulation.residual_volume_mm3.toLocaleString()} mm³ · 事件 {job.simulation.events}
+                </div>
+                <div style={{ fontSize: 12, marginBottom: 8 }}>
+                  {job.validation.layers.map((l) => (
+                    <span key={l.layer} style={{ marginRight: 10, color: l.status === "PASS" ? "#86efac" : l.status === "WARN" ? "#fbbf24" : "#f87171" }}>
+                      {l.layer}={l.status}({l.checks})
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowNc(!showNc);
+                    if (!ncText) void loadNc();
+                  }}
+                  style={{ padding: "5px 12px", cursor: "pointer", fontSize: 12, background: "#334155", border: "none", color: "#e2e8f0", borderRadius: 6, marginBottom: 8 }}
+                >
+                  {showNc ? "隐藏 NC 程序" : "查看 NC 程序"}
+                </button>
+                {showNc && (
+                  <pre style={{ maxHeight: 180, overflow: "auto", fontSize: 11, lineHeight: 1.5, background: "#0b1220", color: "#cbd5e1", padding: 10, borderRadius: 8, border: "1px solid #1e293b", whiteSpace: "pre", margin: 0 }}>
+                    {ncText ?? "加载中…"}
+                  </pre>
+                )}
+              </>
+            )}
+          </section>
+
+          {job?.simulation.frames && job.simulation.frames.length > 0 && (
+            <section style={{ marginBottom: 20 }}>
+              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+                仿真播放 <span style={{ color: "#64748b", fontWeight: 400 }}>俯视剩余毛坯</span>
+              </h3>
+              <SimPlayer frames={job.simulation.frames} partBBox={{ min: { x: bbox.min[0], y: bbox.min[1], z: bbox.min[2] }, max: { x: bbox.max[0], y: bbox.max[1], z: bbox.max[2] } }} />
+            </section>
+          )}
 
           <section>
             <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>

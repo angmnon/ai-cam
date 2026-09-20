@@ -404,5 +404,18 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
     expect(val.statusCode).toBe(200);
     expect(val.json().data.status).toBe("PASS");
     expect(val.json().data.layers.map((l: { layer: string }) => l.layer)).toEqual(["PARSER", "SEMANTIC", "MACHINE", "SIMULATION"]);
+
+    // Job 报告（P3-9）
+    const rep = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/job/report`, headers });
+    expect(rep.statusCode).toBe(200);
+    const report = rep.json().data;
+    expect(report.schema_version).toBe("1.0.0");
+    expect(report.program_number).toMatch(/^O\d{4}$/);
+    expect(report.validated).toBe(true);
+    expect(report.setup_sheet[0].wcs).toBe("G54");
+    expect(report.tool_list.length).toBeGreaterThan(0);
+    expect(report.process_sheet.length).toBe(report.summary.operation_count);
+    expect(report.simulation.status).toBe("PASS");
+    expect(report.simulation.removed_volume_mm3).toBeGreaterThan(0);
   });
 });

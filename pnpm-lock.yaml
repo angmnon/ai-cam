@@ -319,6 +319,43 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/job-runner:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../cam-ir
+      '@ai-cam/cam-kernel':
+        specifier: workspace:*
+        version: link:../cam-kernel
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../feature-engine
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../geometry-schema
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+      '@ai-cam/nc-validator':
+        specifier: workspace:*
+        version: link:../nc-validator
+      '@ai-cam/post-core':
+        specifier: workspace:*
+        version: link:../post-core
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../stock-sim
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/job-schema:
     devDependencies:
       '@eslint/js':
@@ -521,12 +558,24 @@ importers:
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../../packages/geometry-schema
+      '@ai-cam/job-runner':
+        specifier: workspace:*
+        version: link:../../packages/job-runner
       '@ai-cam/job-schema':
         specifier: workspace:*
         version: link:../../packages/job-schema
       '@ai-cam/master-data':
         specifier: workspace:*
         version: link:../../packages/master-data
+      '@ai-cam/nc-validator':
+        specifier: workspace:*
+        version: link:../../packages/nc-validator
+      '@ai-cam/post-core':
+        specifier: workspace:*
+        version: link:../../packages/post-core
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../../packages/stock-sim
       '@fastify/cors':
         specifier: ^11.0.0
         version: 11.3.0

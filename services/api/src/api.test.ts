@@ -361,4 +361,48 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
     expect(latest.statusCode).toBe(200);
     expect(latest.json().data.revision_no).toBe(1);
   });
+
+  it("一键 Job（box）：POST /job → Validated NC → GET nc/validation", async () => {
+    const token = await login();
+    const headers = { authorization: `Bearer ${token}` };
+
+    const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+    const partId = created.json().data.part.id;
+    await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+
+    // 未生成前 GET → 404
+    const pre = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/job`, headers });
+    expect(pre.statusCode).toBe(404);
+
+    const run = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/job`, headers });
+    expect(run.statusCode).toBe(201);
+    const data = run.json().data;
+    expect(data.job.id).toMatch(/^jobrun_/);
+    expect(data.job.validated).toBe(true);
+    expect(data.job.pipeline.map((p: { stage: string }) => p.stage)).toEqual(["PLAN", "SIMULATE", "POST", "VALIDATE"]);
+    for (const p of data.job.pipeline) expect(p.status).toBe("PASS");
+    expect(data.nc.program_number).toMatch(/^O\d{4}$/);
+    expect(data.nc.line_count).toBeGreaterThan(20);
+    expect(data.simulation.status).toBe("PASS");
+    expect(data.validation.status).toBe("PASS");
+    expect(data.validation.layers.length).toBe(4);
+
+    // 最新 Job
+    const latest = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/job`, headers });
+    expect(latest.statusCode).toBe(200);
+    expect(latest.json().data.run.validated).toBe(true);
+
+    // NC 文本
+    const nc = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/job/nc`, headers });
+    expect(nc.statusCode).toBe(200);
+    expect(String(nc.headers["content-type"])).toContain("text/plain");
+    expect(nc.body).toContain("G21 G17 G90 G94");
+    expect(nc.body).toContain("M30");
+
+    // 校验报告
+    const val = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/job/validation`, headers });
+    expect(val.statusCode).toBe(200);
+    expect(val.json().data.status).toBe("PASS");
+    expect(val.json().data.layers.map((l: { layer: string }) => l.layer)).toEqual(["PARSER", "SEMANTIC", "MACHINE", "SIMULATION"]);
+  });
 });

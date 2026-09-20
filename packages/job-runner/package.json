@@ -1,0 +1,29 @@
+{
+  "name": "@ai-cam/job-runner",
+  "version": "0.1.0",
+  "description": "Phase 3 Job 端到端编排：plan → sim → post → validate 一键生成 Validated NC（P3-8）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
+    "@ai-cam/master-data": "workspace:*",
+    "@ai-cam/nc-validator": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/stock-sim": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

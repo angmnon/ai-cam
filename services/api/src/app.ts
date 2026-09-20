@@ -11,6 +11,7 @@ import { InMemoryEventBus, EventBus } from "./bus/event-bus.js";
 import { createJobStore, JobStore } from "./jobs/job-store.js";
 import { createPartStore, PartStore } from "./parts/part-store.js";
 import { createCamStore, CamStore } from "./cam/cam-store.js";
+import { createJobRunStore, JobRunStore } from "./cam/job-run-store.js";
 import { createFixtureAnalyzer, createWorkerAnalyzer, type PartAnalyzer } from "./parts/analyzer.js";
 import { R2Adapter } from "./storage/r2-adapter.js";
 import { LocalDiskAdapter } from "./storage/local-adapter.js";
@@ -34,6 +35,7 @@ declare module "fastify" {
     parts: PartStore;
     partsAnalyzer: PartAnalyzer;
     cams: CamStore;
+    jobRuns: JobRunStore;
   }
 }
 
@@ -45,6 +47,7 @@ export interface AppDeps {
   parts?: PartStore;
   partsAnalyzer?: PartAnalyzer;
   cams?: CamStore;
+  jobRuns?: JobRunStore;
 }
 
 export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
@@ -87,6 +90,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   const jobs = deps.jobs ?? createJobStore(bus);
   const parts = deps.parts ?? createPartStore();
   const cams = deps.cams ?? createCamStore();
+  const jobRuns = deps.jobRuns ?? createJobRunStore();
   const partsAnalyzer =
     deps.partsAnalyzer ??
     (config.partsAnalyzer.mode === "worker"
@@ -98,6 +102,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("parts", parts);
   app.decorate("cams", cams);
   app.decorate("partsAnalyzer", partsAnalyzer);
+  app.decorate("jobRuns", jobRuns);
 
   // 路由
   await app.register(healthRoutes);

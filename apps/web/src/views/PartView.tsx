@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { api, BASE, type AiPlanResult, type CamIr, type DfmReport, type Feature, type JobSummary, type PartSummary, type ReleaseRecord } from "../api.js";
 import { Viewer } from "../viewer/Viewer.js";
 import { SimPlayer } from "./SimPlayer.js";
+import { planFixture, clampConflict } from "@ai-cam/fixture-engine";
+import { designSoftJaw, toObj, estimateVolume } from "@ai-cam/soft-jaw";
 
 const SEVERITY_COLOR: Record<string, string> = { INFO: "#38bdf8", WARNING: "#f59e0b", BLOCKER: "#ef4444" };
 const OP_COLOR: Record<string, string> = { FACE: "#38bdf8", POCKET: "#f59e0b", DRILL: "#34d399", CONTOUR: "#f472b6", CHAMFER: "#fbbf24" };
 
-export function PartView({ partId, onBack }: { partId: string; onBack: () => void }) {
+export function PartView({ partId, onBack, mode }: { partId: string; onBack: () => void; mode: "expert" | "shopfloor" }) {
   const [part, setPart] = useState<PartSummary | null>(null);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [dfm, setDfm] = useState<DfmReport | null>(null);
@@ -31,6 +33,7 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
   const [releaseBusy, setReleaseBusy] = useState(false);
   const [releaseError, setReleaseError] = useState<string | null>(null);
   const [releaseNote, setReleaseNote] = useState("");
+  const [showJawObj, setShowJawObj] = useState(false);
 
   const load = async () => {
     setBusy(true);
@@ -182,6 +185,11 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
     toolpaths: showToolpaths && cam ? cam.toolpaths.map((tp) => ({ operation_id: tp.operation_id, moves: tp.moves })) : undefined,
     partBBox: { min: { x: bbox.min[0], y: bbox.min[1], z: bbox.min[2] }, max: { x: bbox.max[0], y: bbox.max[1], z: bbox.max[2] } },
   };
+  // 夹具方案（P5-2/P5-3 贯通）：3-2-1 定位 + 软爪参数
+  const partBBoxObj = { min: { x: bbox.min[0], y: bbox.min[1], z: bbox.min[2] }, max: { x: bbox.max[0], y: bbox.max[1], z: bbox.max[2] } };
+  const fixturePlan = planFixture(partBBoxObj, { soft_jaw: true });
+  const jaw = designSoftJaw({ partBBox: partBBoxObj, clampDir: "X", fixtureId: fixturePlan.recommended_id });
+  const conflicts = clampConflict(features, fixturePlan.candidates.find((c) => c.id === fixturePlan.recommended_id)!);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#0f172a", color: "#e2e8f0" }}>
@@ -230,10 +238,11 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             </table>
           </section>
 
-          <section style={{ marginBottom: 20 }}>
-            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-              特征（{features.length}） <span style={{ color: "#64748b", fontWeight: 400 }}>识别器 {an.features.recognizer_version}</span>
-            </h3>
+          {mode === "expert" && (
+            <section style={{ marginBottom: 20 }}>
+              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+                特征（{features.length}） <span style={{ color: "#64748b", fontWeight: 400 }}>识别器 {an.features.recognizer_version}</span>
+              </h3>
             {features.length === 0 && <div style={{ fontSize: 13, color: "#64748b" }}>未识别到特征。</div>}
             {features.map((f) => (
               <div key={f.id} style={{ border: "1px solid #334155", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 13 }}>
@@ -249,6 +258,7 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
               </div>
             ))}
           </section>
+          )}
 
           <section style={{ marginBottom: 20 }}>
             <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
@@ -267,8 +277,13 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             {cam && (
               <>
                 <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
-                  {cam.machine.machine_name} · {cam.material.material_name}（{cam.material.grade}） · 引擎 {cam.metadata.generator_version} · 退刀 {cam.setups[0]?.wcs}
+                  {cam.machine.machine_name} · {cam.material.material_name}（{cam.material.grade}） · 引擎 {cam.metadata.generator_version} · {cam.setups.length} 个装夹
                 </div>
+                {cam.setups.length > 1 && (
+                  <div style={{ fontSize: 12, color: "#38bdf8", marginBottom: 8 }}>
+                    Setup 视图（4 轴 Index）：{cam.setups.map((s) => `${s.id} ${s.wcs}${s.rotation ? ` A${s.rotation.angle}°` : " (0°)"}${s.part_faces?.length ? ` · ${s.part_faces.length} 特征` : ""}`).join("  |  ")}
+                  </div>
+                )}
                 <label style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
                   <input type="checkbox" checked={showToolpaths} onChange={() => setShowToolpaths(!showToolpaths)} /> 3D 叠加刀路
                 </label>
@@ -369,10 +384,11 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             )}
           </section>
 
-          <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
-            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-              AI 工艺规划 <span style={{ color: "#64748b", fontWeight: 400 }}>P4-9 · Preview → Compare → Apply</span>
-            </h3>
+          {mode === "expert" && (
+            <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
+              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+                AI 工艺规划 <span style={{ color: "#64748b", fontWeight: 400 }}>P4-9 · Preview → Compare → Apply</span>
+              </h3>
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               <input
                 value={aiGoal}
@@ -452,6 +468,7 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
               </div>
             )}
           </section>
+          )}
 
           <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
             <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
@@ -499,6 +516,34 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             ))}
           </section>
 
+          <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+              夹具方案 <span style={{ color: "#64748b", fontWeight: 400 }}>P5-2/3 · 3-2-1 定位 + 软爪</span>
+            </h3>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>
+              定位 {fixturePlan.locate.constraint_count} 点（{fixturePlan.locate.locators.filter((l) => l.kind === "PRIMARY").length} 主基准 · {fixturePlan.locate.locators.filter((l) => l.kind === "SECONDARY").length} 导向 · {fixturePlan.locate.locators.filter((l) => l.kind === "TERTIARY").length} 止动）· 推荐 {fixturePlan.recommended_id}
+            </div>
+            <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 6 }}>
+              软爪 {jaw.id}：槽宽 {jaw.params.slot_width_mm}mm · 槽深 {jaw.params.slot_depth_mm}mm · 爪体 {jaw.params.length_mm}×{jaw.params.width_mm}×{jaw.params.height_mm}mm · 体积≈{Math.round(estimateVolume(jaw)).toLocaleString()} mm³ · 材料 {jaw.params.material}
+            </div>
+            {conflicts.length > 0 && (
+              <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 6 }}>
+                夹持冲突提示：{conflicts.join("；")}
+              </div>
+            )}
+            <button
+              onClick={() => setShowJawObj(!showJawObj)}
+              style={{ padding: "4px 12px", cursor: "pointer", fontSize: 12, background: "#334155", border: "none", color: "#e2e8f0", borderRadius: 6 }}
+            >
+              {showJawObj ? "隐藏软爪 OBJ" : "查看软爪 OBJ"}
+            </button>
+            {showJawObj && (
+              <pre style={{ maxHeight: 160, overflow: "auto", fontSize: 10, lineHeight: 1.4, background: "#0b1220", color: "#cbd5e1", padding: 10, borderRadius: 8, border: "1px solid #1e293b", whiteSpace: "pre", margin: "8px 0 0" }}>
+                {toObj(jaw)}
+              </pre>
+            )}
+          </section>
+
           {job?.simulation.frames && job.simulation.frames.length > 0 && (
             <section style={{ marginBottom: 20 }}>
               <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
@@ -508,10 +553,11 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             </section>
           )}
 
-          <section>
-            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-              DFM 报告 <span style={{ color: "#64748b", fontWeight: 400 }}>规则 {dfm?.rules_version}</span>
-            </h3>
+          {mode === "expert" && (
+            <section>
+              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+                DFM 报告 <span style={{ color: "#64748b", fontWeight: 400 }}>规则 {dfm?.rules_version}</span>
+              </h3>
             {dfm && (
               <div style={{ display: "flex", gap: 8, marginBottom: 10, fontSize: 12 }}>
                 <span style={{ color: "#38bdf8" }}>INFO {dfm.summary.info}</span>
@@ -530,6 +576,7 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
             ))}
             {dfm?.items.length === 0 && <div style={{ fontSize: 13, color: "#64748b" }}>未发现问题，零件可制造。</div>}
           </section>
+          )}
         </aside>
       </div>
     </div>

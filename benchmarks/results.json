@@ -1,0 +1,55 @@
+{
+  "benchmark": "ai-cam P5-8 性能建档",
+  "date": "2026-09-20T11:58:35.664Z",
+  "hardware_note": "本机实跑（未标注机型）",
+  "repeats": 30,
+  "part": "tests/golden/parts/box.json",
+  "cam_hash": "422c755e6fb2eeb9ce7bf2b90a5c8e783715df4aa66482ffd20017895f0f62a1",
+  "stages": [
+    {
+      "stage": "parse(STEP→规范化)",
+      "runs": 30,
+      "p50_ms": 0.41,
+      "p95_ms": 1.96,
+      "p99_ms": 2.99,
+      "min_ms": 0.22,
+      "max_ms": 2.99
+    },
+    {
+      "stage": "feature-graph(特征识别)",
+      "runs": 30,
+      "p50_ms": 0.35,
+      "p95_ms": 0.76,
+      "p99_ms": 3.4,
+      "min_ms": 0.13,
+      "max_ms": 3.4
+    },
+    {
+      "stage": "cam-plan(刀路生成)",
+      "runs": 30,
+      "p50_ms": 0.2,
+      "p95_ms": 2.54,
+      "p99_ms": 2.72,
+      "min_ms": 0.14,
+      "max_ms": 2.72
+    },
+    {
+      "stage": "stock-sim(仿真)",
+      "runs": 30,
+      "p50_ms": 158.92,
+      "p95_ms": 197.43,
+      "p99_ms": 226.69,
+      "min_ms": 79,
+      "max_ms": 226.69
+    },
+    {
+      "stage": "post(后处理FANUC)",
+      "runs": 30,
+      "p50_ms": 0.1,
+      "p95_ms": 0.29,
+      "p99_ms": 1.62,
+      "min_ms": 0.09,
+      "max_ms": 1.62
+    }
+  ]
+}

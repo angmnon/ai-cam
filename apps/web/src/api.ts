@@ -107,7 +107,7 @@ export interface CamIr {
   machine: { machine_name: string; axis_config: string; max_spindle_rpm: number; max_feed: number };
   material: { material_name: string; grade: string };
   stock: { kind: string; dimensions: { x: number; y: number; z: number }; margin: { x: number; y: number; z: number } };
-  setups: Array<{ id: string; name: string; wcs: string; origin: { x: number; y: number; z: number } }>;
+  setups: Array<{ id: string; name: string; wcs: string; origin: { x: number; y: number; z: number }; rotation?: { axis: "A" | "B"; angle: number }; part_faces?: string[] }>;
   tools: Array<{ tool_id: string; tool_number: number }>;
   operations: CamOperation[];
   toolpaths: CamToolpath[];

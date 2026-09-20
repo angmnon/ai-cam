@@ -35,6 +35,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@ai-cam/fixture-engine':
+        specifier: workspace:*
+        version: link:../../packages/fixture-engine
+      '@ai-cam/soft-jaw':
+        specifier: workspace:*
+        version: link:../../packages/soft-jaw
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -75,6 +81,27 @@ importers:
       vite:
         specifier: ^6.0.5
         version: 6.4.3(@types/node@22.20.4)(yaml@2.9.1)
+
+  benchmarks:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../packages/cam-ir
+      '@ai-cam/cam-kernel':
+        specifier: workspace:*
+        version: link:../packages/cam-kernel
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../packages/feature-engine
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../packages/geometry-schema
+      '@ai-cam/post-core':
+        specifier: workspace:*
+        version: link:../packages/post-core
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../packages/stock-sim
 
   packages/ai-planner:
     dependencies:
@@ -655,6 +682,15 @@ importers:
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../domain-schemas
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
+  packages/security:
     devDependencies:
       typescript:
         specifier: ^5.7.2

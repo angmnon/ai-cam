@@ -7,7 +7,7 @@
  * - 止动基准（Tertiary）：端面 −Y，1 个挡块限制 X 平移。
  * 夹持力方向与定位方向相反（Z− 支撑、X− 侧压），构成稳定静定装夹。
  */
-import type { BBox, Feature } from "@ai-cam/domain-schemas";
+import type { BBox } from "@ai-cam/domain-schemas";
 
 export interface Point3 {
   x: number;
@@ -166,7 +166,12 @@ export function planFixture(bbox: BBox, opts: FixtureOptions = {}): FixturePlan 
 }
 
 /** 特征是否与夹持面冲突（特征可访问方向含夹持方向或特征贴靠夹持面） */
-export function clampConflict(features: Feature[], candidate: FixtureCandidate): string[] {
+export interface ClampFeatureLite {
+  id: string;
+  accessible_directions?: string[];
+}
+
+export function clampConflict(features: ClampFeatureLite[], candidate: FixtureCandidate): string[] {
   const conflicts: string[] = [];
   const dir = candidate.clamp_dir as string;
   for (const f of features) {

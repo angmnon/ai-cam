@@ -9,6 +9,7 @@ type View = { name: "login" } | { name: "upload" } | { name: "part"; partId: str
 
 export function App() {
   const [view, setView] = useState<View>(hasToken() ? { name: "upload" } : { name: "login" });
+  const [mode, setMode] = useState<"expert" | "shopfloor">("expert");
 
   const logout = () => {
     setToken(null);
@@ -29,7 +30,14 @@ export function App() {
           {view.name === "part" && (
             <span style={{ color: "#38bdf8" }}>零件面板</span>
           )}
-          <button onClick={logout} style={{ marginLeft: "auto", cursor: "pointer", background: "none", border: "none", color: "#64748b", fontSize: 13 }}>
+          <button
+            onClick={() => setMode(mode === "expert" ? "shopfloor" : "expert")}
+            style={{ marginLeft: "auto", cursor: "pointer", padding: "4px 12px", fontSize: 12, background: mode === "expert" ? "#334155" : "#7c3aed", border: "1px solid #475569", borderRadius: 999, color: mode === "expert" ? "#e2e8f0" : "#fff" }}
+            title="Expert：完整工艺信息；Shop Floor：机床操作简化视图"
+          >
+            {mode === "expert" ? "专家模式" : "车间模式"}
+          </button>
+          <button onClick={logout} style={{ cursor: "pointer", background: "none", border: "none", color: "#64748b", fontSize: 13 }}>
             退出登录
           </button>
         </nav>
@@ -37,7 +45,7 @@ export function App() {
       <div style={{ flex: 1, minHeight: 0 }}>
         {view.name === "login" && <LoginView onLoggedIn={() => setView({ name: "upload" })} />}
         {view.name === "upload" && <UploadView onAnalyzed={(partId) => setView({ name: "part", partId })} />}
-        {view.name === "part" && <PartView partId={view.partId} onBack={() => setView({ name: "upload" })} />}
+        {view.name === "part" && <PartView partId={view.partId} mode={mode} onBack={() => setView({ name: "upload" })} />}
       </div>
     </div>
   );

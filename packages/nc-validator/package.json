@@ -1,0 +1,28 @@
+{
+  "name": "@ai-cam/nc-validator",
+  "version": "0.1.0",
+  "description": "Phase 3 NC 校验器：Parser / Semantic / Machine / Simulation 四层（P3-7）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
+    "@ai-cam/master-data": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/stock-sim": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

@@ -371,6 +371,40 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/nc-validator:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../cam-ir
+      '@ai-cam/cam-kernel':
+        specifier: workspace:*
+        version: link:../cam-kernel
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../feature-engine
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../geometry-schema
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+      '@ai-cam/post-core':
+        specifier: workspace:*
+        version: link:../post-core
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../stock-sim
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/parameter-engine:
     dependencies:
       '@ai-cam/cam-ir':

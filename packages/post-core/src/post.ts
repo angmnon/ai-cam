@@ -98,12 +98,6 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
       state.coolant = coolant;
     }
 
-    // 安全高度
-    if (op.safe_z_mm != null) {
-      const sa = axisBlock(state, undefined, undefined, op.safe_z_mm, profile.decimals);
-      if (sa) w.emit(`G00 ${sa}`);
-    }
-
     // 刀路
     const moves = tp.moves;
     for (let mi = 0; mi < moves.length; mi++) {

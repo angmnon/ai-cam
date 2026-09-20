@@ -25,7 +25,7 @@ export const MOCK_PLANS: Record<string, Record<string, unknown>> = {
   surface_quality: {
     strategy: "finish_priority",
     setup_preference: "single_side_z",
-    process_order: "DRILL_LAST",
+    process_order: "FACE_FIRST",
     tool_weights: { diameter_match: 0.3, tool_cost: 0.1, surface_quality: 0.6 },
     overrides: { finish_allowance_mm: 0.02 },
   },

@@ -13,6 +13,8 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
     "@ai-cam/dfm": "workspace:*",
     "@ai-cam/domain-schemas": "workspace:*",
     "@ai-cam/error-codes": "workspace:*",

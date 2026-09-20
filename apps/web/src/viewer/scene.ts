@@ -13,6 +13,12 @@ export interface ViewerFeatureBox {
   bbox: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
 }
 
+/** 刀路叠加输入（CamIR.toolpaths 子集） */
+export interface ViewerToolpath {
+  operation_id: string;
+  moves: Array<{ type: string; x: number; y: number; z: number }>;
+}
+
 export interface ViewerScene {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
@@ -153,8 +159,7 @@ export async function loadObjFromUrl(scene: ViewerScene, url: string): Promise<T
 }
 
 /** 特征包围盒线框（叠加在零件网格上） */
-export function addFeatureBoxes(scene: ViewerScene, features: ViewerFeatureBox[]): void {
-  const dirs: Array<[number, number, number]> = [
+export function addFeatureBoxes(scene: ViewerScene, features: ViewerFeatureBox[]): void {  const dirs: Array<[number, number, number]> = [
     [1, 0, 0],
     [-1, 0, 0],
     [0, 1, 0],
@@ -206,4 +211,40 @@ export function triangleCount(obj: THREE.Object3D): number {
     }
   });
   return Math.round(count);
+}
+
+/** 刀路叠加：每个 op 一条折线（跳过 RAPID 快速移动；Z-up → three Y-up 旋转） */
+const TP_OP_COLORS: Record<string, number> = {
+  FACE: 0x38bdf8,
+  POCKET: 0xf59e0b,
+  DRILL: 0x34d399,
+  CONTOUR: 0xf472b6,
+  CHAMFER: 0xfbbf24,
+  ADAPTIVE_ROUGH: 0xf97316,
+};
+
+export function addToolpathLines(scene: ViewerScene, toolpaths: ViewerToolpath[]): THREE.Group {
+  const group = new THREE.Group();
+  for (const tp of toolpaths) {
+    const pts: THREE.Vector3[] = [];
+    for (const m of tp.moves) {
+      if (m.type === "RAPID") continue; // 不画快速移动
+      pts.push(new THREE.Vector3(m.x, m.y, m.z));
+    }
+    if (pts.length < 2) continue;
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const opType = tp.operation_id.split("_")[0].toUpperCase();
+    const color = TP_OP_COLORS[opType] ?? 0x94a3b8;
+    const line = new THREE.Line(
+      geo,
+      new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 }),
+    );
+    line.rotation.x = -Math.PI / 2; // STEP Z-up → three Y-up
+    group.add(line);
+  }
+  if (group.children.length > 0) {
+    group.name = "toolpaths";
+    scene.partGroup.add(group);
+  }
+  return group;
 }

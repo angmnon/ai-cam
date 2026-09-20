@@ -10,6 +10,7 @@ import { loadConfig } from "./config.js";
 import { InMemoryEventBus, EventBus } from "./bus/event-bus.js";
 import { createJobStore, JobStore } from "./jobs/job-store.js";
 import { createPartStore, PartStore } from "./parts/part-store.js";
+import { createCamStore, CamStore } from "./cam/cam-store.js";
 import { createFixtureAnalyzer, createWorkerAnalyzer, type PartAnalyzer } from "./parts/analyzer.js";
 import { R2Adapter } from "./storage/r2-adapter.js";
 import { LocalDiskAdapter } from "./storage/local-adapter.js";
@@ -32,6 +33,7 @@ declare module "fastify" {
     jobs: JobStore;
     parts: PartStore;
     partsAnalyzer: PartAnalyzer;
+    cams: CamStore;
   }
 }
 
@@ -42,6 +44,7 @@ export interface AppDeps {
   jobs?: JobStore;
   parts?: PartStore;
   partsAnalyzer?: PartAnalyzer;
+  cams?: CamStore;
 }
 
 export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
@@ -83,6 +86,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
     deps.storage ?? (config.storage.driver === "r2" ? new R2Adapter({ accountId: "", accessKeyId: "", secretAccessKey: "", bucket: "", publicUrl: "" }) : new LocalDiskAdapter(config.storage.dataDir));
   const jobs = deps.jobs ?? createJobStore(bus);
   const parts = deps.parts ?? createPartStore();
+  const cams = deps.cams ?? createCamStore();
   const partsAnalyzer =
     deps.partsAnalyzer ??
     (config.partsAnalyzer.mode === "worker"
@@ -92,6 +96,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("storage", storage);
   app.decorate("jobs", jobs);
   app.decorate("parts", parts);
+  app.decorate("cams", cams);
   app.decorate("partsAnalyzer", partsAnalyzer);
 
   // 路由

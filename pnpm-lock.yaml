@@ -104,6 +104,49 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/cam-kernel:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../cam-ir
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../feature-engine
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../geometry-schema
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+      '@ai-cam/parameter-engine':
+        specifier: workspace:*
+        version: link:../parameter-engine
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/dfm:
     dependencies:
       '@ai-cam/domain-schemas':
@@ -328,8 +371,48 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/parameter-engine:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../cam-ir
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   services/api:
     dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../../packages/cam-ir
+      '@ai-cam/cam-kernel':
+        specifier: workspace:*
+        version: link:../../packages/cam-kernel
       '@ai-cam/dfm':
         specifier: workspace:*
         version: link:../../packages/dfm

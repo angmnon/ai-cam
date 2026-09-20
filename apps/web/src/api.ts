@@ -69,6 +69,51 @@ export interface DfmReport {
   }>;
 }
 
+// ---- Phase 2 CAM IR（最小子集） ----
+export interface CamMove {
+  type: "RAPID" | "LINEAR" | "ARC_CW" | "ARC_CCW" | "PLUNGE" | "RETRACT";
+  x: number;
+  y: number;
+  z: number;
+  feed_mm_min?: number;
+}
+
+export interface CamOperation {
+  id: string;
+  op_index: number;
+  name: string;
+  type: string;
+  feature_ids: string[];
+  tool: { tool_id: string; tool_number: number; rank: number; rank_reason: string[] };
+  parameters: Record<string, unknown>;
+  depends_on: string[];
+  safe_z_mm: number;
+}
+
+export interface CamToolpath {
+  operation_id: string;
+  toolpath_id: string;
+  move_count: number;
+  engine_version: string;
+  bounds: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
+  moves: CamMove[];
+}
+
+export interface CamIr {
+  schema_version: string;
+  ir_id: string;
+  job_id: string;
+  part_id: string;
+  machine: { machine_name: string; axis_config: string; max_spindle_rpm: number; max_feed: number };
+  material: { material_name: string; grade: string };
+  stock: { kind: string; dimensions: { x: number; y: number; z: number }; margin: { x: number; y: number; z: number } };
+  setups: Array<{ id: string; name: string; wcs: string; origin: { x: number; y: number; z: number } }>;
+  tools: Array<{ tool_id: string; tool_number: number }>;
+  operations: CamOperation[];
+  toolpaths: CamToolpath[];
+  metadata: { generated_by: string; generator_version: string; created_at: string };
+}
+
 class ApiErrorClient extends Error {
   constructor(
     public code: string,
@@ -134,6 +179,12 @@ export const api = {
   meshUrl: (id: string) => `${BASE}/api/v1/parts/${id}/mesh`,
 
   listParts: () => request<{ data: PartSummary[] }>("GET", "/api/v1/parts"),
+
+  generateToolpath: (id: string) =>
+    request<{ data: { revision: { id: string; revision_no: number; engine_version: string }; cam: CamIr; parameter_decisions: Record<string, unknown> } }>("POST", `/api/v1/parts/${id}/toolpath`),
+
+  getToolpath: (id: string) =>
+    request<{ data: { revision_id: string; revision_no: number; engine_version: string; cam: CamIr } }>("GET", `/api/v1/parts/${id}/toolpath`),
 };
 
 export { BASE };

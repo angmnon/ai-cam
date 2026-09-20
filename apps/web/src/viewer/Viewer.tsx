@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   addFeatureBoxes,
+  addToolpathLines,
   clearPartGroup,
   createViewerScene,
   fitView,
@@ -9,11 +10,13 @@ import {
   triangleCount,
   type ViewerFeatureBox,
   type ViewerScene,
+  type ViewerToolpath,
 } from "./scene.js";
 
 export interface ViewerData {
   meshUrl?: string;
   features?: ViewerFeatureBox[];
+  toolpaths?: ViewerToolpath[];
   partBBox?: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
 }
 
@@ -75,10 +78,12 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
           const obj = await loadObjFromUrl(scene, data.meshUrl);
           if (!cancelled) {
             if (data.features?.length) addFeatureBoxes(scene, data.features);
+            if (data.toolpaths?.length) addToolpathLines(scene, data.toolpaths);
             setTriangles(triangleCount(obj));
           }
         } else if (data.features?.length) {
           addFeatureBoxes(scene, data.features);
+          if (data.toolpaths?.length) addToolpathLines(scene, data.toolpaths);
           setTriangles(0);
         } else if (data.partBBox) {
           const b = data.partBBox;
@@ -88,6 +93,7 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
           const line = new (await import("three")).LineSegments(edges, new (await import("three")).LineBasicMaterial({ color: 0x64748b }));
           line.position.set((b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2, (b.min.z + b.max.z) / 2);
           scene.partGroup.add(line);
+          if (data.toolpaths?.length) addToolpathLines(scene, data.toolpaths);
           fitView(scene, line);
           setTriangles(0);
         }
@@ -109,7 +115,7 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
       <header style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 16px", borderBottom: "1px solid #1e293b" }}>
         <strong style={{ fontSize: 15 }}>3D 零件视图</strong>
         <span style={{ fontSize: 13, color: "#94a3b8" }}>
-          {loading ? "加载中…" : data?.meshUrl ? "网格（VIEW_MESH） + 特征包围盒" : "特征包围盒（示意）"}
+          {loading ? "加载中…" : data?.meshUrl ? "网格（VIEW_MESH） + 特征包围盒" : data?.toolpaths?.length ? "刀路叠加（示意）" : "特征包围盒（示意）"}
         </span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
           <label style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center" }}>

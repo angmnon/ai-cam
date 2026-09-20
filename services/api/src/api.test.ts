@@ -326,4 +326,39 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
     expect(feats.statusCode).toBe(409);
     expect(feats.json().error.code).toBe("PART_STATE_INVALID");
   });
+
+  it("生成 CAM 工艺计划（box）：POST toolpath → CamIR 校验 → GET 最新", async () => {
+    const token = await login();
+    const headers = { authorization: `Bearer ${token}` };
+
+    const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+    const partId = created.json().data.part.id;
+    await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+
+    // 未生成前 GET → 404 CAM_REVISION_NOT_FOUND
+    const pre = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/toolpath`, headers });
+    expect(pre.statusCode).toBe(404);
+    expect(pre.json().error.code).toBe("CAM_REVISION_NOT_FOUND");
+
+    const gen = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/toolpath`, headers });
+    expect(gen.statusCode).toBe(201);
+    const data = gen.json().data;
+    expect(data.revision.id).toMatch(/^cam_/);
+    expect(data.revision.revision_no).toBe(1);
+    expect(data.cam.schema_version).toBe("1.0.0");
+    expect(data.cam.operations.length).toBeGreaterThanOrEqual(2);
+    expect(data.cam.tools.length).toBeGreaterThan(0);
+    expect(data.cam.setups[0].wcs).toBe("G54");
+    expect(data.cam.toolpaths.length).toBe(data.cam.operations.length);
+    for (const tp of data.cam.toolpaths) {
+      expect(tp.move_count).toBe(tp.moves.length);
+      expect(tp.moves.every((m: { x: number; y: number; z: number }) => Number.isFinite(m.x) && Number.isFinite(m.y) && Number.isFinite(m.z))).toBe(true);
+      expect(tp.bounds.min.x).toBeLessThanOrEqual(tp.bounds.max.x);
+    }
+    expect(data.parameter_decisions.FACE_F0001.parameters.feed_mm_min).toBeGreaterThan(0);
+
+    const latest = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/toolpath`, headers });
+    expect(latest.statusCode).toBe(200);
+    expect(latest.json().data.revision_no).toBe(1);
+  });
 });

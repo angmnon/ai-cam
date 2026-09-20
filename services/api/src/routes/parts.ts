@@ -1,10 +1,12 @@
-/** 零件路由：创建（含上传会话）/ 分析 / 详情 / 特征 / DFM / 网格 */
+/** 零件路由：创建（含上传会话）/ 分析 / 详情 / 特征 / DFM / 网格 / 刀路（CAM） */
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import { storageKey } from "../storage/storage.js";
 import { ok, paged } from "../plugins/response.js";
 import fp from "../plugins/fp.js";
+import { planPart } from "@ai-cam/cam-kernel";
+import { mustLatest } from "../cam/cam-store.js";
 
 const CreatePartBody = z.object({
   filename: z.string().min(1).max(255).regex(/\.(step|stp)$/i, "仅支持 .step/.stp"),
@@ -130,6 +132,31 @@ const partRoutes: FastifyPluginAsync = async (app) => {
       throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     }
     return ok(part.analysis.dfm);
+  });
+
+  // 生成/更新 CAM 工艺计划（Phase 2：cam-kernel 确定性规划）
+  app.post("/:id/toolpath", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const orgId = request.user!.org_id;
+    const part = app.parts.get(orgId, id);
+    if (part.status !== "ANALYZED" || !part.analysis) {
+      throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
+    }
+    try {
+      const { cam, toolpaths, parameterDecisions } = planPart(part.analysis.part, part.analysis.features.features);
+      const revision = app.cams.create({ orgId, partId: part.id, userId: request.user!.sub, cam });
+      return reply.status(201).send(ok({ revision, cam, toolpaths, parameter_decisions: parameterDecisions }));
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      throw new ApiError({ code: ErrorCodes.CAM_TOOLPATH_GENERATION_FAILED, message: String((e as Error).message), stage: "cam", retryable: true });
+    }
+  });
+
+  // 最新 CAM 工艺计划
+  app.get("/:id/toolpath", async (request) => {
+    const { id } = request.params as { id: string };
+    const revision = mustLatest(app.cams, request.user!.org_id, id);
+    return ok({ revision_id: revision.id, revision_no: revision.revision_no, engine_version: revision.engine_version, cam: revision.cam });
   });
 
   // 网格（OBJ）

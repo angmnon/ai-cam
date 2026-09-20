@@ -1,14 +1,19 @@
-/** 零件信息面板：BBox/体积/特征列表/DFM 摘要 + 3D 视图 */
+/** 零件信息面板：BBox/体积/特征列表/DFM 摘要 + CAM 刀路工作台 + 3D 视图 */
 import { useEffect, useState } from "react";
-import { api, type DfmReport, type Feature, type PartSummary } from "../api.js";
+import { api, type CamIr, type DfmReport, type Feature, type PartSummary } from "../api.js";
 import { Viewer } from "../viewer/Viewer.js";
 
 const SEVERITY_COLOR: Record<string, string> = { INFO: "#38bdf8", WARNING: "#f59e0b", BLOCKER: "#ef4444" };
+const OP_COLOR: Record<string, string> = { FACE: "#38bdf8", POCKET: "#f59e0b", DRILL: "#34d399", CONTOUR: "#f472b6", CHAMFER: "#fbbf24" };
 
 export function PartView({ partId, onBack }: { partId: string; onBack: () => void }) {
   const [part, setPart] = useState<PartSummary | null>(null);
   const [features, setFeatures] = useState<Feature[]>([]);
   const [dfm, setDfm] = useState<DfmReport | null>(null);
+  const [cam, setCam] = useState<CamIr | null>(null);
+  const [camRevision, setCamRevision] = useState<number | null>(null);
+  const [camError, setCamError] = useState<string | null>(null);
+  const [showToolpaths, setShowToolpaths] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -20,10 +25,31 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
       setPart(p.data);
       setFeatures(f.data.features);
       setDfm(d.data);
+      // 已生成的 CAM 计划（无则 404 忽略）
+      try {
+        const tp = await api.getToolpath(partId);
+        setCam(tp.data.cam);
+        setCamRevision(tp.data.revision_no);
+      } catch (err) {
+        if ((err as { code?: string }).code !== "CAM_REVISION_NOT_FOUND") throw err;
+        setCam(null);
+        setCamRevision(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const generateToolpath = async () => {
+    setCamError(null);
+    try {
+      const res = await api.generateToolpath(partId);
+      setCam(res.data.cam);
+      setCamRevision(res.data.revision.revision_no);
+    } catch (err) {
+      setCamError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -45,6 +71,7 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
   const viewerData = {
     meshUrl: an.mesh_key ? api.meshUrl(partId) : undefined,
     features,
+    toolpaths: showToolpaths && cam ? cam.toolpaths.map((tp) => ({ operation_id: tp.operation_id, moves: tp.moves })) : undefined,
     partBBox: { min: { x: bbox.min[0], y: bbox.min[1], z: bbox.min[2] }, max: { x: bbox.max[0], y: bbox.max[1], z: bbox.max[2] } },
   };
 
@@ -113,6 +140,66 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
                 <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>可访问：{f.accessible_directions.join(" / ")}</div>
               </div>
             ))}
+          </section>
+
+          <section style={{ marginBottom: 20 }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+              CAM 工艺计划 <span style={{ color: "#64748b", fontWeight: 400 }}>{camRevision ? `rev ${camRevision}` : "未生成"}</span>
+            </h3>
+            {part.status === "ANALYZED" && (
+              <button
+                onClick={() => void generateToolpath()}
+                disabled={!!cam}
+                style={{ padding: "7px 14px", cursor: cam ? "not-allowed" : "pointer", fontSize: 13, background: cam ? "#334155" : "#3b82f6", border: "none", color: "#fff", borderRadius: 6, marginBottom: 10 }}
+              >
+                {cam ? "已生成（重新 POST 可更新）" : "生成 3 轴刀路"}
+              </button>
+            )}
+            {camError && <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>生成失败：{camError}</div>}
+            {cam && (
+              <>
+                <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+                  {cam.machine.machine_name} · {cam.material.material_name}（{cam.material.grade}） · 引擎 {cam.metadata.generator_version} · 退刀 {cam.setups[0]?.wcs}
+                </div>
+                <label style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                  <input type="checkbox" checked={showToolpaths} onChange={() => setShowToolpaths(!showToolpaths)} /> 3D 叠加刀路
+                </label>
+                <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid #334155", borderRadius: 8 }}>
+                  <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ color: "#64748b", textAlign: "left", position: "sticky", top: 0, background: "#0f172a" }}>
+                        <th style={{ padding: "6px 8px" }}>#</th>
+                        <th style={{ padding: "6px 8px" }}>类型</th>
+                        <th style={{ padding: "6px 8px" }}>工序</th>
+                        <th style={{ padding: "6px 8px" }}>刀具</th>
+                        <th style={{ padding: "6px 8px", textAlign: "right" }}>S rpm</th>
+                        <th style={{ padding: "6px 8px", textAlign: "right" }}>F mm/min</th>
+                        <th style={{ padding: "6px 8px", textAlign: "right" }}>moves</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cam.operations.map((op) => {
+                        const tp = cam.toolpaths.find((t) => t.operation_id === op.id);
+                        return (
+                          <tr key={op.id} style={{ borderTop: "1px solid #1e293b" }}>
+                            <td style={{ padding: "5px 8px", color: "#64748b" }}>{op.op_index}</td>
+                            <td style={{ padding: "5px 8px", color: OP_COLOR[op.type] ?? "#94a3b8", fontWeight: 600 }}>{op.type}</td>
+                            <td style={{ padding: "5px 8px" }}>{op.name}</td>
+                            <td style={{ padding: "5px 8px", color: "#94a3b8" }}>T{op.tool.tool_number}</td>
+                            <td style={{ padding: "5px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Math.round(Number(op.parameters.spindle_rpm ?? 0)).toLocaleString()}</td>
+                            <td style={{ padding: "5px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{Math.round(Number(op.parameters.feed_mm_min ?? 0)).toLocaleString()}</td>
+                            <td style={{ padding: "5px 8px", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{tp?.move_count ?? 0}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+                  总计 {cam.toolpaths.reduce((s, t) => s + t.move_count, 0).toLocaleString()} 个刀路点 · {cam.tools.length} 把刀具
+                </div>
+              </>
+            )}
           </section>
 
           <section>

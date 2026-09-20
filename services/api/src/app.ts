@@ -12,6 +12,8 @@ import { createJobStore, JobStore } from "./jobs/job-store.js";
 import { createPartStore, PartStore } from "./parts/part-store.js";
 import { createCamStore, CamStore } from "./cam/cam-store.js";
 import { createJobRunStore, JobRunStore } from "./cam/job-run-store.js";
+import { createReleaseStore, type ReleaseStore } from "./cam/release-store.js";
+import { createAiPlanStore, type AiPlanStore } from "./cam/ai-plan-store.js";
 import { createFixtureAnalyzer, createWorkerAnalyzer, type PartAnalyzer } from "./parts/analyzer.js";
 import { R2Adapter } from "./storage/r2-adapter.js";
 import { LocalDiskAdapter } from "./storage/local-adapter.js";
@@ -36,6 +38,8 @@ declare module "fastify" {
     partsAnalyzer: PartAnalyzer;
     cams: CamStore;
     jobRuns: JobRunStore;
+    releases: ReleaseStore;
+    aiPlans: AiPlanStore;
   }
 }
 
@@ -91,6 +95,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   const parts = deps.parts ?? createPartStore();
   const cams = deps.cams ?? createCamStore();
   const jobRuns = deps.jobRuns ?? createJobRunStore();
+  const releases = createReleaseStore();
+  const aiPlans = createAiPlanStore();
   const partsAnalyzer =
     deps.partsAnalyzer ??
     (config.partsAnalyzer.mode === "worker"
@@ -103,6 +109,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("cams", cams);
   app.decorate("partsAnalyzer", partsAnalyzer);
   app.decorate("jobRuns", jobRuns);
+  app.decorate("releases", releases);
+  app.decorate("aiPlans", aiPlans);
 
   // 路由
   await app.register(healthRoutes);

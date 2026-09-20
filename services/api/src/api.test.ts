@@ -418,4 +418,149 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
     expect(report.simulation.status).toBe("PASS");
     expect(report.simulation.removed_volume_mm3).toBeGreaterThan(0);
   });
+
+  describe("Release 工作流（P4-11）", () => {
+    async function buildPartWithJob() {
+      const token = await login();
+      const headers = { authorization: `Bearer ${token}` };
+      const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+      const partId = created.json().data.part.id;
+      await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+      await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/toolpath`, headers });
+      const run = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/job`, headers });
+      expect(run.statusCode).toBe(201);
+      return { token, headers, partId };
+    }
+
+    it("无 Job 时创建 Release → 409 JOB_NOT_FOUND", async () => {
+      const token = await login();
+      const headers = { authorization: `Bearer ${token}` };
+      const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+      const partId = created.json().data.part.id;
+      await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+      const rel = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
+      expect(rel.statusCode).toBe(404);
+      expect(rel.json().error.code).toBe("JOB_NOT_FOUND");
+    });
+
+    it("创建→审批→发布完整链：version 递增 + 二维码 + 审计", async () => {
+      const { headers, partId } = await buildPartWithJob();
+
+      const created = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
+      expect(created.statusCode).toBe(201);
+      const rel = created.json().data;
+      expect(rel.id).toMatch(/^rel_/);
+      expect(rel.version_no).toBe(1);
+      expect(rel.status).toBe("PENDING_APPROVAL");
+      expect(rel.qr_token).toMatch(/^qr_/);
+      expect(rel.cam_revision_id).toMatch(/^cam_/);
+      expect(rel.job_run_id).toMatch(/^jobrun_/);
+
+      // 未审批直接发布 → 409 RELEASE_STATE_INVALID
+      const early = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers });
+      expect(early.statusCode).toBe(409);
+      expect(early.json().error.code).toBe("RELEASE_STATE_INVALID");
+
+      // 审批
+      const approved = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers, payload: { note: "仿真与校验全绿，准予发布" } });
+      expect(approved.statusCode).toBe(200);
+      expect(approved.json().data.status).toBe("APPROVED");
+      expect(approved.json().data.approved_by).toBeTruthy();
+      expect(approved.json().data.approval_note).toBe("仿真与校验全绿，准予发布");
+
+      // 二次审批 → 409
+      const dup = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers });
+      expect(dup.statusCode).toBe(409);
+
+      // 发布
+      const released = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers });
+      expect(released.statusCode).toBe(200);
+      expect(released.json().data.status).toBe("RELEASED");
+      expect(released.json().data.released_at).toBeTruthy();
+
+      // 列表 + 详情
+      const list = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/releases`, headers });
+      expect(list.statusCode).toBe(200);
+      expect(list.json().data.length).toBe(1);
+      const detail = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/releases/${rel.id}`, headers });
+      expect(detail.json().data.status).toBe("RELEASED");
+
+      // 再次创建 → version_no=2（版本链递增）
+      const again = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
+      expect(again.statusCode).toBe(201);
+      expect(again.json().data.version_no).toBe(2);
+    });
+
+    it("未知 Release → 404 RELEASE_NOT_FOUND；驳回需附理由", async () => {
+      const { headers, partId } = await buildPartWithJob();
+      const nf = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/releases/rel_nope`, headers });
+      expect(nf.statusCode).toBe(404);
+      expect(nf.json().error.code).toBe("RELEASE_NOT_FOUND");
+
+      const created = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
+      const relId = created.json().data.id;
+      const noNote = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers });
+      expect(noNote.statusCode).toBe(422);
+
+      const rejected = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers, payload: { note: "余量不足，需返工" } });
+      expect(rejected.statusCode).toBe(200);
+      expect(rejected.json().data.status).toBe("REJECTED");
+    });
+  });
+
+  describe("AI 规划（P4-9）：Preview → 审计 → Apply", () => {
+    it("POST ai-plan：意图/Guardrails/工具选择 + ChangeSet（before=null）", async () => {
+      const token = await login();
+      const headers = { authorization: `Bearer ${token}` };
+      const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+      const partId = created.json().data.part.id;
+      await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+
+      const res = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/ai-plan`, headers, payload: { goal: "表面光洁度优先" } });
+      expect(res.statusCode).toBe(201);
+      const data = res.json().data;
+      expect(data.plan.id).toMatch(/^aiplan_/);
+      expect(data.intent.strategy).toBe("finish_priority");
+      expect(data.guardrail.ok).toBe(true);
+      expect(data.setups.length).toBeGreaterThan(0);
+      expect(data.process.order.length).toBeGreaterThan(0);
+      expect(data.tool_choices.length).toBeGreaterThan(0);
+      expect(data.tool_choices[0].reasons.length).toBeGreaterThan(0);
+      expect(data.change_set.before).toBeNull();
+      expect(data.change_set.after.operation_count).toBeGreaterThan(0);
+      expect(data.change_set.reasons.length).toBeGreaterThan(0);
+      expect(data.job.validated).toBe(true);
+    });
+
+    it("AI 规划审计列表 + Apply → 生成 CAM revision + Job", async () => {
+      const token = await login();
+      const headers = { authorization: `Bearer ${token}` };
+      const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+      const partId = created.json().data.part.id;
+      await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/analyze`, headers });
+
+      const res = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/ai-plan`, headers, payload: { goal: "成本优先" } });
+      const planId = res.json().data.plan.id;
+      expect(res.json().data.intent.strategy).toBe("rough_then_finish");
+      expect(res.json().data.intent.tool_weights.tool_cost).toBeGreaterThan(0.5);
+
+      const list = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/ai-plans`, headers });
+      expect(list.statusCode).toBe(200);
+      expect(list.json().data.length).toBe(1);
+      expect(list.json().data[0].goal).toBe("成本优先");
+      expect(list.json().data[0].tool_calls.length).toBeGreaterThan(0);
+
+      const applied = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/ai-plans/${planId}/apply`, headers });
+      expect(applied.statusCode).toBe(201);
+      const d = applied.json().data;
+      expect(d.revision_id).toMatch(/^cam_/);
+      expect(d.revision_no).toBe(1);
+      expect(d.job_run_id).toMatch(/^jobrun_/);
+
+      // Apply 后 ChangeSet.before 不再为空（再次规划）
+      const res2 = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/ai-plan`, headers, payload: { goal: "效率优先" } });
+      expect(res2.json().data.change_set.before).not.toBeNull();
+      expect(res2.json().data.change_set.before.cam_revision_id).toBe(d.revision_id);
+    });
+  });
 });

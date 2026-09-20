@@ -13,6 +13,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@ai-cam/ai-planner": "workspace:*",
     "@ai-cam/cam-ir": "workspace:*",
     "@ai-cam/cam-kernel": "workspace:*",
     "@ai-cam/dfm": "workspace:*",
@@ -24,6 +25,7 @@
     "@ai-cam/job-schema": "workspace:*",
     "@ai-cam/job-runner": "workspace:*",
     "@ai-cam/master-data": "workspace:*",
+    "@ai-cam/model-gateway": "workspace:*",
     "@ai-cam/nc-validator": "workspace:*",
     "@ai-cam/post-core": "workspace:*",
     "@ai-cam/stock-sim": "workspace:*",

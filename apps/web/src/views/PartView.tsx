@@ -1,6 +1,6 @@
 /** 零件信息面板：BBox/体积/特征列表/DFM 摘要 + CAM 刀路工作台 + 仿真播放 + 一键 Job + 3D 视图 */
 import { useEffect, useState } from "react";
-import { api, BASE, type CamIr, type DfmReport, type Feature, type JobSummary, type PartSummary } from "../api.js";
+import { api, BASE, type AiPlanResult, type CamIr, type DfmReport, type Feature, type JobSummary, type PartSummary, type ReleaseRecord } from "../api.js";
 import { Viewer } from "../viewer/Viewer.js";
 import { SimPlayer } from "./SimPlayer.js";
 
@@ -22,6 +22,15 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
   const [jobBusy, setJobBusy] = useState(false);
   const [showNc, setShowNc] = useState(false);
   const [ncText, setNcText] = useState<string | null>(null);
+  const [aiGoal, setAiGoal] = useState("粗加工优先，兼顾表面质量");
+  const [aiPlan, setAiPlan] = useState<AiPlanResult | null>(null);
+  const [aiPlans, setAiPlans] = useState<Array<{ id: string; goal: string; model_route: string; prompt_version: string; created_at: string; tool_calls: Array<{ tool: string; ok: boolean }> }>>([]);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [releases, setReleases] = useState<ReleaseRecord[]>([]);
+  const [releaseBusy, setReleaseBusy] = useState(false);
+  const [releaseError, setReleaseError] = useState<string | null>(null);
+  const [releaseNote, setReleaseNote] = useState("");
 
   const load = async () => {
     setBusy(true);
@@ -83,8 +92,77 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
     }
   };
 
+  const runAiPlan = async () => {
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const res = await api.runAiPlan(partId, aiGoal);
+      setAiPlan(res.data);
+      const list = await api.listAiPlans(partId);
+      setAiPlans(list.data);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const applyAiPlan = async () => {
+    if (!aiPlan) return;
+    setAiError(null);
+    try {
+      await api.applyAiPlan(partId, aiPlan.plan.id);
+      setAiPlan(null);
+      const tp = await api.getToolpath(partId);
+      setCam(tp.data.cam);
+      await runAiPlan();
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const loadReleases = async () => {
+    try {
+      setReleases((await api.listReleases(partId)).data);
+    } catch {
+      /* 未生成 Job 时忽略 */
+    }
+  };
+
+  const createRelease = async () => {
+    setReleaseBusy(true);
+    setReleaseError(null);
+    try {
+      const rel = (await api.createRelease(partId)).data;
+      setReleases([rel, ...releases]);
+    } catch (err) {
+      setReleaseError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setReleaseBusy(false);
+    }
+  };
+
+  const approveRelease = async (rid: string) => {
+    try {
+      const rel = (await api.approveRelease(partId, rid, releaseNote || "仿真与校验通过")).data;
+      setReleases(releases.map((r) => (r.id === rid ? rel : r)));
+    } catch (err) {
+      setReleaseError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const releaseNow = async (rid: string) => {
+    try {
+      const rel = (await api.releaseNow(partId, rid)).data;
+      setReleases(releases.map((r) => (r.id === rid ? rel : r)));
+    } catch (err) {
+      setReleaseError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   useEffect(() => {
     void load();
+    void loadReleases();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partId]);
 
@@ -289,6 +367,136 @@ export function PartView({ partId, onBack }: { partId: string; onBack: () => voi
                 )}
               </>
             )}
+          </section>
+
+          <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+              AI 工艺规划 <span style={{ color: "#64748b", fontWeight: 400 }}>P4-9 · Preview → Compare → Apply</span>
+            </h3>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              <input
+                value={aiGoal}
+                onChange={(e) => setAiGoal(e.target.value)}
+                style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "#0b1220", border: "1px solid #334155", color: "#e2e8f0", borderRadius: 6 }}
+                placeholder="输入加工目标，如：表面光洁度优先 / 成本优先 / 效率优先"
+              />
+              <button
+                onClick={() => void runAiPlan()}
+                disabled={aiBusy}
+                style={{ padding: "7px 14px", cursor: aiBusy ? "wait" : "pointer", fontSize: 13, background: "#7c3aed", border: "none", color: "#fff", borderRadius: 6 }}
+              >
+                {aiBusy ? "规划中…" : "AI 规划"}
+              </button>
+            </div>
+            {aiError && <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{aiError}</div>}
+            {aiPlan && (
+              <div style={{ border: "1px solid #334155", borderRadius: 8, padding: 10, fontSize: 12, marginBottom: 10 }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontWeight: 600 }}>意图：{aiPlan.intent?.strategy ?? "（默认）"}</span>
+                  <span style={{ color: aiPlan.guardrail.ok ? "#86efac" : "#fca5a5", fontWeight: 600 }}>
+                    {aiPlan.guardrail.ok ? "✔ Guardrails 通过" : `✘ Guardrails（${aiPlan.guardrail.violations.length} 项）`}
+                  </span>
+                  <span style={{ color: aiPlan.job.validated ? "#86efac" : "#fca5a5" }}>{aiPlan.job.validated ? "✔ VALIDATED" : "✘ NOT VALIDATED"}</span>
+                </div>
+                {!aiPlan.guardrail.ok &&
+                  aiPlan.guardrail.violations.map((v, i) => (
+                    <div key={i} style={{ color: "#fca5a5" }}>
+                      {v.path}: {v.message}
+                    </div>
+                  ))}
+                <div style={{ color: "#94a3b8", margin: "6px 0" }}>装夹 {aiPlan.setups.length} · 工序 {aiPlan.process.order.length} · 刀具选择 {aiPlan.tool_choices.length}</div>
+                {aiPlan.tool_choices.map((tc) => (
+                  <div key={tc.operation_type + tc.tool_id} style={{ color: "#e2e8f0", marginBottom: 2 }}>
+                    <span style={{ color: "#38bdf8", fontWeight: 600 }}>{tc.operation_type}</span> → {tc.tool_id}（score {tc.score.toFixed(2)}）
+                    <span style={{ color: "#64748b" }}> · {tc.reasons[0]}</span>
+                  </div>
+                ))}
+                <div style={{ borderTop: "1px solid #1e293b", margin: "8px 0 6px", paddingTop: 6 }}>
+                  <div style={{ color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>变更预览（ChangeSet）</div>
+                  <div style={{ display: "flex", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: "#64748b", marginBottom: 2 }}>当前</div>
+                      {aiPlan.change_set.before ? (
+                        <div style={{ color: "#e2e8f0" }}>{aiPlan.change_set.before.operation_count} 工序 · {aiPlan.change_set.before.tools.length} 刀具 · {aiPlan.change_set.before.setups.length} 装夹</div>
+                      ) : (
+                        <div style={{ color: "#64748b" }}>（无 CAM 计划）</div>
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: "#64748b", marginBottom: 2 }}>AI 方案</div>
+                      <div style={{ color: "#86efac" }}>{aiPlan.change_set.after.operation_count} 工序 · {aiPlan.change_set.after.tools.length} 刀具 · {aiPlan.change_set.after.setups.length} 装夹</div>
+                    </div>
+                  </div>
+                  {aiPlan.change_set.reasons.map((r, i) => (
+                    <div key={i} style={{ color: "#64748b", marginTop: 2 }}>
+                      · {r}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => void applyAiPlan()}
+                  style={{ marginTop: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, background: "#16a34a", border: "none", color: "#fff", borderRadius: 6 }}
+                >
+                  Apply 生成新 CAM 计划
+                </button>
+              </div>
+            )}
+            {aiPlans.length > 0 && (
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>
+                审计记录 {aiPlans.length} 条：
+                {aiPlans.slice(0, 3).map((pl) => (
+                  <span key={pl.id} style={{ marginRight: 10 }}>
+                    [{pl.goal.slice(0, 8)}… {pl.model_route} · v{pl.prompt_version} · {pl.tool_calls.length} calls]
+                  </span>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
+            <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
+              Release 发布 <span style={{ color: "#64748b", fontWeight: 400 }}>P4-11 · 审批链</span>
+            </h3>
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              <button
+                onClick={() => void createRelease()}
+                disabled={releaseBusy || !job}
+                style={{ padding: "7px 14px", cursor: releaseBusy ? "wait" : job ? "pointer" : "not-allowed", fontSize: 13, background: job ? "#3b82f6" : "#334155", border: "none", color: "#fff", borderRadius: 6 }}
+              >
+                {releaseBusy ? "创建中…" : "发起 Release 申请"}
+              </button>
+              <input
+                value={releaseNote}
+                onChange={(e) => setReleaseNote(e.target.value)}
+                style={{ flex: 1, padding: "6px 10px", fontSize: 12, background: "#0b1220", border: "1px solid #334155", color: "#e2e8f0", borderRadius: 6 }}
+                placeholder="审批备注（可选）"
+              />
+            </div>
+            {releaseError && <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{releaseError}</div>}
+            {releases.length === 0 && <div style={{ fontSize: 12, color: "#64748b" }}>暂无发布记录。先生成 Job，再发起 Release 申请。</div>}
+            {releases.map((r) => (
+              <div key={r.id} style={{ border: "1px solid #334155", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontWeight: 600 }}>v{r.version_no}</span>
+                  <span style={{ color: "#64748b" }}>{r.id.slice(0, 12)}…</span>
+                  <span style={{ marginLeft: "auto", color: r.status === "RELEASED" ? "#86efac" : r.status === "APPROVED" ? "#38bdf8" : r.status === "REJECTED" ? "#f87171" : "#fbbf24", fontWeight: 600 }}>{r.status}</span>
+                </div>
+                <div style={{ color: "#94a3b8", marginTop: 4 }}>
+                  cam {r.cam_revision_id.slice(0, 10)}… · job {r.job_run_id.slice(0, 10)}… · 申请人 {r.requested_by.slice(0, 8)} · QR {r.qr_token}
+                </div>
+                {r.approval_note && <div style={{ color: "#64748b", marginTop: 2 }}>备注：{r.approval_note}</div>}
+                {r.status === "PENDING_APPROVAL" && (
+                  <button onClick={() => void approveRelease(r.id)} style={{ marginTop: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, background: "#16a34a", border: "none", color: "#fff", borderRadius: 6 }}>
+                    审批通过
+                  </button>
+                )}
+                {r.status === "APPROVED" && (
+                  <button onClick={() => void releaseNow(r.id)} style={{ marginTop: 6, padding: "4px 10px", cursor: "pointer", fontSize: 12, background: "#3b82f6", border: "none", color: "#fff", borderRadius: 6 }}>
+                    正式发布
+                  </button>
+                )}
+              </div>
+            ))}
           </section>
 
           {job?.simulation.frames && job.simulation.frames.length > 0 && (

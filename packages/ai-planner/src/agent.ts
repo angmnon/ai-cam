@@ -25,7 +25,7 @@ export interface AgentToolCall {
 
 export interface AgentRun {
   intent: PlannerOutput | null;
-  guardrail: { ok: boolean; violations: string[] };
+  guardrail: { ok: boolean; violations: Array<{ path: string; message: string }> };
   setups: ReturnType<typeof planSetups>;
   process: ReturnType<typeof planProcess>;
   tool_choices: Array<{ operation_type: string; tool_id: string; score: number; reasons: string[] }>;
@@ -40,7 +40,7 @@ export interface AgentOptions {
   goal: string;
   materialId?: string;
   machineId?: string;
-  dialect?: "FANUC" | "ISO_GENERIC";
+  dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC";
 }
 
 /** 工具注册表（v1：只读/生成/验证，供审计与 schema 校验；可扩展为可写工具） */
@@ -109,15 +109,15 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
     const parsed = JSON.parse(res.content) as unknown;
     const schema = validatePlannerOutput(parsed);
     if (!schema.ok) {
-      guardrail = { ok: false, violations: schema.violations.map((v) => `${v.path}: ${v.message}`) };
+      guardrail = { ok: false, violations: schema.violations };
       intent = null;
     } else {
       const refs = validatePlannerRefs(schema.value!, { featureCount: features.length, hasDrills: features.some((f) => f.type === "HOLE_THROUGH" || f.type === "HOLE_BLIND") });
-      guardrail = { ok: refs.ok, violations: refs.violations.map((v) => `${v.path}: ${v.message}`) };
+      guardrail = { ok: refs.ok, violations: refs.violations };
       intent = refs.ok ? refs.value : null;
     }
   } catch (err) {
-    guardrail = { ok: false, violations: [`模型调用失败: ${String((err as Error).message)}`] };
+    guardrail = { ok: false, violations: [{ path: "model", message: `模型调用失败: ${String((err as Error).message)}` }] };
   }
 
   // 2) 程序化规划器（意图通过才采用；失败用默认偏好）

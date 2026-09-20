@@ -7,7 +7,7 @@ import { planPart } from "@ai-cam/cam-kernel";
 import type { NormalizedPartModel } from "@ai-cam/geometry-schema";
 import type { FeatureGraph } from "@ai-cam/domain-schemas";
 import { simulate, type SimulationReport } from "@ai-cam/stock-sim";
-import { postProcess, FANUC_PROFILE, ISO_GENERIC_PROFILE, type NcProgram } from "@ai-cam/post-core";
+import {postProcess, type NcProgram, makeProfile} from "@ai-cam/post-core";
 import { validateNc, type ValidationReport } from "@ai-cam/nc-validator";
 
 export const JOB_RUNNER_VERSION = "0.1.0";
@@ -25,7 +25,7 @@ export interface RunJobInput {
   part: NormalizedPartModel;
   partName: string;
   features: FeatureGraph["features"];
-  dialect?: "FANUC" | "ISO_GENERIC";
+  dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC";
   simulationThresholds?: Parameters<typeof simulate>[0]["thresholds"];
   frameStep?: number;
 }
@@ -42,7 +42,7 @@ export function runJob(input: RunJobInput): JobResult {
   pipeline.push({ stage: "SIMULATE", status: simulation.status, detail: `切除 ${simulation.removed_volume_mm3}mm³ / 残料 ${simulation.residual_volume_mm3}mm³ / ${simulation.events.length} 事件` });
 
   // 3. post（post-core）
-  const profile = input.dialect === "ISO_GENERIC" ? ISO_GENERIC_PROFILE : FANUC_PROFILE;
+  const profile = makeProfile(input.dialect ?? "FANUC");
   const nc = postProcess(cam, profile);
   pipeline.push({ stage: "POST", status: "PASS", detail: `${nc.program_number} / ${nc.lines.length} 行 / ${nc.metadata.tool_changes} 次换刀` });
 

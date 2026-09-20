@@ -626,6 +626,9 @@ importers:
 
   services/api:
     dependencies:
+      '@ai-cam/ai-planner':
+        specifier: workspace:*
+        version: link:../../packages/ai-planner
       '@ai-cam/cam-ir':
         specifier: workspace:*
         version: link:../../packages/cam-ir
@@ -659,6 +662,9 @@ importers:
       '@ai-cam/master-data':
         specifier: workspace:*
         version: link:../../packages/master-data
+      '@ai-cam/model-gateway':
+        specifier: workspace:*
+        version: link:../../packages/model-gateway
       '@ai-cam/nc-validator':
         specifier: workspace:*
         version: link:../../packages/nc-validator

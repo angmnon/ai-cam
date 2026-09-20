@@ -8,6 +8,9 @@ import fp from "../plugins/fp.js";
 import { planPart } from "@ai-cam/cam-kernel";
 import { mustLatest } from "../cam/cam-store.js";
 import { runJob, buildJobReport } from "@ai-cam/job-runner";
+import { runCamAgent } from "@ai-cam/ai-planner";
+import { ModelGateway } from "@ai-cam/model-gateway";
+import { createMockProvider } from "@ai-cam/model-gateway";
 
 const CreatePartBody = z.object({
   filename: z.string().min(1).max(255).regex(/\.(step|stp)$/i, "仅支持 .step/.stp"),
@@ -261,6 +264,128 @@ const partRoutes: FastifyPluginAsync = async (app) => {
       validation: bundle.validation.report,
     });
     return ok(report);
+  });
+
+  // AI 规划（P4-9）：Preview → 审计 → Apply
+  app.post("/:id/ai-plan", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const orgId = request.user!.org_id;
+    const part = app.parts.get(orgId, id);
+    if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
+    const body = (request.body ?? {}) as { goal?: string; dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC" };
+    const gateway = new ModelGateway({}).register(createMockProvider());
+    const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
+      gateway,
+      goal: body.goal ?? "粗加工优先，兼顾表面质量",
+      dialect: body.dialect,
+    });
+    const before = app.cams.latest(orgId, id);
+    const after = run.job.cam;
+    const changeSet = {
+      before: before ? { cam_revision_id: before.id, operation_count: before.cam.operations.length, tools: before.cam.tools.map((t) => t.tool_id), setups: before.cam.setups.map((s2) => s2.id) } : null,
+      after: { operation_count: after.operations.length, tools: after.tools.map((t) => t.tool_id), setups: after.setups.map((s2) => s2.id) },
+      reasons: [
+        ...run.guardrail.violations.map((v) => `Guardrail ${v.path}: ${v.message}`),
+        ...run.tool_choices.slice(0, 4).map((t) => `${t.operation_type} → ${t.tool_id}（score ${t.score.toFixed(2)}）：${t.reasons[0] ?? ""}`),
+        `路由：${run.model_route}（prompt v${run.prompt_version}）`,
+      ],
+    };
+    const plan = app.aiPlans.create({
+      organization_id: orgId,
+      part_id: id,
+      goal: body.goal ?? "粗加工优先，兼顾表面质量",
+      intent: run.intent as Record<string, unknown>,
+      guardrail: run.guardrail,
+      model_route: run.model_route,
+      prompt_version: run.prompt_version,
+      change_set: changeSet,
+      tool_calls: run.tool_calls.map((tc) => ({ tool: tc.tool, ok: tc.ok })),
+      created_by: request.user!.sub,
+    });
+    return reply.status(201).send(
+      ok({
+        plan: { id: plan.id, created_at: plan.created_at },
+        intent: run.intent,
+        guardrail: run.guardrail,
+        setups: run.setups,
+        process: run.process,
+        tool_choices: run.tool_choices,
+        change_set: changeSet,
+        job: { validated: run.job.validated, simulation_status: run.job.simulation.status, validation_status: run.job.validation.status },
+      }),
+    );
+  });
+
+  app.get("/:id/ai-plans", async (request) => {
+    const { id } = request.params as { id: string };
+    return ok(app.aiPlans.list(request.user!.org_id, id));
+  });
+
+  app.post("/:id/ai-plans/:planId/apply", async (request, reply) => {
+    const { id, planId } = request.params as { id: string; planId: string };
+    const orgId = request.user!.org_id;
+    const plan = app.aiPlans.get(orgId, id, planId);
+    const part = app.parts.get(orgId, id);
+    if (!part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
+    const gateway = new ModelGateway({}).register(createMockProvider());
+    const run = await runCamAgent(part.analysis.part, part.analysis.features.features, { gateway, goal: plan.goal, dialect: undefined });
+    const revision = app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: run.job.cam });
+    const jobRun = app.jobRuns.createRun({
+      orgId,
+      partId: id,
+      userId: request.user!.sub,
+      run: {
+        status: run.job.validation.status === "FAIL" ? "FAIL" : run.job.validation.status,
+        pipeline: run.job.pipeline,
+        engine_version: run.job.cam.metadata?.generator_version ?? "0.1.0",
+        validated: run.job.validated,
+      },
+    });
+    return reply.status(201).send(ok({ revision_id: revision.id, revision_no: revision.revision_no, job_run_id: jobRun.id, plan_id: plan.id }));
+  });
+
+  // Release 工作流（P4-11）
+  app.post("/:id/release", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const orgId = request.user!.org_id;
+    const part = app.parts.get(orgId, id);
+    if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part not analyzed.", stage: "parts", retryable: false });
+    const cam = app.cams.latest(orgId, id);
+    const run = app.jobRuns.latestRun(orgId, id);
+    if (!cam || !run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Generate CAM + Job first (POST /toolpath, POST /job).", stage: "jobs", retryable: false });
+    const rel = app.releases.create({ orgId, partId: id, camRevisionId: cam.id, jobRunId: run.id, userId: request.user!.sub });
+    return reply.status(201).send(ok(rel));
+  });
+
+  app.get("/:id/releases", async (request) => {
+    const { id } = request.params as { id: string };
+    const orgId = request.user!.org_id;
+    return ok(app.releases.list(orgId, id));
+  });
+
+  app.get("/:id/releases/:releaseId", async (request) => {
+    const { id, releaseId } = request.params as { id: string; releaseId: string };
+    const orgId = request.user!.org_id;
+    return ok(app.releases.get(orgId, id, releaseId));
+  });
+
+  app.post("/:id/releases/:releaseId/approve", async (request) => {
+    const { id, releaseId } = request.params as { id: string; releaseId: string };
+    const body = (request.body ?? {}) as { note?: string };
+    return ok(app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
+  });
+
+  app.post("/:id/releases/:releaseId/release", async (request) => {
+    const { id, releaseId } = request.params as { id: string; releaseId: string };
+    const body = (request.body ?? {}) as { note?: string };
+    return ok(app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
+  });
+
+  app.post("/:id/releases/:releaseId/reject", async (request) => {
+    const { id, releaseId } = request.params as { id: string; releaseId: string };
+    const body = (request.body ?? {}) as { note?: string };
+    if (!body.note) throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "note is required for reject.", stage: "releases", retryable: false });
+    return ok(app.releases.reject({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
   });
 
   // 网格（OBJ）

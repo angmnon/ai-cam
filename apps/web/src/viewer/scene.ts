@@ -1,9 +1,17 @@
 /**
- * Viewer 场景工厂：构建示例零件（示意）、灯光、网格、坐标轴与相机。
- * 后续接入：服务端 tessellation（GLB / VIEW_MESH）→ loadPartMesh() 替换示例。
+ * Viewer 场景工厂：支持服务端 tessellation（OBJ / VIEW_MESH）与特征包围盒渲染。
+ * 坐标系约定：three.js Y-up；STEP/几何数据 Z-up → 加载 OBJ 时旋转 -90° 绕 X 轴。
  */
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+
+export interface ViewerFeatureBox {
+  id: string;
+  type: string;
+  confidence: number;
+  bbox: { min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } };
+}
 
 export interface ViewerScene {
   scene: THREE.Scene;
@@ -11,35 +19,21 @@ export interface ViewerScene {
   renderer: THREE.WebGLRenderer;
   controls: OrbitControls;
   partGroup: THREE.Group;
-  mesh: THREE.Mesh;
   dispose(): void;
 }
 
-/** 构建示例零件：基座 + 凸台 + 顶部定位孔（示意，非真实 CAD 数据） */
-export function buildDemoPart(): THREE.Group {
-  const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.35, roughness: 0.35, flatShading: true });
-  const matAccent = new THREE.MeshStandardMaterial({ color: 0x3b82f6, metalness: 0.3, roughness: 0.4, flatShading: true });
-
-  const base = new THREE.Mesh(new THREE.BoxGeometry(80, 16, 50), mat);
-  base.position.y = 8;
-  group.add(base);
-
-  const boss = new THREE.Mesh(new THREE.BoxGeometry(36, 22, 26), mat);
-  boss.position.set(-8, 27, 0);
-  group.add(boss);
-
-  const pad = new THREE.Mesh(new THREE.BoxGeometry(18, 10, 18), matAccent);
-  pad.position.set(24, 21, -6);
-  group.add(pad);
-
-  const hole = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 4, 32), matAccent);
-  hole.position.set(-8, 34.5, 0);
-  hole.rotation.x = Math.PI / 2;
-  group.add(hole);
-
-  return group;
-}
+const FEATURE_COLORS: Record<string, number> = {
+  HOLE_THROUGH: 0x38bdf8,
+  HOLE_BLIND: 0x22d3ee,
+  POCKET: 0xf59e0b,
+  OPEN_POCKET: 0xfbbf24,
+  SLOT: 0xf97316,
+  BOSS: 0x34d399,
+  STEP: 0x818cf8,
+  OUTER_PROFILE: 0x94a3b8,
+  CHAMFER: 0xf472b6,
+  PLANAR_FACE: 0x94a3b8,
+};
 
 export function createViewerScene(container: HTMLElement): ViewerScene {
   const width = container.clientWidth || 800;
@@ -57,30 +51,25 @@ export function createViewerScene(container: HTMLElement): ViewerScene {
   camera.position.set(150, 130, 170);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 24, 0);
+  controls.target.set(0, 20, 0);
   controls.enableDamping = true;
   controls.update();
 
-  // 灯光
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.1);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+  const dir = new THREE.DirectionalLight(0xffffff, 1.2);
   dir.position.set(120, 180, 100);
   scene.add(dir);
   const rim = new THREE.DirectionalLight(0x93c5fd, 0.4);
   rim.position.set(-100, 40, -80);
   scene.add(rim);
 
-  // 网格与坐标轴
   const grid = new THREE.GridHelper(300, 20, 0x334155, 0x1e293b);
   scene.add(grid);
   const axes = new THREE.AxesHelper(80);
   scene.add(axes);
 
-  // 示例零件
   const partGroup = new THREE.Group();
-  partGroup.add(buildDemoPart());
   scene.add(partGroup);
-  const mesh = partGroup.children[0] as THREE.Mesh;
 
   let raf = 0;
   const animate = () => {
@@ -105,7 +94,6 @@ export function createViewerScene(container: HTMLElement): ViewerScene {
     renderer,
     controls,
     partGroup,
-    mesh,
     dispose() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
@@ -115,11 +103,98 @@ export function createViewerScene(container: HTMLElement): ViewerScene {
           obj.geometry.dispose();
           (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach((m) => m.dispose());
         }
+        if (obj instanceof THREE.LineSegments) {
+          obj.geometry.dispose();
+        }
       });
       renderer.dispose();
       renderer.domElement.remove();
     },
   };
+}
+
+/** 清空零件组（网格与特征盒） */
+export function clearPartGroup(scene: ViewerScene): void {
+  while (scene.partGroup.children.length > 0) {
+    const child = scene.partGroup.children[0];
+    scene.partGroup.remove(child);
+    if (child instanceof THREE.Mesh) {
+      child.geometry.dispose();
+      (Array.isArray(child.material) ? child.material : [child.material]).forEach((m) => m.dispose());
+    }
+  }
+}
+
+/** 从 URL 加载 OBJ（Z-up → Y-up 旋转）并自动对中/适配视角 */
+export async function loadObjFromUrl(scene: ViewerScene, url: string): Promise<THREE.Group> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`mesh fetch failed: ${res.status}`);
+  const text = await res.text();
+  const loader = new OBJLoader();
+  const obj = loader.parse(text);
+  obj.rotation.x = -Math.PI / 2; // STEP Z-up → three Y-up
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = box.getCenter(new THREE.Vector3());
+  obj.position.sub(center);
+  obj.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.material = new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        metalness: 0.35,
+        roughness: 0.4,
+        flatShading: true,
+      });
+      child.material.side = THREE.DoubleSide;
+    }
+  });
+  scene.partGroup.add(obj);
+  fitView(scene, obj);
+  return obj;
+}
+
+/** 特征包围盒线框（叠加在零件网格上） */
+export function addFeatureBoxes(scene: ViewerScene, features: ViewerFeatureBox[]): void {
+  const dirs: Array<[number, number, number]> = [
+    [1, 0, 0],
+    [-1, 0, 0],
+    [0, 1, 0],
+    [0, -1, 0],
+    [0, 0, 1],
+    [0, 0, -1],
+  ];
+  for (const f of features) {
+    const b = f.bbox;
+    const size = new THREE.Vector3(b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z);
+    const center = new THREE.Vector3((b.min.x + b.max.x) / 2, (b.min.y + b.max.y) / 2, (b.min.z + b.max.z) / 2);
+    const color = FEATURE_COLORS[f.type] ?? 0xffffff;
+    const geo = new THREE.BoxGeometry(size.x, size.y, size.z);
+    const edges = new THREE.EdgesGeometry(geo);
+    const line = new THREE.LineSegments(
+      edges,
+      new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.95 }),
+    );
+    line.position.copy(center);
+    scene.partGroup.add(line);
+
+    // 方向指示线（可访问方向）
+    const axLen = Math.max(size.x, size.y, size.z) * 0.35 + 4;
+    for (const d of dirs) {
+      const arrow = new THREE.ArrowHelper(new THREE.Vector3(...d), center, axLen, color, axLen * 0.16, axLen * 0.08);
+      scene.partGroup.add(arrow);
+    }
+  }
+}
+
+/** 按包围盒适配相机视角 */
+export function fitView(scene: ViewerScene, target: THREE.Object3D): void {
+  const box = new THREE.Box3().setFromObject(target);
+  if (box.isEmpty()) return;
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const radius = Math.max(size.x, size.y, size.z, 1) * 1.8;
+  scene.camera.position.set(center.x + radius * 0.9, center.y + radius * 0.8, center.z + radius);
+  scene.controls.target.copy(center);
+  scene.controls.update();
 }
 
 export function triangleCount(obj: THREE.Object3D): number {

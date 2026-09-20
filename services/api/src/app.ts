@@ -9,6 +9,8 @@ import type { AppConfig } from "./config.js";
 import { loadConfig } from "./config.js";
 import { InMemoryEventBus, EventBus } from "./bus/event-bus.js";
 import { createJobStore, JobStore } from "./jobs/job-store.js";
+import { createPartStore, PartStore } from "./parts/part-store.js";
+import { createFixtureAnalyzer, createWorkerAnalyzer, type PartAnalyzer } from "./parts/analyzer.js";
 import { R2Adapter } from "./storage/r2-adapter.js";
 import { LocalDiskAdapter } from "./storage/local-adapter.js";
 import { StorageAdapter } from "./storage/storage.js";
@@ -20,12 +22,16 @@ import authRoutes from "./routes/auth.js";
 import eventRoutes from "./routes/events.js";
 import fileRoutes from "./routes/files.js";
 import jobRoutes from "./routes/jobs.js";
+import partRoutes from "./routes/parts.js";
+import masterRoutes from "./routes/master.js";
 
 declare module "fastify" {
   interface FastifyInstance {
     storage: StorageAdapter;
     bus: EventBus;
     jobs: JobStore;
+    parts: PartStore;
+    partsAnalyzer: PartAnalyzer;
   }
 }
 
@@ -34,6 +40,8 @@ export interface AppDeps {
   storage?: StorageAdapter;
   bus?: EventBus;
   jobs?: JobStore;
+  parts?: PartStore;
+  partsAnalyzer?: PartAnalyzer;
 }
 
 export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
@@ -74,15 +82,25 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   const storage =
     deps.storage ?? (config.storage.driver === "r2" ? new R2Adapter({ accountId: "", accessKeyId: "", secretAccessKey: "", bucket: "", publicUrl: "" }) : new LocalDiskAdapter(config.storage.dataDir));
   const jobs = deps.jobs ?? createJobStore(bus);
+  const parts = deps.parts ?? createPartStore();
+  const partsAnalyzer =
+    deps.partsAnalyzer ??
+    (config.partsAnalyzer.mode === "worker"
+      ? createWorkerAnalyzer(config.partsAnalyzer.binaryPath ?? "geometry_worker")
+      : createFixtureAnalyzer(config.partsAnalyzer.fixturesDir));
   app.decorate("bus", bus);
   app.decorate("storage", storage);
   app.decorate("jobs", jobs);
+  app.decorate("parts", parts);
+  app.decorate("partsAnalyzer", partsAnalyzer);
 
   // 路由
   await app.register(healthRoutes);
   await app.register(authRoutes);
   await app.register(fileRoutes, { prefix: "/api/v1/files" });
   await app.register(jobRoutes, { prefix: "/api/v1/jobs" });
+  await app.register(partRoutes, { prefix: "/api/v1/parts" });
+  await app.register(masterRoutes, { prefix: "/api/v1/master" });
   await app.register(eventRoutes, { prefix: "/api/v1/events" });
 
   app.addHook("onClose", async () => {

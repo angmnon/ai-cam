@@ -1,7 +1,8 @@
 /** API 骨架集成测试（vitest + fastify inject） */
+import { existsSync, readdirSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { InMemoryEventBus } from "./bus/event-bus.js";
@@ -9,6 +10,9 @@ import { LocalDiskAdapter } from "./storage/local-adapter.js";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { attachSseStream } from "./routes/events.js";
+
+const FIXTURES_DIR = resolve(process.cwd(), "../../tests/golden/parts");
+const fixturesAvailable = existsSync(FIXTURES_DIR) && readdirSync(FIXTURES_DIR).filter((f) => f.endsWith(".json")).length >= 8;
 
 describe("api skeleton", () => {
   let app: FastifyInstance;
@@ -221,5 +225,105 @@ describe("api skeleton", () => {
     expect(writes.some((w) => w.includes("event: job.progress"))).toBe(true);
     expect(writes.some((w) => w.includes('"subject":"job_123"'))).toBe(true);
     cleanup();
+  });
+
+  it("主数据路由返回种子数据", async () => {
+    const token = await login();
+    for (const path of ["machines", "controllers", "tools", "materials", "cutting-rules"]) {
+      const res = await app.inject({ method: "GET", url: `/api/v1/master/${path}`, headers: authHeaders(token) });
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.json().data)).toBe(true);
+      expect(res.json().data.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", () => {
+  let app: FastifyInstance;
+  let dataDir: string;
+
+  beforeEach(async () => {
+    dataDir = await mkdtemp(join(tmpdir(), "ai-cam-parts-"));
+    const config = loadConfig({ PORT: "8080", JWT_SECRET: "test-secret", DATA_DIR: dataDir, PARTS_ANALYZER: "fixture", FIXTURES_DIR: FIXTURES_DIR });
+    app = await buildApp({ config, storage: new LocalDiskAdapter(dataDir) });
+    await app.ready();
+  });
+
+  afterEach(async () => {
+    await app.close();
+    await rm(dataDir, { recursive: true, force: true });
+  });
+
+  async function login(): Promise<string> {
+    const res = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { email: "e@test.local", password: "x" } });
+    return (res.json().data as { token: string }).token;
+  }
+
+  it("创建零件（CAD_SOURCE 会话）→ 分析 → 特征/DFM → 网格", async () => {
+    const token = await login();
+    const headers = { authorization: `Bearer ${token}` };
+
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/v1/parts",
+      headers,
+      payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 },
+    });
+    expect(created.statusCode).toBe(201);
+    const part = created.json().data.part;
+    expect(part.id).toMatch(/^part_/);
+    expect(part.status).toBe("PENDING");
+    expect(part.source_key).toContain(`cad_source/${part.id}`);
+
+    const analyzed = await app.inject({ method: "POST", url: `/api/v1/parts/${part.id}/analyze`, headers });
+    expect(analyzed.statusCode).toBe(200);
+    const after = analyzed.json().data;
+    expect(after.status).toBe("ANALYZED");
+    expect(after.analysis.part.volume_mm3).toBeCloseTo(120000, 0);
+    expect(after.analysis.part.bbox_mm.max).toEqual([80, 50, 30]);
+
+    const feats = await app.inject({ method: "GET", url: `/api/v1/parts/${part.id}/features`, headers });
+    expect(feats.statusCode).toBe(200);
+    const types = feats.json().data.features.map((f: { type: string }) => f.type);
+    expect(types).toContain("OUTER_PROFILE");
+
+    const dfm = await app.inject({ method: "GET", url: `/api/v1/parts/${part.id}/dfm`, headers });
+    expect(dfm.statusCode).toBe(200);
+    expect(dfm.json().data.rules_version).toMatch(/^\d+\.\d+\.\d+$/);
+
+    const mesh = await app.inject({ method: "GET", url: `/api/v1/parts/${part.id}/mesh`, headers });
+    if (after.analysis.mesh_key) {
+      expect(mesh.statusCode).toBe(200);
+      expect(String(mesh.headers["content-type"])).toBe("model/obj");
+    } else {
+      expect(mesh.statusCode).toBe(404);
+    }
+  });
+
+  it("多租户隔离：org_b 无法读取 org_a 的零件", async () => {
+    const ta = await login();
+    const tbRes = await app.inject({ method: "POST", url: "/api/v1/auth/login", payload: { email: "e@test.local", password: "x", organization_id: "org_b" } });
+    const tb = (tbRes.json().data as { token: string }).token;
+
+    const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers: { authorization: `Bearer ${ta}` }, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+    const partId = created.json().data.part.id;
+
+    const denied = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}`, headers: { authorization: `Bearer ${tb}` } });
+    expect(denied.statusCode).toBe(403);
+    expect(denied.json().error.code).toBe("AUTH_FORBIDDEN");
+  });
+
+  it("未知零件分析 → 404 PART_NOT_FOUND；未分析前 features → 409", async () => {
+    const token = await login();
+    const headers = { authorization: `Bearer ${token}` };
+    const nf = await app.inject({ method: "GET", url: "/api/v1/parts/part_nope", headers });
+    expect(nf.statusCode).toBe(404);
+    expect(nf.json().error.code).toBe("PART_NOT_FOUND");
+
+    const created = await app.inject({ method: "POST", url: "/api/v1/parts", headers, payload: { filename: "box.step", content_type: "model/step", size_bytes: 1024 } });
+    const partId = created.json().data.part.id;
+    const feats = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/features`, headers });
+    expect(feats.statusCode).toBe(409);
+    expect(feats.json().error.code).toBe("PART_STATE_INVALID");
   });
 });

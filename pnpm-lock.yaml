@@ -104,6 +104,40 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/dfm:
+    dependencies:
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../geometry-schema
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/domain-schemas:
     dependencies:
       zod:
@@ -180,7 +214,97 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/feature-engine:
+    dependencies:
+      '@ai-cam/dfm':
+        specifier: workspace:*
+        version: link:../dfm
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../geometry-schema
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
+  packages/geometry-schema:
+    dependencies:
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/job-schema:
+    devDependencies:
+      '@eslint/js':
+        specifier: ^9.17.0
+        version: 9.39.5
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.20.4
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.5
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.5)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.18.0
+        version: 8.70.0(eslint@9.39.5)(typescript@5.9.3)
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
+  packages/master-data:
+    dependencies:
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0
@@ -206,6 +330,9 @@ importers:
 
   services/api:
     dependencies:
+      '@ai-cam/dfm':
+        specifier: workspace:*
+        version: link:../../packages/dfm
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../../packages/domain-schemas
@@ -215,9 +342,18 @@ importers:
       '@ai-cam/event-schema':
         specifier: workspace:*
         version: link:../../packages/event-schema
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../../packages/feature-engine
+      '@ai-cam/geometry-schema':
+        specifier: workspace:*
+        version: link:../../packages/geometry-schema
       '@ai-cam/job-schema':
         specifier: workspace:*
         version: link:../../packages/job-schema
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../../packages/master-data
       '@fastify/cors':
         specifier: ^11.0.0
         version: 11.3.0

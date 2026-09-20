@@ -13,10 +13,14 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@ai-cam/dfm": "workspace:*",
     "@ai-cam/domain-schemas": "workspace:*",
     "@ai-cam/error-codes": "workspace:*",
     "@ai-cam/event-schema": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
     "@ai-cam/job-schema": "workspace:*",
+    "@ai-cam/master-data": "workspace:*",
     "@fastify/cors": "^11.0.0",
     "@fastify/helmet": "^13.0.0",
     "@fastify/swagger": "^9.4.0",

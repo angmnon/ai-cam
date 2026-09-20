@@ -1,0 +1,35 @@
+{
+  "name": "@ai-cam/feature-engine",
+  "version": "0.1.0",
+  "description": "制造特征识别 v1：基于规范化面模型 + 边邻接的确定性识别（孔/盲孔/口袋/槽/凸台/台阶/轮廓）+ 可访问性",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@ai-cam/dfm": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^3.0.0"
+  }
+}

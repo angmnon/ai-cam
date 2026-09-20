@@ -15,4 +15,6 @@ RUN cmake -S cpp/geometry-core -B build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build -j"$(nproc)"
 
 WORKDIR /work
+# geometry_worker：解析 STEP → 规范化 JSON（--obj 输出 OBJ）
+# step_generator：生成 Golden 样本
 ENTRYPOINT ["/src/build/geometry_worker"]

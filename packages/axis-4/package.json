@@ -1,0 +1,24 @@
+{
+  "name": "@ai-cam/axis-4",
+  "version": "0.1.0",
+  "description": "Indexed 4 轴管线（P5-1）：多 3 轴 Setup 分配 + 坐标变换 + 旋转限制检查 + INDEX_ROTATE IR 组装",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

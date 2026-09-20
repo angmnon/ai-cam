@@ -1,0 +1,45 @@
+{
+  "name": "@ai-cam/ai-planner",
+  "version": "0.1.0",
+  "description": "AI 规划层（P4-3~P4-8）：结构化输出 Guardrails + Setup/Process/Tool Planner + CAM Master Agent + Replan",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
+    "@ai-cam/job-runner": "workspace:*",
+    "@ai-cam/master-data": "workspace:*",
+    "@ai-cam/model-gateway": "workspace:*",
+    "@ai-cam/nc-validator": "workspace:*",
+    "@ai-cam/parameter-engine": "workspace:*",
+    "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/stock-sim": "workspace:*",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.0",
+    "vitest": "^3.0.0"
+  }
+}

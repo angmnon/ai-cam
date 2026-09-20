@@ -1,0 +1,21 @@
+{
+  "name": "@ai-cam/enterprise-rules",
+  "version": "0.1.0",
+  "description": "企业规则引擎（P5-4）：规则 DSL + 优先级折叠（企业 > 材料 > 工具约束 > AI 优化）+ 可解释决策",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

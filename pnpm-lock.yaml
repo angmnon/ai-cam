@@ -298,6 +298,22 @@ importers:
         specifier: ^3.0.0
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
+  packages/enterprise-rules:
+    dependencies:
+      '@ai-cam/cam-ir':
+        specifier: workspace:*
+        version: link:../cam-ir
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
   packages/error-codes:
     devDependencies:
       '@eslint/js':
@@ -626,6 +642,28 @@ importers:
       '@ai-cam/master-data':
         specifier: workspace:*
         version: link:../master-data
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
+  packages/process-retrieval:
+    dependencies:
+      '@ai-cam/domain-schemas':
+        specifier: workspace:*
+        version: link:../domain-schemas
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.0
+        version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
+
+  packages/soft-jaw:
     devDependencies:
       typescript:
         specifier: ^5.7.2

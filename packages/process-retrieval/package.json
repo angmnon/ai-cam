@@ -1,0 +1,20 @@
+{
+  "name": "@ai-cam/process-retrieval",
+  "version": "0.1.0",
+  "description": "历史工艺检索（P5-5）：Feature Signature 规范化 + 相似 Job 检索（内存索引 v1，pgvector 后续）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-cam/domain-schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

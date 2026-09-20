@@ -1,0 +1,17 @@
+{
+  "name": "@ai-cam/soft-jaw",
+  "version": "0.1.0",
+  "description": "软爪生成 MVP（P5-3）：参数化软爪模型 + OBJ 三角网格导出（STEP 依赖 OCCT Worker 后续接入）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

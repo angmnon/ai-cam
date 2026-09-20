@@ -1,6 +1,8 @@
 /**
- * Golden 全流程回归（M3 门禁原型）：20 样本 → plan → sim → post → validate 四层。
- * 断言：每个样本 Validated NC（四层无 ERROR）。
+ * Golden 全流程回归（M3 门禁原型 + §10 Post Golden roundtrip 扩充）：
+ * 20 样本 × 四族 Profile → plan → sim → post → validate 四层。
+ * 断言：每个样本每族 Validated NC（四层无 ERROR）。
+ * 仿真结果与方言无关，每件仅 simulate 一次，四族复用。
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -8,11 +10,13 @@ import { describe, expect, it } from "vitest";
 import { parseWorkerOutput } from "@ai-cam/geometry-schema";
 import { buildFeatureGraph } from "@ai-cam/feature-engine";
 import { planPart } from "@ai-cam/cam-kernel";
-import { postProcess, FANUC_PROFILE } from "@ai-cam/post-core";
+import { postProcess, makeProfile } from "@ai-cam/post-core";
 import { simulate } from "@ai-cam/stock-sim";
 import { validateNc } from "./validator.js";
 
 const PARTS_DIR = resolve(process.cwd(), "../../tests/golden/parts");
+
+const DIALECTS = ["FANUC", "SYNTEC", "MITSUBISHI", "ISO_GENERIC"] as const;
 
 function loadStems(): string[] {
   try {
@@ -22,19 +26,23 @@ function loadStems(): string[] {
   }
 }
 
-describe("Golden Validated NC（M3 门禁）", () => {
+describe("Golden Validated NC（M3 门禁 + 四族 roundtrip）", () => {
   const stems = loadStems();
-  it("Golden 夹具存在（≥8）", () => expect(stems.length).toBeGreaterThanOrEqual(8));
+  it("Golden 夹具存在（≥20）", () => expect(stems.length).toBeGreaterThanOrEqual(20));
 
   for (const stem of stems) {
-    it(`${stem}: 全流程 Validated NC PASS`, () => {
-      const raw = readFileSync(join(PARTS_DIR, `${stem}.json`), "utf8");
-      const part = parseWorkerOutput(raw);
-      const { cam } = planPart(part, buildFeatureGraph(part, stem).features);
-      const sim = simulate({ cam, partVolumeMm3: part.volume_mm3, frameStep: 4 });
-      const nc = postProcess(cam, FANUC_PROFILE);
-      const rep = validateNc({ cam, ncText: nc.text, programNumber: nc.program_number, simulation: sim });
-      expect(rep.status, `${stem}: ${JSON.stringify(rep.layers.map((l) => ({ layer: l.layer, status: l.status, n: l.checks.length })))}`).toBe("PASS");
-    });
+    // 每件只做一次解析/规划/仿真（与方言无关），四族复用
+    const raw = readFileSync(join(PARTS_DIR, `${stem}.json`), "utf8");
+    const part = parseWorkerOutput(raw);
+    const { cam } = planPart(part, buildFeatureGraph(part, stem).features);
+    const sim = simulate({ cam, partVolumeMm3: part.volume_mm3, frameStep: 4 });
+
+    for (const dialect of DIALECTS) {
+      it(`${stem} × ${dialect}: 全流程 Validated NC PASS`, () => {
+        const nc = postProcess(cam, makeProfile(dialect));
+        const rep = validateNc({ cam, ncText: nc.text, programNumber: nc.program_number, simulation: sim });
+        expect(rep.status, `${stem}/${dialect}: ${JSON.stringify(rep.layers.map((l) => ({ layer: l.layer, status: l.status, n: l.checks.length })))}`).toBe("PASS");
+      });
+    }
   }
 });

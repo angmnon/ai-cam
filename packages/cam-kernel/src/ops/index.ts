@@ -123,6 +123,8 @@ export function profileOp(input: ProfileInput): ToolpathMove[] {
   ];
 
   for (const z of layers) {
+    // 层间先抬刀再快速移动（Phase 3 仿真门禁：RAPID 不得穿越毛坯）
+    if (b.moves.length > 0) retractToSafe(b, safeZ, feed);
     rapidToSafe(b, pts[0][0], pts[0][1], safeZ);
     b.plungeTo(z, plungeFeed);
     for (let i = 0; i < 5; i++) {

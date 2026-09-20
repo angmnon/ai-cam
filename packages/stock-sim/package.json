@@ -1,0 +1,26 @@
+{
+  "name": "@ai-cam/stock-sim",
+  "version": "0.1.0",
+  "description": "Phase 3 仿真内核：稀疏体素材料去除 / 碰撞检测 / Gouge 与残料检查（P3-1~P3-3）",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@ai-cam/cam-ir": "workspace:*",
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/master-data": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.0"
+  }
+}

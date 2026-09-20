@@ -161,6 +161,16 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     const closed = side.length === 0;
     // 整层平面（底 bbox 触及零件 bbox 全部 4 侧）：是台阶/外轮廓级别，不是凹槽
     if (side.length === 4) continue;
+    // 触及零件边界 ≥3 侧或含相邻两侧（角部开放）：是台阶面而非凹槽底
+    // （L 形支架底座、阶梯面等会沿零件外缘开放 ≥2 个相邻方向，真凹槽只开放相对两侧或单侧）
+    const OPPOSITE: Record<string, string> = { "+X": "-X", "-X": "+X", "+Y": "-Y", "-Y": "+Y" };
+    let adjacentPair = false;
+    for (let i = 0; i < side.length && !adjacentPair; i++) {
+      for (let j = i + 1; j < side.length && !adjacentPair; j++) {
+        if (OPPOSITE[side[i]] !== side[j]) adjacentPair = true;
+      }
+    }
+    if (side.length >= 3 || adjacentPair) continue;
 
     let type: FeatureType;
     if (!closed && aspect > 2.5) type = "SLOT";
@@ -272,7 +282,8 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
       features.push({
         id: nextId(),
         type: isChamfer ? "CHAMFER" : "PLANAR_FACE",
-        confidence: 0.6,
+        // 斜角规则（法向 z∈[0.35,0.94]）是确定性判定：CHAMFER 置信度高
+        confidence: isChamfer ? 0.8 : 0.6,
         source_face_ids: [f.id],
         bbox: fb,
         accessible_directions: ["+Z"],

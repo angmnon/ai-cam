@@ -1,0 +1,17 @@
+{
+    "solid_count":  1,
+    "healing_valid":  true,
+    "bbox_mm":  {
+                    "min":  [
+                                -40,
+                                -40,
+                                0
+                            ],
+                    "max":  [
+                                40,
+                                40,
+                                20
+                            ]
+                },
+    "volume_mm3":  75398.2
+}

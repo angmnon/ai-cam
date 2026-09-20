@@ -60,7 +60,47 @@ const FEATURE_EXPECTATIONS: Record<string, FeatureExpect[]> = {
     { type: "OUTER_PROFILE" },
     { type: "HOLE_THROUGH", dimensions: { diameter_mm: [29, 31] }, accessible_contains: ["+Z", "-Z"] },
   ],
+  plate_4holes: [
+    { type: "OUTER_PROFILE" },
+    { type: "HOLE_THROUGH", dimensions: { diameter_mm: [9, 11] }, accessible_contains: ["+Z", "-Z"] },
+  ],
+  counterbore_block: [
+    { type: "OUTER_PROFILE" },
+    // Ø20 沉头（HOLE_BLIND）；Ø10 通孔壁在沉台面以下分段，v1 语义记为盲孔，不在此断言
+    { type: "HOLE_BLIND", dimensions: { diameter_mm: [19, 21], depth_mm: [7, 9] } },
+  ],
+  // 三级嵌套台阶：识别器 v1 语义 = 上块被中层环绕形成闭腔（POCKET），另两块平面为外轮廓
+  two_step_block: [
+    { type: "OUTER_PROFILE" },
+    { type: "POCKET", dimensions: { length_mm: [59, 61], width_mm: [29, 31], depth_mm: [9, 11] } },
+  ],
+  l_bracket: [{ type: "OUTER_PROFILE" }, { type: "STEP" }],
+  ring: [
+    { type: "OUTER_PROFILE" },
+    { type: "HOLE_THROUGH", dimensions: { diameter_mm: [39, 41] } },
+  ],
+  flange: [
+    { type: "OUTER_PROFILE" },
+    // 5 个通孔（Ø20 中心孔 + 4×Ø8 螺栓孔），hit[0] 为螺栓孔 → 不做直径断言
+    { type: "HOLE_THROUGH" },
+  ],
+  cross_block: [{ type: "OUTER_PROFILE" }],
+  corner_boss_block: [
+    { type: "OUTER_PROFILE" },
+    { type: "BOSS", dimensions: { length_mm: [24, 26], width_mm: [19, 21], height_mm: [9, 11] } },
+  ],
+  side_hole_block: [{ type: "OUTER_PROFILE" }],
+  deep_pocket_block: [
+    { type: "OUTER_PROFILE" },
+    { type: "SLOT", dimensions: { length_mm: [39, 41], width_mm: [7, 9], depth_mm: [25, 27] } },
+  ],
+  chamfered_block: [{ type: "OUTER_PROFILE" }, { type: "CHAMFER" }],
+  slot_plate: [
+    { type: "OUTER_PROFILE" },
+    { type: "SLOT", dimensions: { width_mm: [7, 9], depth_mm: [4, 6] }, accessible_contains: ["+X", "-X"] },
+  ],
 };
+
 
 function loadStems(): string[] {
   try {

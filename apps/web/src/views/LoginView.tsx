@@ -1,6 +1,6 @@
 /** 登录视图 */
 import { useState } from "react";
-import { api, setToken } from "../api.js";
+import { api } from "../api.js";
 
 export function LoginView({ onLoggedIn }: { onLoggedIn: () => void }) {
   const [email, setEmail] = useState("engineer@test.local");
@@ -14,8 +14,9 @@ export function LoginView({ onLoggedIn }: { onLoggedIn: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await api.login(email, password, org);
-      setToken(res.data.token);
+      // P2-02：登录成功后端 Set-Cookie（HttpOnly），前端不再写 localStorage；
+      // 响应体里的 token 仅供单测/脚本，浏览器会话由 cookie 维持。
+      await api.login(email, password, org);
       onLoggedIn();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

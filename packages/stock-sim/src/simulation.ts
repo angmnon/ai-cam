@@ -201,6 +201,11 @@ export function simulate(input: SimulateInput): SimulationReport {
       for (let pi = 0; pi < pts.length; pi++) {
         const p = pts[pi];
         const isLastSample = pi === pts.length - 1;
+        // P2-05：夹具体素布尔碰撞（刀柱 vs CamIR.fixtures；RAPID 与切削段全覆盖）
+        const fxHit = grid.anyInFixture(p.x, p.y, p.z, p.z + Math.max(radius * 2, 4), radius);
+        if (fxHit) {
+          opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `刀具侵入夹具 ${fxHit}（voxel 布尔碰撞）` });
+        }
         // P1-05③ 机床包络超程：对每个 move 点做对称容差判定
         if (env) {
           const tol = 0.5;
@@ -292,12 +297,18 @@ export function simulate(input: SimulateInput): SimulationReport {
   const hasWarn = events.some((e) => e.severity === "WARN");
   const status: Verdict = hasFail || hasError ? "FAIL" : hasWarn ? "WARN" : "PASS";
 
-  // P1-05 碰撞覆盖度：fixture AABB 未在 CamIR setup 建模 → not_checked
+  // P1-05/P2-05 碰撞覆盖度：夹具几何来自 CamIR.fixtures（可选）。
+  // 有夹具几何时：真跑体素布尔碰撞，fixture 覆盖度升级为真结果 PASS/COLLISION；
+  // 无夹具几何时保持 not_checked（golden 零件不含夹具，行为不变）。
   const setup0 = cam.setups?.[0] as (typeof cam.setups[number] & { fixture_bbox?: unknown }) | undefined;
-  const fixtureChecked = setup0?.fixture_bbox != null;
+  const legacyFixtureBbox = setup0?.fixture_bbox != null;
+  const fxList = cam.fixtures ?? [];
+  const fxCollisions = events.filter((e) => e.kind === "COLLISION" && e.message.includes("夹具"));
+  const fixtureCoverage =
+    fxList.length > 0 ? (fxCollisions.length > 0 ? "COLLISION" : "PASS") : legacyFixtureBbox ? "checked" : "not_checked (CamIR.fixtures 为空)";
   const collisionCoverage = {
     holder: "checked",
-    fixture: fixtureChecked ? "checked" : "not_checked (CamIR setup 无 fixture AABB)",
+    fixture: fixtureCoverage,
     machine_envelope: cam.machine?.travel != null ? "checked" : "not_checked (machine 无 travel)",
   };
 

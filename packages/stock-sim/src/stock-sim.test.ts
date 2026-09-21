@@ -323,3 +323,68 @@ describe("P2-19 球头体积球冠修正", () => {
     expect(rep.estimate_method).toBe("spherical_cap");
   });
 });
+
+describe("P2-05 夹具体素布尔碰撞（CamIR.fixtures）", () => {
+  /** 基准：无夹具时 collision_coverage.fixture 恒为 not_checked */
+  it("无夹具几何 → fixture 覆盖度保持 not_checked", () => {
+    const rep = simulate({ cam, partVolumeMm3: part.volume_mm3 });
+    expect(rep.collision_coverage.fixture).toBe("not_checked (CamIR.fixtures 为空)");
+    expect(rep.events.filter((e) => e.message.includes("夹具"))).toHaveLength(0);
+  });
+
+  it("BOX 夹具在毛坯下方（刀程不触及）→ fixture=PASS，无误报", () => {
+    const cam2 = structuredClone(cam);
+    const o = cam2.stock.origin!;
+    const d = cam2.stock.dimensions!;
+    // 钳体放在毛坯底面之下 20~5mm，刀程永远不会下探到此处
+    cam2.fixtures = [
+      {
+        id: "fx_vise_base",
+        type: "BOX",
+        position: { x: o.x, y: o.y, z: o.z - 20 },
+        dimensions: { dx: d.x, dy: d.y, dz: 15 },
+      },
+    ];
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    expect(rep.collision_coverage.fixture).toBe("PASS");
+    expect(rep.events.filter((e) => e.message.includes("夹具"))).toHaveLength(0);
+  });
+
+  it("BOX 夹具罩住 RAPID 航点 → 真报 COLLISION，覆盖度升级为 COLLISION", () => {
+    const cam2 = structuredClone(cam);
+    const tp = cam2.toolpaths![0];
+    const r = tp.moves.find((m) => m.type === "RAPID")!;
+    // 夹具盒罩住该 RAPID 终点 → 刀柱必与夹具体素求交
+    cam2.fixtures = [
+      {
+        id: "fx_obstacle",
+        type: "BOX",
+        position: { x: r.x - 15, y: r.y - 15, z: r.z - 10 },
+        dimensions: { dx: 30, dy: 30, dz: 20 },
+      },
+    ];
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    expect(rep.collision_coverage.fixture).toBe("COLLISION");
+    const fxColl = rep.events.filter((e) => e.kind === "COLLISION" && e.message.includes("fx_obstacle"));
+    expect(fxColl.length).toBeGreaterThan(0);
+    expect(rep.status).toBe("FAIL");
+  });
+
+  it("CYLINDER 夹具（圆棒）侵入刀程 → 真报 COLLISION", () => {
+    const cam2 = structuredClone(cam);
+    const tp = cam2.toolpaths![0];
+    const r = tp.moves.find((m) => m.type === "RAPID")!;
+    // 立式圆棒夹具：底面圆心在 RAPID 点，直径 24，沿 Z 贯穿该航点高度
+    cam2.fixtures = [
+      {
+        id: "fx_post",
+        type: "CYLINDER",
+        position: { x: r.x, y: r.y, z: r.z - 10 },
+        dimensions: { dx: 24, dy: 0, dz: 20 },
+      },
+    ];
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    expect(rep.collision_coverage.fixture).toBe("COLLISION");
+    expect(rep.events.some((e) => e.kind === "COLLISION" && e.message.includes("fx_post"))).toBe(true);
+  });
+});

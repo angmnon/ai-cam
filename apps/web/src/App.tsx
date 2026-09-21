@@ -1,6 +1,6 @@
 /** App：登录 → 上传/解析 → 零件面板 */
 import { useState } from "react";
-import { hasToken, setToken } from "./api.js";
+import { logout } from "./api.js";
 import { LoginView } from "./views/LoginView.js";
 import { UploadView } from "./views/UploadView.js";
 import { PartView } from "./views/PartView.js";
@@ -8,11 +8,12 @@ import { PartView } from "./views/PartView.js";
 type View = { name: "login" } | { name: "upload" } | { name: "part"; partId: string };
 
 export function App() {
-  const [view, setView] = useState<View>(hasToken() ? { name: "upload" } : { name: "login" });
+  // P2-02：HttpOnly cookie JS 不可读，无法在首载时探测会话；一律走登录页，登录成功后 onLoggedIn 推进。
+  const [view, setView] = useState<View>({ name: "login" });
   const [mode, setMode] = useState<"expert" | "shopfloor">("expert");
 
-  const logout = () => {
-    setToken(null);
+  const handleLogout = async () => {
+    await logout();
     setView({ name: "login" });
   };
 
@@ -37,7 +38,7 @@ export function App() {
           >
             {mode === "expert" ? "专家模式" : "车间模式"}
           </button>
-          <button onClick={logout} style={{ cursor: "pointer", background: "none", border: "none", color: "#64748b", fontSize: 13 }}>
+          <button onClick={handleLogout} style={{ cursor: "pointer", background: "none", border: "none", color: "#64748b", fontSize: 13 }}>
             退出登录
           </button>
         </nav>

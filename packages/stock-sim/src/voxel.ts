@@ -36,6 +36,8 @@ export class VoxelGrid {
   private topK = new Map<string, number>();
   /** stats() 结果缓存；任何修改（fillBox/cutCylinder）后置 null 失效，命中时 O(1) 返回 */
   private statsCache: VoxelStats | null = null;
+  /** P2-05：夹具体素集合（key -> fixture id）；独立于毛坯材料 filled，不影响体积统计 */
+  private fixtureFilled = new Map<string, string>();
 
   constructor(minX: number, minY: number, minZ: number, maxX: number, maxY: number, maxZ: number, opts: VoxelOptions = {}) {
     const v = opts.voxelSize ?? 2;
@@ -151,6 +153,80 @@ export class VoxelGrid {
     return this.anyInCylinder(cx, cy, zBot, zTop, holderRadius);
   }
 
+  /** P2-05：填充夹具体素盒（与毛坯材料集合隔离，不参与体积/残料统计） */
+  fillFixtureBox(x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, fixtureId: string): void {
+    const s = this.spec;
+    const i0 = this.clampI(Math.floor((x0 - s.minX) / s.voxel));
+    const i1 = this.clampI(Math.ceil((x1 - s.minX) / s.voxel));
+    const j0 = this.clampJ(Math.floor((y0 - s.minY) / s.voxel));
+    const j1 = this.clampJ(Math.ceil((y1 - s.minY) / s.voxel));
+    const k0 = this.clampK(Math.floor((z0 - s.minZ) / s.voxel));
+    const k1 = this.clampK(Math.ceil((z1 - s.minZ) / s.voxel));
+    for (let i = i0; i <= i1; i++) {
+      for (let j = j0; j <= j1; j++) {
+        for (let k = k0; k <= k1; k++) {
+          this.fixtureFilled.set(KEY(i, j, k), fixtureId);
+        }
+      }
+    }
+  }
+
+  /** P2-05：填充圆柱夹具体素（底面圆心 cx,cy，z ∈ [zBot,zTop]，直径 diameter） */
+  fillFixtureCylinder(cx: number, cy: number, zBot: number, zTop: number, diameter: number, fixtureId: string): void {
+    const s = this.spec;
+    const R = diameter / 2;
+    const i0 = this.clampI(Math.floor((cx - R - s.minX) / s.voxel));
+    const i1 = this.clampI(Math.ceil((cx + R - s.minX) / s.voxel));
+    const j0 = this.clampJ(Math.floor((cy - R - s.minY) / s.voxel));
+    const j1 = this.clampJ(Math.ceil((cy + R - s.minY) / s.voxel));
+    const k0 = this.clampK(Math.floor((zBot - s.minZ) / s.voxel));
+    const k1 = this.clampK(Math.ceil((zTop - s.minZ) / s.voxel));
+    const r2 = R * R;
+    for (let i = i0; i <= i1; i++) {
+      const wx = s.minX + (i + 0.5) * s.voxel;
+      const dx = wx - cx;
+      for (let j = j0; j <= j1; j++) {
+        const wy = s.minY + (j + 0.5) * s.voxel;
+        const dy = wy - cy;
+        if (dx * dx + dy * dy > r2) continue;
+        for (let k = k0; k <= k1; k++) {
+          this.fixtureFilled.set(KEY(i, j, k), fixtureId);
+        }
+      }
+    }
+  }
+
+  /**
+   * P2-05：刀柱扫掠与夹具体素布尔求交。
+   * 返回首个命中的夹具 id（无夹具体素或无命中返回 null）。
+   */
+  anyInFixture(cx: number, cy: number, zBot: number, zTop: number, radius: number): string | null {
+    const s = this.spec;
+    if (this.fixtureFilled.size === 0) return null;
+    if (zTop <= s.minZ || zBot >= s.minZ + s.nz * s.voxel) return null;
+    const i0 = this.clampI(Math.floor((cx - radius - s.minX) / s.voxel));
+    const i1 = this.clampI(Math.ceil((cx + radius - s.minX) / s.voxel));
+    const j0 = this.clampJ(Math.floor((cy - radius - s.minY) / s.voxel));
+    const j1 = this.clampJ(Math.ceil((cy + radius - s.minY) / s.voxel));
+    const k0 = Math.max(0, Math.floor((zBot - s.minZ) / s.voxel));
+    const k1 = Math.min(s.nz - 1, Math.ceil((zTop - s.minZ) / s.voxel));
+    const r2 = radius * radius;
+    for (let i = i0; i <= i1; i++) {
+      const wx = s.minX + (i + 0.5) * s.voxel;
+      const dx = wx - cx;
+      for (let j = j0; j <= j1; j++) {
+        const wy = s.minY + (j + 0.5) * s.voxel;
+        const dy = wy - cy;
+        if (dx * dx + dy * dy > r2) continue;
+        for (let k = k0; k <= k1; k++) {
+          const hit = this.fixtureFilled.get(KEY(i, j, k));
+          if (hit != null) return hit;
+        }
+      }
+    }
+    return null;
+  }
+
   /**
    * 统计填充体素。O(1)：filled.size 直接取；topHeights 由增量维护的 topK 映射生成并缓存，
    * 命中缓存时零遍历；任何 fillBox/cutCylinder 均会使缓存失效。
@@ -213,13 +289,57 @@ export class VoxelGrid {
   }
 }
 
-/** 由 CAM IR stock 初始化毛坯体素（BOX 毛坯） */
+/** 由 CAM IR stock 初始化毛坯体素（BOX 毛坯）；P2-05：网格边界并上 CamIR.fixtures 以容纳夹具几何 */
 export function voxelizeStock(cam: CamIR, opts: VoxelOptions = {}): VoxelGrid {
   const stock = cam.stock;
   const d = stock.dimensions ?? { x: 100, y: 100, z: 40 };
   const o = stock.origin ?? { x: -50, y: -50, z: 0 };
-  const grid = new VoxelGrid(o.x, o.y, o.z, o.x + (d.x ?? 100), o.y + (d.y ?? 100), o.z + (d.z ?? 40), opts);
-  grid.fillBox(o.x, o.y, o.z, o.x + (d.x ?? 100), o.y + (d.y ?? 100), o.z + (d.z ?? 40));
+  const sx = o.x;
+  const sy = o.y;
+  const sz = o.z;
+  const ex = o.x + (d.x ?? 100);
+  const ey = o.y + (d.y ?? 100);
+  const ez = o.z + (d.z ?? 40);
+  // 网格边界并上夹具包围体（夹具可能伸出毛坯外，如下方钳体）
+  let minX = sx;
+  let minY = sy;
+  let minZ = sz;
+  let maxX = ex;
+  let maxY = ey;
+  let maxZ = ez;
+  const fixtures = cam.fixtures ?? [];
+  for (const fx of fixtures) {
+    const p = fx.position;
+    const dm = fx.dimensions;
+    if (fx.type === "CYLINDER") {
+      const r = dm.dx / 2;
+      minX = Math.min(minX, p.x - r);
+      maxX = Math.max(maxX, p.x + r);
+      minY = Math.min(minY, p.y - r);
+      maxY = Math.max(maxY, p.y + r);
+      minZ = Math.min(minZ, p.z);
+      maxZ = Math.max(maxZ, p.z + dm.dz);
+    } else {
+      minX = Math.min(minX, p.x);
+      maxX = Math.max(maxX, p.x + dm.dx);
+      minY = Math.min(minY, p.y);
+      maxY = Math.max(maxY, p.y + dm.dy);
+      minZ = Math.min(minZ, p.z);
+      maxZ = Math.max(maxZ, p.z + dm.dz);
+    }
+  }
+  const grid = new VoxelGrid(minX, minY, minZ, maxX, maxY, maxZ, opts);
+  grid.fillBox(sx, sy, sz, ex, ey, ez);
+  // P2-05：把夹具几何铺进独立体素集（不影响材料体积统计）
+  for (const fx of fixtures) {
+    const p = fx.position;
+    const dm = fx.dimensions;
+    if (fx.type === "CYLINDER") {
+      grid.fillFixtureCylinder(p.x, p.y, p.z, p.z + dm.dz, dm.dx, fx.id);
+    } else {
+      grid.fillFixtureBox(p.x, p.y, p.z, p.x + dm.dx, p.y + dm.dy, p.z + dm.dz, fx.id);
+    }
+  }
   return grid;
 }
 

@@ -89,7 +89,8 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
   const loadNc = async () => {
     if (ncText) return;
     try {
-      const res = await fetch(`${BASE}/api/v1/parts/${partId}/job/nc`, { headers: { authorization: `Bearer ${localStorage.getItem("ai_cam_token") ?? ""}` } });
+      // P2-02：靠 HttpOnly cookie 鉴权（credentials:include）；不再从 localStorage 读 token。
+      const res = await fetch(`${BASE}/api/v1/parts/${partId}/job/nc`, { credentials: "include" });
       if (res.ok) setNcText(await res.text());
     } catch {
       /* noop */

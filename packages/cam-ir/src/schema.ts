@@ -47,6 +47,22 @@ export const Stock = z.object({
 });
 export type Stock = z.infer<typeof Stock>;
 
+// ---------- 夹具包围体几何（P2-05 仿真残余缺口） ----------
+/**
+ * 夹具包围体（写入 CamIR.fixtures，供 stock-sim 做体素布尔碰撞检测）。
+ * - BOX：position = 包围盒最小角点，dimensions = 三轴边长 (dx, dy, dz)
+ * - CYLINDER：position = 底面圆心，dimensions.dx = 直径，dimensions.dz = 高度（沿 +Z）
+ */
+export const FixtureSolid = z.object({
+  id: z.string(),
+  type: z.enum(["BOX", "CYLINDER"]),
+  /** 几何参考原点（BOX=最小角；CYLINDER=底面圆心），mm */
+  position: Vec3,
+  /** BOX: 三轴边长；CYLINDER: dx=直径、dz=高度（dy 忽略） */
+  dimensions: z.object({ dx: z.number(), dy: z.number(), dz: z.number() }),
+});
+export type FixtureSolid = z.infer<typeof FixtureSolid>;
+
 export const MachineProfile = z.object({
   machine_id: z.string(),
   machine_name: z.string().optional(),
@@ -186,6 +202,8 @@ export const CamIR = z.object({
   tools: z.array(ToolRef).min(1),
   operations: z.array(Operation).min(1),
   toolpaths: z.array(ToolpathIR).optional(),
+  /** P2-05：夹具包围体几何（可选；stock-sim 据此做体素布尔碰撞） */
+  fixtures: z.array(FixtureSolid).optional(),
   metadata: z
     .object({
       generated_by: z.string(),

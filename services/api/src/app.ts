@@ -96,8 +96,10 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
     ajv: { customOptions: { strict: false } },
   });
 
-  // P2-40：CORS 仅放行白名单 Origin；@fastify/cors 对不在列表中的 Origin 不回 ACAO 头
-  await app.register(cors, { origin: config.corsOrigins });
+  // P2-40：CORS 仅放行白名单 Origin；@fastify/cors 对不在列表中的 Origin 不回 ACAO 头。
+  // P2-02：credentials:true（cookie 跨源携带所必需）；origin 必须是精确白名单数组（不得 wildcard "*"），
+  // 否则浏览器在 credentials 模式下拒绝响应。
+  await app.register(cors, { origin: config.corsOrigins, credentials: true });
   await app.register(helmet, { contentSecurityPolicy: false });
   // P2-41：手工设置 CSP（不新增 helmet 依赖；helmet 其余安全头仍生效）
   const CSP =

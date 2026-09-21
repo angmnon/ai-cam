@@ -1,7 +1,7 @@
 /** Fixture Planner v1 测试（P5-2） */
 import { describe, expect, it } from "vitest";
 import type { BBox, Feature } from "@ai-cam/domain-schemas";
-import { planLocators, candidateFixtures, collisionCheck, planFixture, clampConflict } from "./fixture.js";
+import { planLocators, candidateFixtures, collisionCheck, planFixture, clampConflict, fixtureToIRGeometry, planToIRFixtures } from "./fixture.js";
 
 const box: BBox = { min: { x: 0, y: 0, z: 0 }, max: { x: 80, y: 50, z: 30 } };
 
@@ -100,5 +100,28 @@ describe("夹持冲突", () => {
     const c = clampConflict(feats, fx);
     expect(c.some((m) => m.startsWith("f2"))).toBe(true);
     expect(c.some((m) => m.startsWith("f1"))).toBe(false);
+  });
+});
+
+describe("P2-05 夹具几何写入 CamIR.fixtures", () => {
+  it("夹具候选 body AABB → BOX 包围体（最小角 + 三轴边长）", () => {
+    const [fx] = candidateFixtures(box);
+    const geo = fixtureToIRGeometry(fx);
+    expect(geo.id).toBe(fx.id);
+    expect(geo.type).toBe("BOX");
+    expect(geo.position).toEqual({ x: fx.body.x0, y: fx.body.y0, z: fx.body.z0 });
+    expect(geo.dimensions).toEqual({
+      dx: fx.body.x1 - fx.body.x0,
+      dy: fx.body.y1 - fx.body.y0,
+      dz: fx.body.z1 - fx.body.z0,
+    });
+  });
+
+  it("装夹计划仅推荐夹具产出 CamIR.fixtures 数组", () => {
+    const plan = planFixture(box, { soft_jaw: true });
+    const fixtures = planToIRFixtures(plan);
+    expect(fixtures).toHaveLength(1);
+    expect(fixtures[0].id).toBe(plan.recommended_id);
+    expect(fixtures[0].type).toBe("BOX");
   });
 });

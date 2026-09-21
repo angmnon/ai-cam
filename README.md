@@ -50,3 +50,15 @@ pnpm --filter @ai-cam/web dev   # 启动 Viewer（默认 :5173）
 - Job 状态机：非法跳转被拒绝（见 `packages/job-schema/src/state-machine.ts`）
 - 错误码：见 `packages/error-codes/src/error-codes.ts`
 - 对象存储 Key：`/{org_id}/{resource_type}/{resource_id}/{version}/{file}`
+
+## 架构备注：事件总线分布式化路径（P2-04）
+
+> **状态：暂缓 — 非必需（暂缓-非必需）。** 单实例进程内事件总线已能覆盖当前 Phase 0–2 的全部 SSE/审计/指标需求；以下路径仅在需要多副本水平扩容、跨进程 Job 通知或跨服务事件分发时再启动。
+
+- **现状**：`services/api/src/bus/event-bus.ts` 为进程内 `InMemoryEventBus`，`subscribe / publish` 仅在本 Node 进程内生效。SSE（`/api/v1/events/stream`）的订阅方与事件生产方必须在同一进程。
+- **未来分布式化路径（任选其一或组合，按负载选型）**：
+  1. **Redis Pub/Sub**：替换 `InMemoryEventBus`，所有 API 副本订阅同一 channel，事件 fan-out 到本进程内的 SSE 订阅者。适合低延迟、at-most-once、无持久化要求的实时通知。
+  2. **PostgreSQL `LISTEN/NOTIFY`**：复用现有 `DATABASE_URL`，按 `org_id` / `job_*` 分 channel 订阅。零新基础设施，但受 PG 单连接限制、消息不持久化、不适合高频事件。
+  3. **需要持久化 / 严格投递语义时**：再引入 Kafka / NATS / Cloudflare Queues（与 Phase 4 之后的异步 Job 队列合并设计）。
+- **迁移前置条件**：① `EventBus` 接口已稳定（`publish(subject, event)` + `subscribe(handler)`），实现可替换；② SSE 路由的 subject 校验已存在（仅允许 `job_*`）；③ 多副本后需考虑 sticky session / 跨副本订阅路由。
+- **不启动的理由**：当前部署形态为单 API 进程 + 内存/PG 持久层；水平扩容未提上日程，过早引入 Redis 会增加运维成本与故障面。

@@ -192,3 +192,33 @@ export function clampConflict(features: ClampFeatureLite[], candidate: FixtureCa
   }
   return conflicts;
 }
+
+/**
+ * P2-05：写入 CamIR.fixtures 的夹具包围体几何。
+ * 结构与 @ai-cam/cam-ir FixtureSolid 对齐（本包不引入 cam-ir 运行时依赖，按结构形状产出）。
+ */
+export interface FixtureIRGeometry {
+  id: string;
+  type: "BOX" | "CYLINDER";
+  /** BOX=最小角点；CYLINDER=底面圆心（mm） */
+  position: Point3;
+  /** BOX: 三轴边长；CYLINDER: dx=直径、dz=高度（mm） */
+  dimensions: { dx: number; dy: number; dz: number };
+}
+
+/** 夹具候选本体包络（AABB）→ CamIR.fixtures 元素（统一 BOX 包围体） */
+export function fixtureToIRGeometry(c: FixtureCandidate): FixtureIRGeometry {
+  const b = c.body;
+  return {
+    id: c.id,
+    type: "BOX",
+    position: { x: b.x0, y: b.y0, z: b.z0 },
+    dimensions: { dx: b.x1 - b.x0, dy: b.y1 - b.y0, dz: b.z1 - b.z0 },
+  };
+}
+
+/** 装夹计划 → CamIR.fixtures 数组（仅推荐夹具本体，供 stock-sim 体素布尔碰撞） */
+export function planToIRFixtures(plan: FixturePlan): FixtureIRGeometry[] {
+  const rec = plan.candidates.find((c) => c.id === plan.recommended_id);
+  return rec ? [fixtureToIRGeometry(rec)] : [];
+}

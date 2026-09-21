@@ -150,105 +150,45 @@ class ApiErrorClient extends Error {
   }
 }
 
-// ---- P2-44: Auth token 读取与风险标注 ----
+// ---- P2-02: 会话迁移到 HttpOnly cookie ----
 //
-// 【风险】当前 token 存放于 localStorage（key: ai_cam_token）。localStorage 可被任意同源
-// JavaScript 读取，一旦前端存在 XSS 漏洞，攻击者即可读取并盗用 token，进而冒用用户身份
-// 调用后端 API。
+// 【变更】原 P2-44 将 JWT 存于 localStorage（key: ai_cam_token），可被任意同源 JS 读取，
+// 一旦存在 XSS 即可被盗用。P2-02 起，登录由后端下发 HttpOnly Cookie `aicam_session`，
+// 浏览器自动携带，前端 JS 不再持有 token 明文，从根上消除 XSS 对会话的窃取面。
 //
-// 【后续迁移方向】将 token 改为后端下发的 HttpOnly + Secure + SameSite Cookie，前端不再
-// 持有 token 明文，由浏览器自动携带，从根本上消除 XSS 对 token 的窃取面。在迁移完成前，
-// 本文件兼容三种 token 来源以支持嵌入式 / 网关注入场景：
-//   1) 显式注入 token（setAuthToken 或首次 ?token= URL 注入）——优先级最高
-//   2) localStorage ai_cam_token（现有登录写入路径，保持不变）
-//   3) Cookie ai_cam_token（document.cookie 解析）
+// 【前端约定】
+//   - 所有 fetch 必须带 credentials: "include"，cookie 才会跨源（5173→8080/8090）携带；
+//   - 不再读 localStorage / document.cookie，也不再 Authorization: Bearer；
+//   - hasToken() 仅作占位（HttpOnly cookie JS 不可读）：登录成功后由调用方 onLoggedIn() 切视图；
+//   - 登出调用 POST /auth/logout 让后端清 cookie。
+//
+// 注意：后端 CORS 必须 credentials:true 且 origin 精确白名单（不 wildcard），否则浏览器拒绝携带 cookie。
 
-const TOKEN_STORAGE_KEY = "ai_cam_token";
-
-// 显式注入的 token：来自 setAuthToken() 或模块加载时对 URL ?token= 的一次性捕获。
-let injectedToken: string | null = null;
-
-// 兼容旧路径：登录后写入 localStorage 的 token 仍由 setToken() 维护（登录流程不改）。
-let token: string | null = localStorage.getItem(TOKEN_STORAGE_KEY);
-
-function readCookieToken(): string | null {
-  if (typeof document === "undefined") return null;
-  const raw: string = document.cookie || "";
-  for (const part of raw.split(";")) {
-    const eq = part.indexOf("=");
-    if (eq < 0) continue;
-    const name = part.slice(0, eq).trim();
-    if (name === TOKEN_STORAGE_KEY) {
-      const val = part.slice(eq + 1).trim();
-      try {
-        return decodeURIComponent(val);
-      } catch {
-        return val;
-      }
-    }
-  }
-  return null;
-}
-
-// 首次 URL 注入：?token=xxx 在模块加载时捕获，并立即从地址栏抹除，
-// 避免 token 泄漏到浏览器历史 / Referer / 服务端访问日志。
-function captureUrlToken(): string | null {
-  if (typeof window === "undefined" || !window.location) return null;
-  try {
-    const u = new URL(window.location.href);
-    const t = u.searchParams.get("token");
-    if (t) {
-      u.searchParams.delete("token");
-      window.history.replaceState(null, "", u.toString());
-      return t;
-    }
-  } catch {
-    /* noop */
-  }
-  return null;
-}
-
-/** P2-44：显式注入 token（嵌入式 / 网关 / 临时调试用）。传 null 清除。 */
-export function setAuthToken(t: string | null): void {
-  injectedToken = t;
-}
-
-/** P2-44：按 显式注入 > localStorage > Cookie 优先级解析当前 token。 */
-export function getAuthToken(): string | null {
-  if (injectedToken) return injectedToken;
-  const ls = localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (ls) return ls;
-  return readCookieToken();
-}
-
-// 模块加载时执行一次 URL ?token= 注入捕获。
-injectedToken = captureUrlToken();
-
-export function setToken(t: string | null): void {
-  token = t;
-  if (t) localStorage.setItem(TOKEN_STORAGE_KEY, t);
-  else localStorage.removeItem(TOKEN_STORAGE_KEY);
-}
-
+/** 占位：HttpOnly cookie 不可由 JS 读取，故无法在前端探测会话是否存在。
+ *  初始视图一律走登录页；登录成功后由 LoginView onLoggedIn() 推进。
+ *  保留导出以兼容 App.tsx 现有调用签名。 */
 export function hasToken(): boolean {
-  return !!getAuthToken();
+  return false;
 }
 
-/** P2-44：统一构造 Authorization 头（fetchMeshBlob 除外，按既有路径保留）。 */
-function buildAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {};
-  const t = getAuthToken();
-  if (t) headers.authorization = `Bearer ${t}`;
-  return headers;
+/** P2-02：登出（后端清 cookie）。 */
+export async function logout(): Promise<void> {
+  try {
+    await fetch(`${BASE}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
+  } catch {
+    /* 网络错误也强制回到登录页；本地无需清理任何状态 */
+  }
 }
 
 async function request<T>(method: string, path: string, body?: unknown, raw?: boolean, extraHeaders?: Record<string, string>): Promise<T> {
-  const headers = buildAuthHeaders();
+  const headers: Record<string, string> = {};
   if (body !== undefined && !raw) headers["content-type"] = "application/json";
   if (extraHeaders) Object.assign(headers, extraHeaders);
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
+    // P2-02：cookie 跨源携带（HttpOnly aicam_session 由浏览器自动附加）
+    credentials: "include",
     body: raw ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
@@ -340,13 +280,12 @@ export const api = {
 };
 
 /**
- * P1-22：以带 Authorization 头的方式拉取网格二进制（裸 fetch 不带 token 会 401）。
+ * P1-22：拉取网格二进制。
+ * P2-02：不再带 Authorization 头；靠 credentials:include 让浏览器自动附 HttpOnly cookie。
  * 返回 Blob，调用方按需 URL.createObjectURL / text()。
  */
 export async function fetchMeshBlob(url: string): Promise<Blob> {
-  const headers: Record<string, string> = {};
-  if (token) headers.authorization = `Bearer ${token}`;
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { credentials: "include" });
   if (!res.ok) {
     throw new ApiErrorClient(res.headers.get("x-error-code") ?? "HTTP_ERROR", `网格加载失败：HTTP ${res.status}${res.status === 401 ? "（未授权，请重新登录）" : ""}`, res.status);
   }
@@ -512,10 +451,10 @@ export interface CloudEventLike {
 /** 订阅 SSE 事件流，onEvent 收到解析后的 CloudEvent JSON；返回取消订阅函数。 */
 export function subscribeEvents(subject: string | undefined, onEvent: (evt: CloudEventLike) => void): () => void {
   const ctrl = new AbortController();
-  const headers = buildAuthHeaders();
   void (async () => {
     try {
-      const res = await fetch(eventsStreamUrl(subject), { headers, signal: ctrl.signal });
+      // P2-02：credentials:include 自动带 HttpOnly cookie（EventSource 不能带自定义头，故仍走 fetch 流式）
+      const res = await fetch(eventsStreamUrl(subject), { credentials: "include", signal: ctrl.signal });
       if (!res.ok || !res.body) return;
       const reader = res.body.getReader();
       const decoder = new TextDecoder();

@@ -11,7 +11,7 @@
 | 2 | Golden 全量回归 | `pnpm --filter @ai-cam/regression run regression` ≥ 300/300 |
 | 3 | 工厂验证批跑 | `pnpm --filter @ai-cam/factory-validation run factory-check` 无 FAIL |
 | 4 | 打版本与提交 | `git tag vX.Y.Z` 后 push（含 lockfile 与迁移脚本） |
-| 5 | 数据库迁移（前向） | `psql $DATABASE_URL -f services/api/sql/00XX_*.sql`（按序执行） |
+| 5 | 数据库迁移（前向） | `psql $DATABASE_URL -f infra/db/migrations/00XX_*.sql`（按序执行） |
 | 6 | 蓝绿发布 | 先起新容器组 → 健康检查通过 → 切流量 → 观察 30min |
 | 7 | 回滚预案就绪 | 保留旧镜像标签 + 本次迁移 SQL 的逆向脚本（见 §2） |
 

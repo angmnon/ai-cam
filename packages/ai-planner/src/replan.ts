@@ -68,11 +68,20 @@ export interface ReplanResult {
 export async function runWithReplan(part: NormalizedPartModel, features: Feature[], options: AgentOptions & { maxReplans?: number }): Promise<ReplanResult> {
   const maxReplans = options.maxReplans ?? MAX_REPLANS;
   const runs: AgentRun[] = [];
+  // P1-15：跨轮跟踪上一轮真实意图，供 adjustIntentForFailures 生成补丁
+  let prevIntent: PlannerOutput | null = null;
 
   for (let i = 0; i <= maxReplans; i += 1) {
     const prevFailures = i === 0 ? [] : extractFailures(runs[runs.length - 1].job);
-    const run = await runCamAgent(part, features, { ...options, goal: i === 0 ? options.goal : `${options.goal}；上一轮失败：${prevFailures.map((f) => `${f.code}:${f.message}`).join("；")}` });
+    // 每轮把上轮真实失败喂给 adjustIntentForFailures，补丁作为下一轮 intent（首轮走 LLM）
+    const patchedIntent = i === 0 ? undefined : adjustIntentForFailures(prevIntent, prevFailures);
+    const run = await runCamAgent(part, features, {
+      ...options,
+      goal: i === 0 ? options.goal : `${options.goal}；上一轮失败：${prevFailures.map((f) => `${f.code}:${f.message}`).join("；")}`,
+      intentOverride: patchedIntent,
+    });
     runs.push(run);
+    prevIntent = run.intent;
     const failures = extractFailures(run.job);
     if (failures.length === 0) {
       return { attempts: i + 1, human_review: false, failures: [], runs };

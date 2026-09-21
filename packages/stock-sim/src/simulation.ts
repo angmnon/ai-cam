@@ -14,7 +14,7 @@ export const STOCK_SIM_VERSION = "0.1.0";
 export type Verdict = "PASS" | "WARN" | "FAIL";
 
 export interface SimEvent {
-  kind: "COLLISION" | "GOUGE" | "RESIDUAL_WARN" | "RESIDUAL_FAIL";
+  kind: "COLLISION" | "GOUGE" | "RESIDUAL_WARN" | "RESIDUAL_FAIL" | "OVERTRAVEL" | "COVERAGE_WARN";
   severity: Verdict;
   operation_id?: string;
   move_index?: number;
@@ -59,6 +59,8 @@ export interface SimulationReport {
   op_details: OpSimDetail[];
   events: SimEvent[];
   key_surfaces: Array<{ surface: string; residual_mm: number; verdict: Verdict; note: string }>;
+  /** 碰撞检测覆盖度（P1-05）：fixture 无 AABB 时 not_checked */
+  collision_coverage: { holder: string; fixture: string; machine_envelope: string };
   /** 播放快照（默认 step=4 降采样；每 op 一个关键帧） */
   frames: Array<{ operation_id: string; step: number; snapshot: Array<{ x: number; y: number; z: number; solid: boolean }> }>;
 }
@@ -134,6 +136,19 @@ export function simulate(input: SimulateInput): SimulationReport {
 
     const moves = tp.moves;
     const stockTop = (cam.stock.origin?.z ?? 0) + (cam.stock.dimensions?.z ?? 40);
+    // P1-05③ 机床包络（对称容差判定：以 WCS 原点为中心，半程 = travel/2）
+    const travel = cam.machine?.travel;
+    const env = travel ? { hx: travel.x / 2, hy: travel.y / 2, hz: travel.z / 2 } : null;
+    // P1-05① Holder 几何近似：刀柄直径 > 刀具直径，悬伸自刀刃顶端向上
+    const fluteLen = tool.flute_length_mm ?? 20;
+    const holderLen = 40;
+    const holderRadius = Math.max(radius * 1.5, 10);
+    // P1-04 该 op 允许最低切削面（无特征面模型时按刀路层级近似）
+    const gougeRef = allowedBottom(op, tp, cam);
+    if (!gougeRef.modeled) {
+      opEvents.push({ kind: "COVERAGE_WARN", severity: "WARN", operation_id: op.id, x: 0, y: 0, z: 0, message: `op ${op.id}（${op.type}）未建模 gouge 检查` });
+    }
+    const safeZ = op.safe_z_mm ?? null;
     let prev: ToolpathMove | null = null;
     for (let mi = 0; mi < moves.length; mi++) {
       const m = moves[mi];
@@ -144,19 +159,47 @@ export function simulate(input: SimulateInput): SimulationReport {
       } else {
         pts = sampleMove(prev, m, voxel);
       }
-      for (const p of pts) {
+      // RAPID 是否为切削触发点（其后紧跟 PLUNGE/直线切削），其终点免 safeZ 断言
+      const nextMove = moves[mi + 1];
+      const rapidIsEntry = m.type === "RAPID" && nextMove != null && isCutEntryType(nextMove.type);
+      for (let pi = 0; pi < pts.length; pi++) {
+        const p = pts[pi];
+        const isLastSample = pi === pts.length - 1;
+        // P1-05③ 机床包络超程：对每个 move 点做对称容差判定
+        if (env) {
+          const tol = 0.5;
+          if (Math.abs(p.x) > env.hx + tol || Math.abs(p.y) > env.hy + tol || Math.abs(p.z) > env.hz + tol) {
+            opEvents.push({ kind: "OVERTRAVEL", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `坐标超机床包络（±${round2(env.hx)}/±${round2(env.hy)}/±${round2(env.hz)}mm）` });
+          }
+        }
         if (p.type === "RAPID") {
+          // ① 刀尖/刀杆侵入剩余毛坯（保留原上升圆柱：刀尖没入毛坯时刀杆随之相交）
           if (grid.anyInCylinder(p.x, p.y, p.z, Math.max(p.z + radius * 2, p.z + 10), radius)) {
-            opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: "RAPID 段穿过剩余毛坯" });
+            opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: "RAPID 段穿过剩余毛坯（刀尖/刀杆侵入）" });
+          }
+          const onSafePlane = safeZ != null && p.z >= safeZ - 0.5;
+          if (!onSafePlane) {
+            // ② P1-03 低空掠过盲区：刀尖下方 2R 悬伸带与剩余毛坯求交
+            const hTop = grid.topHeightAt(p.x, p.y);
+            if (Number.isFinite(hTop) && hTop > p.z - radius * 2) {
+              opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `RAPID 低空掠过：毛坯顶 ${round2(hTop)}mm 距刀尖仅 ${round2(p.z - hTop)}mm（< 2R=${round2(radius * 2)}）` });
+            }
+            // ③ safeZ 平面断言：低于安全平面且非切削触发点即报警
+            if (safeZ != null && p.z < safeZ - 0.5 && !(rapidIsEntry && isLastSample)) {
+              opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `RAPID z=${round2(p.z)}mm 低于安全平面 ${round2(safeZ)}mm 且非进刀点` });
+            }
+          }
+          // ④ P1-05① Holder 刀柄圆柱 vs 剩余毛坯
+          if (grid.anyHolderOverlap(p.x, p.y, p.z + fluteLen, p.z + fluteLen + holderLen, holderRadius)) {
+            opEvents.push({ kind: "COLLISION", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: "RAPID 段刀柄（Holder）与剩余毛坯干涉" });
           }
           continue; // RAPID 不切除
         }
         // 切削段：刀底 z 到刀顶 z+直径（FLAT/BALL/BULL/DRILL 圆柱近似）
         grid.cutCylinder(p.x, p.y, p.z, p.z + Math.max(radius * 2, 4), radius);
-        // Gouge：切削刀底低于"该 op 允许最低面"（由特征 bbox 底面/孔深推导）
-        const gougeZ = allowedBottomZ(op, cam);
-        if (gougeZ != null && p.z < gougeZ - 0.3) {
-          opEvents.push({ kind: "GOUGE", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `刀底 ${round2(p.z)}mm 低于允许底面 ${round2(gougeZ)}mm` });
+        // Gouge：切削刀底低于该 op 允许最低面
+        if (gougeRef.bottom != null && p.z < gougeRef.bottom - 0.3) {
+          opEvents.push({ kind: "GOUGE", severity: "FAIL", operation_id: op.id, move_index: mi, x: p.x, y: p.y, z: p.z, message: `刀底 ${round2(p.z)}mm 低于允许底面 ${round2(gougeRef.bottom)}mm` });
         }
       }
       prev = m;
@@ -209,6 +252,15 @@ export function simulate(input: SimulateInput): SimulationReport {
   const hasWarn = events.some((e) => e.severity === "WARN");
   const status: Verdict = hasFail ? "FAIL" : hasWarn ? "WARN" : "PASS";
 
+  // P1-05 碰撞覆盖度：fixture AABB 未在 CamIR setup 建模 → not_checked
+  const setup0 = cam.setups?.[0] as (typeof cam.setups[number] & { fixture_bbox?: unknown }) | undefined;
+  const fixtureChecked = setup0?.fixture_bbox != null;
+  const collisionCoverage = {
+    holder: "checked",
+    fixture: fixtureChecked ? "checked" : "not_checked (CamIR setup 无 fixture AABB)",
+    machine_envelope: cam.machine?.travel != null ? "checked" : "not_checked (machine 无 travel)",
+  };
+
   const removalErrorPct = input.partVolumeMm3 > 0 ? Math.abs(removedVolume - (initialVolume - input.partVolumeMm3)) / Math.max(input.partVolumeMm3, 1) * 100 : 0;
 
   return {
@@ -226,19 +278,42 @@ export function simulate(input: SimulateInput): SimulationReport {
     op_details: opDetails,
     events,
     key_surfaces: keySurfaces,
+    collision_coverage: collisionCoverage,
     frames,
   };
 }
 
-/** op 关联特征允许的最低切削面（无特征/无法推导 → null） */
-function allowedBottomZ(op: Operation, cam: CamIR): number | null {
-  // DRILL 允许底面 = 毛坯底面 + 过穿余量 0.5mm（通孔钻穿合规；盲孔刀底 ≥ 特征底 > 毛坯底，不误报）
-  // 修正：旧实现用 safeZ-60 近似，对低矮零件（高 <60mm）会误判通孔 GOUGE。
+/** 切削触发点：RAPID 后紧跟这些类型即视为进刀，其终点免 safeZ 低空断言 */
+function isCutEntryType(t: ToolpathMove["type"]): boolean {
+  return t === "PLUNGE" || t === "LINEAR" || t === "ARC_CW" || t === "ARC_CCW";
+}
+
+/**
+ * P1-04 op 关联特征允许的最低切削面。
+ * 无独立特征面模型（CamIR 仅含 feature_ids，无 bbox），按刀路层级近似特征 bbox.minZ：
+ * - DRILL：毛坯底 -0.5（通孔钻穿合规）
+ * - FACE：面铣单平面 → 首个切削移动 z（设计面）
+ * - POCKET/SLOT/CONTOUR/PROFILE/CHAMFER：本 op 最深设计层 z（特征 bbox 底面近似）
+ * - 其余：未建模（modeled=false），由调用方发 COVERAGE_WARN
+ */
+function allowedBottom(op: Operation, tp: ToolpathIR, cam: CamIR): { bottom: number | null; modeled: boolean } {
   if (op.type === "DRILL") {
     const stockBottom = (cam.stock.origin?.z ?? 0) - (cam.stock.dimensions?.z ?? 0) / 2;
-    return stockBottom - 0.5;
+    return { bottom: stockBottom - 0.5, modeled: true };
   }
-  return null; // v1：无特征面模型，交由残料与碰撞检查兜底
+  const cutMoves = tp.moves.filter((m) => m.type !== "RAPID" && m.type !== "RETRACT");
+  if (cutMoves.length === 0) return { bottom: null, modeled: true };
+  if (op.type === "FACE") {
+    // 面铣为单一切削平面：以首个切削移动 z 为设计面，其后若下探即 gouge
+    return { bottom: cutMoves[0].z, modeled: true };
+  }
+  if (op.type === "POCKET" || op.type === "CONTOUR" || op.type === "CHAMFER") {
+    // 型腔/槽/侧壁：最深设计层 z = 本 op 最低切削 z（特征 bbox.minZ 的刀路近似）
+    let minZ = Infinity;
+    for (const m of cutMoves) if (m.z < minZ) minZ = m.z;
+    return { bottom: Number.isFinite(minZ) ? minZ : null, modeled: true };
+  }
+  return { bottom: null, modeled: false };
 }
 
 /** FACE 顶面残料：刀路扫过区域的剩余最高材料与切削面之差 */

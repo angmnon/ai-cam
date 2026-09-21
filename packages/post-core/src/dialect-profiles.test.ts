@@ -42,3 +42,21 @@ describe("MITSUBISHI Post（P4-10）", () => {
     expect(nc.text).toContain("G91 G28 Z0.");
   });
 });
+
+describe("P1-07 钻孔循环方言差异", () => {
+  const drillRaw = readFileSync(join(process.cwd(), "../../tests/golden/parts/plate_4holes.json"), "utf8");
+  const drillPart = parseWorkerOutput(drillRaw);
+  const drillCam = planPart(drillPart, buildFeatureGraph(drillPart, "plate_4holes").features).cam;
+
+  it("FANUC/SYNTEC/MITSUBISHI 出 G83 + G80 取消；ISO_GENERIC 逐行不出 G83/G73", () => {
+    for (const d of ["FANUC", "SYNTEC", "MITSUBISHI"] as const) {
+      const nc = postProcess(drillCam, makeProfile(d));
+      expect(nc.text).toContain("G83");
+      expect(nc.text).toContain("G80");
+      expect(nc.text).not.toContain("G73");
+    }
+    const iso = postProcess(drillCam, makeProfile("ISO_GENERIC"));
+    expect(iso.text).not.toContain("G83");
+    expect(iso.text).not.toContain("G73");
+  });
+});

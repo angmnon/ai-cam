@@ -24,6 +24,8 @@ export interface FeatureSignature {
 export interface HistoryJob {
   job_id: string;
   part_name: string;
+  /** 所属租户（P1-16：多租户隔离键） */
+  orgId: string;
   /** 历史工艺摘要（供复用） */
   process_summary: string;
   operations_count: number;
@@ -86,17 +88,19 @@ export class ProcessIndex {
   private jobs: HistoryJob[] = [];
   constructor(private threshold = 0.5) {}
 
-  add(job: HistoryJob, features: Feature[]): void {
-    this.jobs.push({ ...job, signature: buildSignature(features) });
+  add(job: HistoryJob, features: Feature[], orgId: string): void {
+    this.jobs.push({ ...job, orgId, signature: buildSignature(features) });
   }
 
   size(): number {
     return this.jobs.length;
   }
 
-  search(features: Feature[], topK = 3): RetrievalHit[] {
+  search(features: Feature[], orgId: string, topK = 3): RetrievalHit[] {
     const sig = buildSignature(features);
+    // P1-16：租户隔离——只在当前 org 内检索，绝不跨租户返回
     return this.jobs
+      .filter((job) => job.orgId === orgId)
       .map((job) => {
         if (!job.signature) return null;
         const { score, reasons } = signatureDistance(sig, job.signature);

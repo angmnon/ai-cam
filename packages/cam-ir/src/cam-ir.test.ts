@@ -105,6 +105,46 @@ describe("cam-ir", () => {
     expect(camIrHash(ir)).toBe(camIrHash(baseIR()));
   });
 
+  it("嵌套字段变化必改变 hash（machine / operation 参数 / nested tool）", () => {
+    const base = camIrHash(baseIR());
+
+    const a = baseIR();
+    a.machine.max_spindle_rpm = 99999;
+    expect(camIrHash(a)).not.toBe(base);
+
+    const b = baseIR();
+    b.operations[0].parameters.feed_mm_min = 999;
+    expect(camIrHash(b)).not.toBe(base);
+
+    const c = baseIR();
+    c.operations[0].tool.rank = 7; // nested tool 字段
+    expect(camIrHash(c)).not.toBe(base);
+
+    const d = baseIR();
+    d.material.grade = "OTHER"; // 更深嵌套
+    expect(camIrHash(d)).not.toBe(base);
+  });
+
+  it("canonicalJson 与键顺序无关：同内容键序不同序列化相同", () => {
+    const forward = {
+      machine: { machine_id: "m1", max_spindle_rpm: 12000, travel: { x: 1, y: 2, z: 3 } },
+      ops: [{ id: "o1", parameters: { feed_mm_min: 100, spindle_speed_rpm: 8000 } }],
+    };
+    const reversed = {
+      ops: [{ parameters: { spindle_speed_rpm: 8000, feed_mm_min: 100 }, id: "o1" }],
+      machine: { travel: { z: 3, x: 1, y: 2 }, max_spindle_rpm: 12000, machine_id: "m1" },
+    };
+    expect(canonicalJson(forward)).toBe(canonicalJson(reversed));
+    expect(camIrHash(forward as never)).toBe(camIrHash(reversed as never));
+  });
+
+  it("嵌套对象不被丢弃：canonicalJson 展开嵌套内容", () => {
+    const out = canonicalJson(baseIR());
+    expect(out).toContain("\"max_spindle_rpm\":12000");
+    expect(out).toContain("\"feed_mm_min\":1200");
+    expect(out).not.toContain("\"machine\":{}");
+  });
+
   it("ChangeSet 携带审计与重校验标记", () => {
     const cs = makeChangeSet(
       "job_1",

@@ -39,6 +39,8 @@ export function parseNc(text: string): ParsedNc {
   let lastY = 0;
   let lastZ = 0;
   let lastF: number | null = null;
+  // P2-24：固定钻孔循环模态状态（post-core 即将真输出 G81/G83/G73）
+  let inDrillCycle = false;
 
   const rawLines = text.split(/\r?\n/);
   for (const raw of rawLines) {
@@ -80,20 +82,33 @@ export function parseNc(text: string): ParsedNc {
     };
     const g = words.find((x) => x.key === "G")?.code;
     const motionG: "G00" | "G01" | "G02" | "G03" | null = g && /^G0[0-3]$/.test(g) ? (g as "G00" | "G01" | "G02" | "G03") : null;
+    // P2-24：固定钻孔循环 G73-G89。G80 取消；G81/G83/G73 等为循环调用行。
+    // 进入本行前是否已在循环内（用于判定循环体内模态孔位行，只给 X/Y 不给 G 字）。
+    const inCycleBefore = inDrillCycle;
+    const drillG: string | null = g && /^G(?:7[3-9]|8[0-9])$/.test(g) ? g : null;
+    const isCycleCancel = drillG === "G80";
+    const isCycleStart = drillG !== null && !isCycleCancel;
+    if (isCycleCancel) inDrillCycle = false;
+    else if (isCycleStart) inDrillCycle = true;
     const x = num("X");
     const y = num("Y");
     const z = num("Z");
+    // 模态轴字无论是否产点都延续位置（循环体内 Z 由 post 保证已在循环内）
     if (x != null) lastX = x;
     if (y != null) lastY = y;
     if (z != null) lastZ = z;
     const f = num("F");
     if (f != null) lastF = f;
     if (motionG) {
+      inDrillCycle = false; // 显式运动模态字退出固定循环
       const m = words.filter((w) => w.key === "M").map((w) => w.code);
       const s = num("S");
       const t = num("T");
       out.motions.push({ g: motionG, x, y, z, i: num("I"), j: num("J"), f, s, t, m, lineNo });
       out.points.push({ x: lastX, y: lastY, z: lastZ, g: motionG, lineNo });
+    } else if (isCycleCancel || isCycleStart || inCycleBefore) {
+      // 固定循环取消行 / 循环调用行 / 循环体内模态孔位行：均不产生 motion point，
+      // 保证 NC 点序列与 IR 仍可比，不误报 POINT_COUNT_MISMATCH（P2-24）。
     }
     // 未知 G/M 检查
     for (const w of words) {

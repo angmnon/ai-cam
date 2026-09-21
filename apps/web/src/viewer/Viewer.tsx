@@ -35,6 +35,7 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
   const [autoRotate, setAutoRotateState] = useState(false);
   const [triangles, setTriangles] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -72,6 +73,7 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setLoadError(null);
       clearPartGroup(scene);
       try {
         if (data.meshUrl) {
@@ -101,6 +103,8 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
       } catch (e) {
         if (!cancelled) {
           setLoading(false);
+          const msg = e instanceof Error ? e.message : String(e);
+          setLoadError(msg);
           console.error("viewer load failed", e);
         }
       }
@@ -129,6 +133,11 @@ export function Viewer({ data }: { data?: ViewerData | null }) {
         </div>
       </header>
       <div ref={mountRef} style={{ flex: 1, minHeight: 0 }} />
+      {loadError && (
+        <div style={{ padding: "8px 16px", background: "#7f1d1d", color: "#fecaca", fontSize: 13 }} role="alert">
+          网格加载失败：{loadError}
+        </div>
+      )}
     </div>
   );
 }

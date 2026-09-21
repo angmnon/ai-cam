@@ -1,9 +1,12 @@
 /** 安全合规测试（P5-7） */
 import { describe, expect, it } from "vitest";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { existsSync, rmSync } from "node:fs";
 import { can, assertCan, AccessDeniedError, ROLES, type Role } from "./rbac.js";
 import { checkPromptInjection } from "./prompt-guard.js";
 import { generateSbom, summarize, type PkgInfo } from "./sbom.js";
-import { MemoryAuditSink, recordAudit, queryAudit } from "./audit.js";
+import { MemoryAuditSink, FileAuditSink, recordAudit, queryAudit, type AuditSink } from "./audit.js";
 
 describe("RBAC 权限矩阵", () => {
   it("ADMIN 拥有全部权限，VIEWER 只读", () => {
@@ -26,7 +29,12 @@ describe("RBAC 权限矩阵", () => {
 
   it("assertCan 对无权限动作抛 AccessDeniedError", () => {
     expect(() => assertCan("VIEWER", "ai:apply")).toThrow(AccessDeniedError);
-    expect(() => assertCan("ENGINEER", "release:release")).not.toThrow();
+    // P1-1：ENGINEER 自批自放被禁止
+    expect(() => assertCan("ENGINEER", "release:release")).toThrow(AccessDeniedError);
+    expect(() => assertCan("ENGINEER", "release:approve")).toThrow(AccessDeniedError);
+    // ADMIN 仍可审批与执行发布
+    expect(() => assertCan("ADMIN", "release:approve")).not.toThrow();
+    expect(() => assertCan("ADMIN", "release:release")).not.toThrow();
   });
 
   it("矩阵覆盖所有角色与关键动作", () => {
@@ -79,13 +87,54 @@ describe("SBOM", () => {
 });
 
 describe("审计日志", () => {
-  it("记录权限操作并可查询", async () => {
+  it("记录权限操作并可查询（MemoryAuditSink）", async () => {
     const sink = new MemoryAuditSink();
-    recordAudit(sink, { actor: "alice", role: "ENGINEER", action: "release:approve", resource: "rel_1" }, "ALLOWED");
-    recordAudit(sink, { actor: "bob", role: "VIEWER", action: "release:approve", resource: "rel_2" }, "DENIED");
-    const denied = queryAudit(sink, { action: "release:approve", outcome: "DENIED" });
+    await recordAudit(sink, { actor: "alice", role: "ENGINEER", action: "release:request", resource: "rel_1" }, "ALLOWED");
+    await recordAudit(sink, { actor: "bob", role: "VIEWER", action: "release:approve", resource: "rel_2" }, "DENIED");
+    const denied = await queryAudit(sink, { action: "release:approve", outcome: "DENIED" });
     expect(denied).toHaveLength(1);
     expect(denied[0].actor).toBe("bob");
     expect(denied[0].outcome).toBe("DENIED");
+  });
+
+  it("FileAuditSink 写入文件后 queryAudit 能读回并过滤", async () => {
+    const file = join(tmpdir(), `ai-cam-sec-audit-${process.pid}-${Date.now()}.jsonl`);
+    try {
+      const sink = new FileAuditSink(file);
+      await recordAudit(sink, { actor: "alice", role: "ENGINEER", action: "release:request", resource: "rel_1" }, "ALLOWED");
+      await recordAudit(sink, { actor: "bob", role: "VIEWER", action: "release:approve", resource: "rel_2" }, "DENIED");
+      // 文件确实落盘
+      expect(existsSync(file)).toBe(true);
+      // queryAudit 从文件读回
+      const all = await queryAudit(sink);
+      expect(all).toHaveLength(2);
+      // 过滤
+      const denied = await queryAudit(sink, { outcome: "DENIED" });
+      expect(denied).toHaveLength(1);
+      expect(denied[0].actor).toBe("bob");
+      const alice = await queryAudit(sink, { actor: "alice" });
+      expect(alice).toHaveLength(1);
+    } finally {
+      if (existsSync(file)) rmSync(file);
+    }
+  });
+
+  it("进程内多次 recordAudit 顺序正确", async () => {
+    const sink = new MemoryAuditSink();
+    for (let i = 0; i < 5; i++) {
+      await recordAudit(sink, { actor: `u${i}`, role: "OPERATOR", action: "job:run", resource: `job_${i}` }, "ALLOWED");
+    }
+    const all = await queryAudit(sink);
+    expect(all.map((e) => e.resource)).toEqual(["job_0", "job_1", "job_2", "job_3", "job_4"]);
+  });
+
+  it("append 失败时 recordAudit 抛错", async () => {
+    class FailingSink implements AuditSink {
+      async append(): Promise<void> {
+        throw new Error("write failed");
+      }
+    }
+    const sink = new FailingSink();
+    await expect(recordAudit(sink, { actor: "x", role: "ADMIN", action: "users:manage", resource: "u1" }, "ALLOWED")).rejects.toThrow("write failed");
   });
 });

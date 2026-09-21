@@ -369,6 +369,28 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
     expect(feats.json().error.code).toBe("PART_STATE_INVALID");
   });
 
+  it("P1-21 安全：路径穿越文件名被拒（../../etc/passwd.step → 422）", async () => {
+    const token = await login();
+    const headers = { authorization: `Bearer ${token}` };
+    const evil = await app.inject({
+      method: "POST",
+      url: "/api/v1/parts",
+      headers,
+      payload: { filename: "../../etc/passwd.step", content_type: "model/step", size_bytes: 1024 },
+    });
+    expect(evil.statusCode).toBe(422);
+    expect(evil.json().error.code).toBe("SYSTEM_VALIDATION");
+
+    // 同类穿越：绝对路径 / 反斜杠也应被拒
+    const abs = await app.inject({
+      method: "POST",
+      url: "/api/v1/parts",
+      headers,
+      payload: { filename: "/tmp/evil.stp", content_type: "model/step", size_bytes: 1024 },
+    });
+    expect(abs.statusCode).toBe(422);
+  });
+
   it("生成 CAM 工艺计划（box）：POST toolpath → CamIR 校验 → GET 最新", async () => {
     const token = await login();
     const headers = { authorization: `Bearer ${token}` };
@@ -474,6 +496,12 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
       return { token, headers, partId };
     }
 
+    // 适配2（RBAC）：ENGINEER 已失去 release:approve/release:release，审批/放行/驳回一律用 ADMIN token
+    async function adminHeaders(): Promise<Record<string, string>> {
+      const adminToken = await app.auth.signToken({ sub: "admin@org_demo.local", org_id: "org_demo", roles: ["ADMIN"] });
+      return { authorization: `Bearer ${adminToken}` };
+    }
+
     it("P0-4 安全：VIEWER 角色调 release approve → 403 AUTH_FORBIDDEN", async () => {
       const { headers, partId } = await buildPartWithJob();
       const created = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
@@ -505,6 +533,7 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
 
     it("创建→审批→发布完整链：version 递增 + 二维码 + 审计", async () => {
       const { headers, partId } = await buildPartWithJob();
+      const admin = await adminHeaders();
 
       const created = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
       expect(created.statusCode).toBe(201);
@@ -516,24 +545,24 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
       expect(rel.cam_revision_id).toMatch(/^cam_/);
       expect(rel.job_run_id).toMatch(/^jobrun_/);
 
-      // 未审批直接发布 → 409 RELEASE_STATE_INVALID
-      const early = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers });
+      // 未审批直接发布 → 409 RELEASE_STATE_INVALID（用 ADMIN 以走到状态机，而非 RBAC 403）
+      const early = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers: admin });
       expect(early.statusCode).toBe(409);
       expect(early.json().error.code).toBe("RELEASE_STATE_INVALID");
 
-      // 审批
-      const approved = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers, payload: { note: "仿真与校验全绿，准予发布" } });
+      // 审批（ADMIN）
+      const approved = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers: admin, payload: { note: "仿真与校验全绿，准予发布" } });
       expect(approved.statusCode).toBe(200);
       expect(approved.json().data.status).toBe("APPROVED");
       expect(approved.json().data.approved_by).toBeTruthy();
       expect(approved.json().data.approval_note).toBe("仿真与校验全绿，准予发布");
 
       // 二次审批 → 409
-      const dup = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers });
+      const dup = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/approve`, headers: admin });
       expect(dup.statusCode).toBe(409);
 
-      // 发布
-      const released = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers });
+      // 发布（ADMIN）
+      const released = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${rel.id}/release`, headers: admin });
       expect(released.statusCode).toBe(200);
       expect(released.json().data.status).toBe("RELEASED");
       expect(released.json().data.released_at).toBeTruthy();
@@ -553,16 +582,18 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
 
     it("未知 Release → 404 RELEASE_NOT_FOUND；驳回需附理由", async () => {
       const { headers, partId } = await buildPartWithJob();
+      const admin = await adminHeaders();
       const nf = await app.inject({ method: "GET", url: `/api/v1/parts/${partId}/releases/rel_nope`, headers });
       expect(nf.statusCode).toBe(404);
       expect(nf.json().error.code).toBe("RELEASE_NOT_FOUND");
 
       const created = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/release`, headers });
       const relId = created.json().data.id;
-      const noNote = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers });
+      // 驳回复用 release:approve，须用 ADMIN（ENGINEER 已无该权限）
+      const noNote = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers: admin });
       expect(noNote.statusCode).toBe(422);
 
-      const rejected = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers, payload: { note: "余量不足，需返工" } });
+      const rejected = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/releases/${relId}/reject`, headers: admin, payload: { note: "余量不足，需返工" } });
       expect(rejected.statusCode).toBe(200);
       expect(rejected.json().data.status).toBe("REJECTED");
     });
@@ -596,6 +627,8 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
 
       const res = await app.inject({ method: "POST", url: `/api/v1/parts/${partId}/ai-plan`, headers, payload: { goal: "表面光洁度优先" } });
       expect(res.statusCode).toBe(201);
+      // P1-17：未配置真实 LLM 凭据时响应标注 x-ai-mode: mock
+      expect(res.headers["x-ai-mode"]).toBe("mock");
       const data = res.json().data;
       expect(data.plan.id).toMatch(/^aiplan_/);
       expect(data.intent.strategy).toBe("finish_priority");

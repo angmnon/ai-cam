@@ -69,4 +69,34 @@ describe("simulate（box 样本）", () => {
     expect(coll.length).toBeGreaterThan(0);
     expect(rep.status).toBe("FAIL");
   });
+
+  it("P1-03 RAPID 在毛坯上方 5mm 低空掠过必报", () => {
+    // 刀尖在毛坯顶上方 5mm（高于材料、未没入），旧仅查上方圆柱会漏检；
+    // 新逻辑查刀尖下方 2R 悬伸带与剩余毛坯相交 → 必报碰撞。
+    const cam2 = structuredClone(cam);
+    const tp = cam2.toolpaths![0];
+    const stockTop = (cam2.stock.origin!.z ?? 0) + (cam2.stock.dimensions!.z ?? 0);
+    const ri = tp.moves.findIndex((m) => m.type === "RAPID");
+    expect(ri).toBeGreaterThanOrEqual(0);
+    const r0 = tp.moves[ri];
+    tp.moves[ri] = { type: "RAPID", x: r0.x, y: r0.y, z: stockTop + 5 };
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    const coll = rep.events.filter((e) => e.kind === "COLLISION");
+    expect(coll.length).toBeGreaterThan(0);
+    expect(rep.status).toBe("FAIL");
+  });
+
+  it("P1-04 FACE 底平面低于特征底必报 gouge", () => {
+    // FACE 面铣设计面 = 首个切削移动 z；追加一个远低于该面的直线切削 → gouge。
+    const cam2 = structuredClone(cam);
+    const tp = cam2.toolpaths![0];
+    const firstCut = tp.moves.find((m) => m.type !== "RAPID" && m.type !== "RETRACT")!;
+    expect(cam2.operations[0].type).toBe("FACE");
+    const last = tp.moves[tp.moves.length - 1];
+    tp.moves.push({ type: "LINEAR", x: last.x, y: last.y, z: firstCut.z - 10, feed_mm_min: 500 });
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    const gouge = rep.events.filter((e) => e.kind === "GOUGE");
+    expect(gouge.length).toBeGreaterThan(0);
+    expect(rep.status).toBe("FAIL");
+  });
 });

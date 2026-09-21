@@ -33,7 +33,7 @@ const securityPlugin: FastifyPluginAsync = async (app) => {
       // JWT 角色统一大写后对齐 RBAC Role 枚举
       const rawRole = (user.roles[0] ?? "").toUpperCase();
       if (!(ROLES as readonly string[]).includes(rawRole)) {
-        recordAudit(sink, { actor: user.sub, role: rawRole || "UNKNOWN", action, resource: request.url, detail: "未知角色" }, "DENIED");
+        await recordAudit(sink, { actor: user.sub, role: rawRole || "UNKNOWN", action, resource: request.url, detail: "未知角色" }, "DENIED");
         throw new ApiError({ code: ErrorCodes.AUTH_FORBIDDEN, message: `角色 ${rawRole || "匿名"} 无 ${action} 权限`, stage: "rbac" });
       }
       const role = rawRole as Role;
@@ -41,12 +41,12 @@ const securityPlugin: FastifyPluginAsync = async (app) => {
         assertCan(role, action);
       } catch (e) {
         if (e instanceof AccessDeniedError) {
-          recordAudit(sink, { actor: user.sub, role, action, resource: request.url, detail: e.message }, "DENIED");
+          await recordAudit(sink, { actor: user.sub, role, action, resource: request.url, detail: e.message }, "DENIED");
           throw new ApiError({ code: ErrorCodes.AUTH_FORBIDDEN, message: e.message, stage: "rbac" });
         }
         throw e;
       }
-      recordAudit(sink, { actor: user.sub, role, action, resource: request.url }, "ALLOWED");
+      await recordAudit(sink, { actor: user.sub, role, action, resource: request.url }, "ALLOWED");
     };
   });
 };

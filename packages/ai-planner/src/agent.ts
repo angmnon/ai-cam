@@ -11,7 +11,7 @@ import { ModelGateway, buildPlannerPrompt, PROMPT_VERSION, type PlannerContext }
 import { seedMachines, seedMaterials, seedTools } from "@ai-cam/master-data";
 import { checkPromptInjection, type InjectionFinding } from "@ai-cam/security";
 import { planPart } from "@ai-cam/cam-kernel";
-import { runJob } from "@ai-cam/job-runner";
+import { runJob, type RunJobInput } from "@ai-cam/job-runner";
 import { validatePlannerOutput, validatePlannerRefs, type PlannerOutput } from "./guardrails.js";
 import { planSetups } from "./setup.js";
 import { planProcess } from "./process.js";
@@ -55,6 +55,10 @@ export interface AgentOptions {
   materialId?: string;
   machineId?: string;
   dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC";
+  /** replan 注入意图：给定时跳过 LLM，直接使用并过 guardrails（P1-15） */
+  intentOverride?: PlannerOutput;
+  /** 仿真阈值（透传 runJob；测试/重规划用于注入失败场景） */
+  simulationThresholds?: RunJobInput["simulationThresholds"];
 }
 
 /** 工具注册表（v1：只读/生成/验证，供审计与 schema 校验；可扩展为可写工具） */
@@ -83,6 +87,8 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
   };
 
   // 工具实现（schema 校验由上层 API 层负责；这里记录审计）
+  // P1-14：simulate/validate 不再恒 PASS，回填 runJob 真实结果（runJob 就绪后赋值）
+  let jobResult: ReturnType<typeof runJob> | null = null;
   const tools: AgentTools = {
     analyze: (p) => ({ volume_mm3: p.volume_mm3, bbox: { min: [...p.bbox_mm.min], max: [...p.bbox_mm.max] } }),
     get_features: (_p, fs) => ({ count: fs.length, types: [...new Set(fs.map((f) => f.type))] }),
@@ -90,8 +96,8 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
     calc_params: () => ({ ok: true }),
     create_op: () => ({ ok: true }),
     generate: () => ({ cam_revision: "cam_ai", operation_count: 0 }),
-    simulate: () => ({ status: "PASS" }),
-    validate: () => ({ status: "PASS" }),
+    simulate: () => ({ status: jobResult?.simulation.status ?? "UNKNOWN" }),
+    validate: () => ({ status: jobResult?.validation.status ?? "UNKNOWN" }),
   };
 
   record("analyze", { part_id: part.file }, () => tools.analyze(part));
@@ -115,6 +121,11 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
       code: "AI_PROMPT_INJECTION_BLOCKED",
       findings: injection.findings,
     };
+  } else if (options.intentOverride) {
+    // P1-15：replan 注入的意图补丁直接采用（跳过 LLM），仍过引用校验
+    const refs = validatePlannerRefs(options.intentOverride, { featureCount: features.length, hasDrills: features.some((f) => f.type === "HOLE_THROUGH" || f.type === "HOLE_BLIND") });
+    guardrail = { ok: refs.ok, violations: refs.violations };
+    intent = refs.ok ? refs.value : null;
   } else {
     // 1a) Planner Prompt → LLM 结构化输出
     const ctx: PlannerContext = {
@@ -181,9 +192,21 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
 
   const planned = planPart(part, features, { materialId: options.materialId, machineId: options.machineId, userOverrides });
   record("generate", { overrides: userOverrides }, () => tools.generate());
-  const job = runJob({ part, partName: part.file.replace(/\.[^.]+$/, ""), features, dialect: options.dialect });
-  record("simulate", {}, () => tools.simulate());
-  record("validate", {}, () => tools.validate());
+  const job = runJob({ part, partName: part.file.replace(/\.[^.]+$/, ""), features, dialect: options.dialect, simulationThresholds: options.simulationThresholds });
+  jobResult = job;
+
+  // P1-14：simulate/validate 回填真实状态；FAIL 时记 ok:false 并附真实失败摘要（不再恒 PASS）
+  const simRes = tools.simulate() as { status: string };
+  const simOk = simRes.status !== "FAIL";
+  toolCalls.push({ tool: "simulate", args: {}, result: simOk ? simRes : { ...simRes, failure: job.simulation.events.map((e) => `${e.kind}: ${e.message}`).join("; ") }, ok: simOk });
+
+  const valRes = tools.validate() as { status: string };
+  const valOk = valRes.status !== "FAIL";
+  const valFailure = job.validation.layers
+    .filter((l) => l.status === "FAIL")
+    .flatMap((l) => l.checks.filter((c) => c.severity === "ERROR").map((c) => `${l.layer}/${c.code}: ${c.message}`))
+    .join("; ");
+  toolCalls.push({ tool: "validate", args: {}, result: valOk ? valRes : { ...valRes, failure: valFailure }, ok: valOk });
 
   void planned;
   return {

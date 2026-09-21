@@ -121,6 +121,11 @@ export class VoxelGrid {
     return false;
   }
 
+  /** Holder 圆柱（刀柄，直径 > 刀具直径）与剩余毛坯体素求交：圆心(cx,cy)，z ∈ [zBot,zTop]，半径 holderRadius。 */
+  anyHolderOverlap(cx: number, cy: number, zBot: number, zTop: number, holderRadius: number): boolean {
+    return this.anyInCylinder(cx, cy, zBot, zTop, holderRadius);
+  }
+
   /** 统计填充体素 */
   stats(): VoxelStats {
     const s = this.spec;

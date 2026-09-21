@@ -31,6 +31,8 @@ export interface AppConfig {
   partsAnalyzer: { mode: "fixture" | "worker"; fixturesDir: string; binaryPath?: string };
   /** Phase 0 bootstrap 登录凭据（单账号；后续接 users/memberships 表后替换） */
   auth: { bootstrap: BootstrapAuthConfig };
+  /** AI 规划：是否配置了真实 LLM 凭据（未配置则全程 MockProvider） */
+  ai: { llmLive: boolean };
   otlpEndpoint?: string;
 }
 
@@ -94,5 +96,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       },
     },
     otlpEndpoint: env.OTLP_ENDPOINT,
+    // P1-17：任一真实 LLM 厂商 key 存在即视为 live；否则全程 MockProvider
+    ai: {
+      llmLive: Boolean(env.OPENAI_API_KEY || env.ANTHROPIC_API_KEY || env.DEEPSEEK_API_KEY || env.LLM_API_KEY),
+    },
   };
 }

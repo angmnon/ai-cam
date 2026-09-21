@@ -9,7 +9,8 @@ import { describe, expect, it } from "vitest";
 import { parseWorkerOutput } from "@ai-cam/geometry-schema";
 import { buildFeatureGraph } from "@ai-cam/feature-engine";
 import { planPart } from "@ai-cam/cam-kernel";
-import { postProcess, makeProfile, type ControllerProfile } from "./post.js";
+import { postProcess, makeProfile } from "./post.js";
+import type { ControllerProfile } from "./core.js";
 
 const PARTS_DIR = resolve(process.cwd(), "../../tests/golden/parts");
 
@@ -26,9 +27,9 @@ function loadStems(): string[] {
 
 const DIALECTS: Array<{ dialect: ControllerProfile["dialect"]; label: string }> = [
   { dialect: "FANUC", label: "FANUC（G0/G83 族）" },
-  { dialect: "SYNTEC", label: "SYNTEC（G0/G73 族）" },
+  { dialect: "SYNTEC", label: "SYNTEC（G0/G83 族）" },
   { dialect: "MITSUBISHI", label: "MITSUBISHI（G00/G83 族）" },
-  { dialect: "ISO_GENERIC", label: "ISO 通用（G00/G83 族）" },
+  { dialect: "ISO_GENERIC", label: "ISO 通用（G00/逐行钻孔族）" },
 ];
 
 function assertDialectFeatures(dialect: ControllerProfile["dialect"], text: string): void {
@@ -52,7 +53,7 @@ function assertDialectFeatures(dialect: ControllerProfile["dialect"], text: stri
   }
 }
 
-const knownG = new Set(["G00", "G01", "G02", "G03", "G21", "G17", "G90", "G91", "G94", "G40", "G49", "G80", "G28", "G30", "G43", "G41"]);
+const knownG = new Set(["G00", "G01", "G02", "G03", "G21", "G17", "G90", "G91", "G94", "G40", "G49", "G80", "G83", "G73", "G28", "G30", "G43", "G41"]);
 const knownM = new Set(["M03", "M05", "M06", "M07", "M08", "M09", "M30"]);
 
 for (const { dialect, label } of DIALECTS) {
@@ -99,6 +100,17 @@ for (const { dialect, label } of DIALECTS) {
         expect(nc.lines[nc.lines.length - 1]).toBe("%");
         // 方言特性
         assertDialectFeatures(dialect, all);
+        // P1-07 钻孔循环：含 DRILL 工序且方言声明 drillingCycles → G83 模态 + G80 取消；
+        // ISO_GENERIC（drillingCycles=false）保持逐行，不得出现 G83/G73
+        const hasDrill = cam.operations.some((o) => o.type === "DRILL");
+        if (hasDrill && makeProfile(dialect).drillingCycles) {
+          expect(all).toContain("G83");
+          expect(all).toContain("G80");
+        }
+        if (hasDrill && !makeProfile(dialect).drillingCycles) {
+          expect(all).not.toContain("G83");
+          expect(all).not.toContain("G73");
+        }
         // metadata
         expect(nc.metadata.part_id.endsWith(stem)).toBe(true);
         expect(nc.metadata.operation_count).toBe(cam.operations.length);

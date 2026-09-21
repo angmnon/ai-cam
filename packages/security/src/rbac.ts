@@ -1,6 +1,8 @@
 /**
  * RBAC 权限矩阵（P5-7）：角色 × 动作的细粒度权限。
- * 角色：ADMIN（全量）/ ENGINEER（工艺/发布）/ OPERATOR（车间执行）/ VIEWER（只读）。
+ * 角色：ADMIN（全量，含发布审批与执行）/ ENGINEER（工艺/发起发布，不自批自放）/
+ *      OPERATOR（车间执行）/ VIEWER（只读）。
+ * P1-1：release:approve 与 release:release 从 ENGINEER 收回，仅 ADMIN 持有（自批自放禁止）。
  */
 export const ROLES = ["ADMIN", "ENGINEER", "OPERATOR", "VIEWER"] as const;
 export type Role = (typeof ROLES)[number];
@@ -24,7 +26,8 @@ export type Action = (typeof ACTIONS)[number];
 
 const MATRIX: Record<Role, readonly Action[]> = {
   ADMIN: [...ACTIONS],
-  ENGINEER: ["part:read", "part:analyze", "cam:generate", "job:run", "job:view_nc", "release:request", "release:approve", "release:release", "ai:plan", "ai:apply", "rules:manage", "audit:read"],
+  // ENGINEER 不再持有 release:approve / release:release（P1-1 自批自放）
+  ENGINEER: ["part:read", "part:analyze", "cam:generate", "job:run", "job:view_nc", "release:request", "ai:plan", "ai:apply", "rules:manage", "audit:read"],
   OPERATOR: ["part:read", "job:run", "job:view_nc", "release:request"],
   VIEWER: ["part:read", "job:view_nc", "audit:read"],
 };

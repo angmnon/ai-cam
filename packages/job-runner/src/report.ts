@@ -81,7 +81,7 @@ export function buildJobReport(input: { cam: CamIR; simulation: SimulationReport
     ir_id: cam.ir_id,
     program_number: nc.program_number,
     status: validation.status === "FAIL" ? "FAIL" : simulation.status === "FAIL" ? "FAIL" : validation.status,
-    validated: simulation.status !== "FAIL" && validation.status !== "FAIL",
+    validated: simulation.status === "PASS" && validation.status === "PASS",
     engine_version: cam.metadata?.generator_version ?? "0.1.0",
     generated_at: new Date().toISOString(),
     summary: {

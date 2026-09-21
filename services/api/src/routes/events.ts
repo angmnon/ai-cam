@@ -12,6 +12,8 @@ export function attachSseStream(
   bus: { subscribe(subject: string | null, handler: (e: CloudEvent) => void): () => void },
   subject: string | null,
   heartbeatMs = HEARTBEAT_MS,
+  /** P1-19：可选事件过滤（如跨 org 过滤），返回 false 则不下发 */
+  filter?: (event: CloudEvent) => boolean,
 ): () => void {
   const res = reply.raw;
   res.writeHead(200, {
@@ -25,6 +27,7 @@ export function attachSseStream(
   res.write(formatSse({ specversion: "1.0", id: "evt_hello", source: "com.aicam.api", type: "hello", subject: subject ?? "*", time: new Date().toISOString(), datacontenttype: "application/json" }));
 
   const unsubscribe = bus.subscribe(subject, (event) => {
+    if (filter && !filter(event)) return; // P1-19：越权事件丢弃
     res.write(formatSse(event));
   });
 
@@ -49,10 +52,27 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
     },
     async (request, reply) => {
       const subject = (request.query as { subject?: string }).subject ?? null;
-      if (subject && !subject.startsWith("job_")) {
-        throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "subject must start with job_.", stage: "events" });
+      const orgId = request.user!.org_id;
+      if (subject) {
+        if (!subject.startsWith("job_")) {
+          throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "subject must start with job_.", stage: "events" });
+        }
+        // P1-19：订阅指定 job 前先校验该 job 属于当前 org，跨 org/不存在即拒绝
+        app.jobs.get(orgId, subject);
       }
-      const cleanup = attachSseStream(reply, app.bus, subject);
+      // P1-19：不传 subject（订阅全部）时，仅下发归属当前 org 的 job 事件
+      const filter = subject
+        ? undefined
+        : (event: CloudEvent) => {
+            if (!event.subject || !event.subject.startsWith("job_")) return false;
+            try {
+              app.jobs.get(orgId, event.subject);
+              return true;
+            } catch {
+              return false;
+            }
+          };
+      const cleanup = attachSseStream(reply, app.bus, subject, HEARTBEAT_MS, filter);
       request.raw.on("close", () => {
         cleanup();
       });

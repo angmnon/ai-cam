@@ -5,6 +5,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
+import { fetchMeshBlob } from "../api.js";
 
 export interface ViewerFeatureBox {
   id: string;
@@ -133,9 +134,15 @@ export function clearPartGroup(scene: ViewerScene): void {
 
 /** 从 URL 加载 OBJ（Z-up → Y-up 旋转）并自动对中/适配视角 */
 export async function loadObjFromUrl(scene: ViewerScene, url: string): Promise<THREE.Group> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`mesh fetch failed: ${res.status}`);
-  const text = await res.text();
+  let text: string;
+  try {
+    // P1-22：带 Authorization 头拉取（裸 fetch 无 token → 401）
+    const blob = await fetchMeshBlob(url);
+    text = await blob.text();
+  } catch (e) {
+    // 不再静默：向调用方抛出明确错误
+    throw new Error(`网格加载失败：${(e as Error).message}`, { cause: e });
+  }
   const loader = new OBJLoader();
   const obj = loader.parse(text);
   obj.rotation.x = -Math.PI / 2; // STEP Z-up → three Y-up

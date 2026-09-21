@@ -53,10 +53,23 @@ describe("toolpath generators", () => {
     expect(Math.max(...moves.map((m) => m.z))).toBeLessThanOrEqual(50);
   });
 
-  it("Pocket 闭腔：层切 + 螺旋进刀", () => {
+  it("Pocket 闭腔：先垂直 plunge 到层深，再水平螺旋进刀", () => {
     const moves = pocketOp({ region: rect2(10, 10, 50, 40), zTop: 20, zBottom: 5, stepdown: 6, stepover: 6, toolR: 3, feed: 1000, plungeFeed: 500, safeZ: 40 });
     expect(moves.length).toBeGreaterThan(10);
-    expect(moves.some((m) => m.type === "LINEAR" && m.z < 6)).toBe(true); // 螺旋/环切切到底
+    expect(moves.some((m) => m.type === "LINEAR" && m.z < 6)).toBe(true);
+    // 首条 RAPID 到孔心安全面，紧随垂直 PLUNGE（x/y 不变），plunge feed = 500
+    expect(moves[0].type).toBe("RAPID");
+    expect(moves[0].z).toBe(40);
+    const plungeIdx = moves.findIndex((m) => m.type === "PLUNGE");
+    expect(plungeIdx).toBeGreaterThan(0);
+    const rapid = moves[plungeIdx - 1];
+    const plunge = moves[plungeIdx];
+    expect(plunge.x).toBeCloseTo(rapid.x, 5);
+    expect(plunge.y).toBeCloseTo(rapid.y, 5);
+    expect(plunge.feed_mm_min).toBe(500);
+    // plunge 之后首段为水平切削（z 不再下降），而非从 safeZ 斜切全高
+    const after = moves[plungeIdx + 1];
+    expect(after.z).toBeCloseTo(plunge.z, 5);
   });
 
   it("Pocket 开槽（SLOT）：从开放侧进刀", () => {
@@ -82,10 +95,20 @@ describe("toolpath generators", () => {
     expect(moves.some((m) => m.z <= 0)).toBe(true); // 过穿
   });
 
-  it("Adaptive：层切 + 环切", () => {
+  it("Adaptive：先垂直 plunge 到层深，再层切环切", () => {
     const moves = adaptiveOp({ region: rect2(10, 10, 70, 50), zTop: 25, zBottom: 5, stepdown: 8, stepover: 6, toolR: 4, feed: 1200, plungeFeed: 600, safeZ: 45 });
     expect(moves.length).toBeGreaterThan(10);
     expect(Math.max(...moves.map((m) => m.z))).toBeLessThanOrEqual(45);
+    // 首条进刀为垂直 PLUNGE：与前一条 RAPID 同 x/y，feed = plungeFeed，之后水平
+    const plungeIdx = moves.findIndex((m) => m.type === "PLUNGE");
+    expect(plungeIdx).toBeGreaterThan(0);
+    const rapid = moves[plungeIdx - 1];
+    const plunge = moves[plungeIdx];
+    expect(rapid.type).toBe("RAPID");
+    expect(plunge.x).toBeCloseTo(rapid.x, 5);
+    expect(plunge.y).toBeCloseTo(rapid.y, 5);
+    expect(plunge.feed_mm_min).toBe(600);
+    expect(moves[plungeIdx + 1].z).toBeCloseTo(plunge.z, 5);
   });
 
   it("helixEntry：螺旋微段 z 单调下降", () => {

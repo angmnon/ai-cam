@@ -205,7 +205,6 @@ export const api = {
   meshUrl: (id: string) => `${BASE}/api/v1/parts/${id}/mesh`,
 
   listParts: () => request<{ data: PartSummary[] }>("GET", "/api/v1/parts"),
-
   generateToolpath: (id: string) =>
     request<{ data: { revision: { id: string; revision_no: number; engine_version: string }; cam: CamIr; parameter_decisions: Record<string, unknown> } }>("POST", `/api/v1/parts/${id}/toolpath`),
 
@@ -230,6 +229,20 @@ export const api = {
   approveRelease: (id: string, releaseId: string, note?: string) => request<{ data: ReleaseRecord }>("POST", `/api/v1/parts/${id}/releases/${releaseId}/approve`, { note }),
   releaseNow: (id: string, releaseId: string) => request<{ data: ReleaseRecord }>("POST", `/api/v1/parts/${id}/releases/${releaseId}/release`, {}),
 };
+
+/**
+ * P1-22：以带 Authorization 头的方式拉取网格二进制（裸 fetch 不带 token 会 401）。
+ * 返回 Blob，调用方按需 URL.createObjectURL / text()。
+ */
+export async function fetchMeshBlob(url: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    throw new ApiErrorClient(res.headers.get("x-error-code") ?? "HTTP_ERROR", `网格加载失败：HTTP ${res.status}${res.status === 401 ? "（未授权，请重新登录）" : ""}`, res.status);
+  }
+  return res.blob();
+}
 
 // ---- Phase 4 AI 规划 / Release（P4-9 / P4-11） ----
 export interface AiPlanResult {

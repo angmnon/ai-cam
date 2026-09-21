@@ -98,6 +98,20 @@ describe("Golden 刀路回归（真实 OCCT 几何 → cam-kernel）", () => {
           const bottom = feat.bbox.max.z;
           expect(tp.moves.some((m) => m.z <= bottom + 0.2)).toBe(true);
         }
+        // 进刀门禁（P1 修复）：每层必须先垂直 PLUNGE——与上一条 move 同 x/y、z 直下，
+        // 且 feed 等于规划 plunge feed；禁止从 safeZ 斜切全高 engagement。
+        const expectedPlungeFeed = op.parameters.plunge_feed_mm_min ?? op.parameters.feed_mm_min;
+        const plungeIdx = tp.moves.findIndex((m) => m.type === "PLUNGE");
+        expect(plungeIdx).toBeGreaterThan(0); // 首条 PLUNGE 前必有 RAPID 定位
+        for (let i = 0; i < tp.moves.length; i++) {
+          const m = tp.moves[i];
+          if (m.type !== "PLUNGE") continue;
+          const prev = tp.moves[i - 1];
+          expect(prev).toBeDefined();
+          expect(m.x).toBeCloseTo(prev.x, 5);
+          expect(m.y).toBeCloseTo(prev.y, 5);
+          expect(m.feed_mm_min).toBeCloseTo(expectedPlungeFeed, 5);
+        }
       }
     });
   }

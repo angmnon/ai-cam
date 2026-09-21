@@ -43,6 +43,8 @@ declare module "fastify" {
     aiPlans: AiPlanStore;
     /** Phase 0 bootstrap 登录凭据（服务端解算 org_id/role） */
     bootstrap: AppConfig["auth"]["bootstrap"];
+    /** P1-17：AI 规划是否接入真实 LLM（否则 MockProvider） */
+    aiLlm: boolean;
   }
 }
 
@@ -118,6 +120,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("aiPlans", aiPlans);
   // P0-1：登录路由读取的服务端 bootstrap 凭据
   app.decorate("bootstrap", config.auth.bootstrap);
+  // P1-17：AI 规划是否接入真实 LLM（响应头 x-ai-mode 据此标注 live/mock）
+  app.decorate("aiLlm", config.ai.llmLive);
   // 未配置正式凭据时启动告警（仅开发态默认 demo/demo）
   if (config.auth.bootstrap.usingDefaults) {
     app.log.warn(

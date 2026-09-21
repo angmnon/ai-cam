@@ -73,10 +73,11 @@ export function pocketOp(input: PocketInput): ToolpathMove[] {
       retractToSafe(b, safeZ, feed);
       continue;
     }
-    // 闭腔：中心螺旋下刀 → 内环向外环等距环切
+    // 闭腔：中心垂直下刀到本层深度 → 水平旋入（避免首层从 safeZ 斜切全高 engagement）
     const helixR = Math.max(0.5 * toolR, Math.min(region.x1 - region.x0, region.y1 - region.y0) / 4);
     rapidToSafe(b, cx, cy, safeZ);
-    helixEntry(b, cx, cy, z, z, helixR, plungeFeed, 1); // 本层螺旋进刀（先水平旋入）
+    b.plungeTo(z, plungeFeed, cx, cy); // 先垂直 plunge 到本层深度
+    helixEntry(b, cx, cy, z, z, helixR, plungeFeed, 1); // 本层水平螺旋旋入
     const rings = concentricRects(region, toolR, stepover).reverse(); // 内→外
     for (const ring of rings) {
       const pts: Array<[number, number]> = [
@@ -203,8 +204,9 @@ export function adaptiveOp(input: AdaptiveInput): ToolpathMove[] {
   for (const z of layers) {
     const helixR = Math.max(0.5 * toolR, Math.min(region.x1 - region.x0, region.y1 - region.y0) / 4);
     rapidToSafe(b, cx, cy, safeZ);
-    // 螺旋下刀到底（adaptive 恒切宽进刀）
-    helixEntry(b, cx, cy, z + 0.5 * toolR, z, helixR, plungeFeed, 2);
+    // 先垂直 plunge 到本层深度，再水平螺旋旋入（恒切宽进刀）
+    b.plungeTo(z, plungeFeed, cx, cy);
+    helixEntry(b, cx, cy, z, z, helixR, plungeFeed, 2);
     const rings = concentricRects(region, toolR, stepover).reverse();
     for (const ring of rings) {
       const pts: Array<[number, number]> = [

@@ -199,9 +199,37 @@ export const CamIR = z.object({
 });
 export type CamIR = z.infer<typeof CamIR>;
 
+/**
+ * 递归稳定序列化（deterministic stable stringify）：
+ * - 普通对象：键按字典序递归排序（键序无关）
+ * - 数组：保持原顺序
+ * - 原始类型 / null：直接 JSON.stringify
+ * - 对象值为 undefined 的键跳过（与 JSON.stringify 语义一致）
+ *
+ * 历史 bug（P1）：曾写成 JSON.stringify(ir, Object.keys(ir).sort())——第二参数是
+ * 白名单 replacer 而非排序数组，导致所有嵌套对象被过滤成 {}，改嵌套字段 hash 不变。
+ */
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return "[" + value.map((v) => (v === undefined ? "null" : stableStringify(v))).join(",") + "]";
+  }
+  const obj = value as Record<string, unknown>;
+  const keys = Object.keys(obj).sort();
+  const parts: string[] = [];
+  for (const k of keys) {
+    const v = obj[k];
+    if (v === undefined) continue;
+    parts.push(`${JSON.stringify(k)}:${stableStringify(v)}`);
+  }
+  return `{${parts.join(",")}}`;
+}
+
 /** 确定性规范化 JSON（字段顺序稳定，用于 hash 复现） */
 export function canonicalJson<T>(ir: T): string {
-  return JSON.stringify(ir, Object.keys(ir as object).sort());
+  return stableStringify(ir);
 }
 
 /** 生成可复现指纹 */

@@ -43,6 +43,28 @@ export interface ValidationReport {
 
 const TOL = 1e-2;
 
+/**
+ * P1-09：IR move.type → 期望 NC G 代码映射（与 post-core emitMove 一致）。
+ * RAPID→G00；RETRACT→G00（post.ts 退刀按快速输出）；LINEAR/PLUNGE→G01；
+ * ARC_CW→G02；ARC_CCW→G03。post 把 RAPID 错写成 G01 即触发 MOTION_TYPE_MISMATCH。
+ */
+function irTypeToG(t: string): string {
+  switch (t) {
+    case "RAPID":
+      return "G00";
+    case "RETRACT":
+      return "G00";
+    case "ARC_CW":
+      return "G02";
+    case "ARC_CCW":
+      return "G03";
+    case "LINEAR":
+    case "PLUNGE":
+    default:
+      return "G01";
+  }
+}
+
 export function validateNc(input: {
   cam: CamIR;
   ncText: string;
@@ -81,22 +103,25 @@ export function validateNc(input: {
     if (!new RegExp(`M03 S${s}`).test(text)) l2.push({ code: "SPINDLE_MISMATCH", severity: "ERROR", message: `op ${op.id} 主轴 ${s}rpm 未出现在 NC`, layer: "SEMANTIC" });
     // 运动点一致：NC 重建点序列 vs IR moves 目标点
   }
-  // NC 运动点 vs IR 点序列（确定性生成应完全一致）
-  const ncPts = parsed.points.map((p) => ({ x: p.x, y: p.y, z: p.z }));
-  const irPts: Array<{ x: number; y: number; z: number }> = [];
+  // NC 运动点 vs IR 点序列（确定性生成应完全一致）；P1-09 同时比对 G 代码类型
+  const ncPts = parsed.points.map((p) => ({ x: p.x, y: p.y, z: p.z, g: p.g }));
+  const irPts: Array<{ x: number; y: number; z: number; g: string }> = [];
   for (const op of cam.operations) {
     const tp = toolpaths.get(op.id);
-    if (tp) for (const m of tp.moves) irPts.push({ x: m.x, y: m.y, z: m.z });
+    if (tp) for (const m of tp.moves) irPts.push({ x: m.x, y: m.y, z: m.z, g: irTypeToG(m.type) });
   }
   if (ncPts.length !== irPts.length) {
     l2.push({ code: "POINT_COUNT_MISMATCH", severity: "ERROR", message: `NC 运动点数 ${ncPts.length} ≠ IR ${irPts.length}`, layer: "SEMANTIC" });
   } else {
     let diff = 0;
+    let typeDiff = 0;
     for (let i = 0; i < ncPts.length; i++) {
       const d = Math.hypot(ncPts[i].x - irPts[i].x, ncPts[i].y - irPts[i].y, ncPts[i].z - irPts[i].z);
       if (d > TOL) diff++;
+      if (ncPts[i].g !== irPts[i].g) typeDiff++;
     }
     if (diff > 0) l2.push({ code: "POINT_SEQUENCE_MISMATCH", severity: "ERROR", message: `${diff}/${ncPts.length} 个运动点与 IR 不一致`, layer: "SEMANTIC" });
+    if (typeDiff > 0) l2.push({ code: "MOTION_TYPE_MISMATCH", severity: "ERROR", message: `${typeDiff}/${ncPts.length} 个运动点 G 代码类型与 IR 不一致（RAPID/LINEAR/PLUNGE/RETRACT/ARC 映射）`, layer: "SEMANTIC" });
   }
   layers.push({ layer: "SEMANTIC", status: l2.some((c) => c.severity === "ERROR") ? "FAIL" : l2.some((c) => c.severity === "WARN") ? "WARN" : "PASS", checks: l2 });
   checks.push(...l2);
@@ -111,13 +136,34 @@ export function validateNc(input: {
     const f = op.parameters.feed_mm_min;
     if (f > maxFeed) l3.push({ code: "FEED_OVER_LIMIT", severity: "ERROR", message: `op ${op.id} 进给 ${f} > 机床上限 ${maxFeed}`, layer: "MACHINE" });
   }
-  // 行程：NC 坐标在机床 travel 内
-  const travel = machine?.kinematics.travel;
+  // 行程：NC 坐标在机床 travel 内（P1-10：优先 min/max 区间；无区间字段时对称假设 [-t,+t] 并降级提示）
+  const travel = machine?.kinematics.travel as (Record<string, number | undefined> | undefined);
   if (travel) {
-    const pts = parsed.points;
-    for (const p of pts) {
-      if (Math.abs(p.x) > travel.x || Math.abs(p.y) > travel.y || Math.abs(p.z) > travel.z) {
-        l3.push({ code: "TRAVEL_EXCEEDED", severity: "ERROR", message: `NC 点 (${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}) 超出机床行程`, layer: "MACHINE" });
+    type Axis = "x" | "y" | "z";
+    const axes: Axis[] = ["x", "y", "z"];
+    const bounds = {} as Record<Axis, { min: number; max: number }>;
+    let symmetricFallback = false;
+    for (const axis of axes) {
+      const mag = travel[axis];
+      const lo = travel[`min${axis.toUpperCase()}`];
+      const hi = travel[`max${axis.toUpperCase()}`];
+      if (typeof lo === "number" && Number.isFinite(lo) && typeof hi === "number" && Number.isFinite(hi)) {
+        bounds[axis] = { min: lo, max: hi };
+      } else if (typeof mag === "number" && Number.isFinite(mag) && mag > 0) {
+        bounds[axis] = { min: -mag, max: mag };
+        symmetricFallback = true;
+      } else {
+        bounds[axis] = { min: -Infinity, max: Infinity };
+      }
+    }
+    // 降级检查：seed 机床 travel 仅给对称行程量，未提供 min/max 区间（INFO，不翻转 PASS 门禁）
+    if (symmetricFallback) {
+      l3.push({ code: "TRAVEL_SYMMETRIC_ASSUMPTION", severity: "INFO", message: "机床 travel 无 min/max 区间字段，按对称假设 [-t,+t] 判定行程（P1-10 降级检查）", layer: "MACHINE" });
+    }
+    for (const p of parsed.points) {
+      const outOf = (axis: Axis): boolean => p[axis] < bounds[axis].min || p[axis] > bounds[axis].max;
+      if (outOf("x") || outOf("y") || outOf("z")) {
+        l3.push({ code: "TRAVEL_EXCEEDED", severity: "ERROR", message: `NC 点 (${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}) 超出机床行程 X[${bounds.x.min},${bounds.x.max}] Y[${bounds.y.min},${bounds.y.max}] Z[${bounds.z.min},${bounds.z.max}]`, layer: "MACHINE" });
         break;
       }
     }
@@ -135,7 +181,8 @@ export function validateNc(input: {
       if (e.kind === "COLLISION" || e.kind === "GOUGE") l4.push({ code: `SIM_${e.kind}`, severity: "ERROR", message: e.message, layer: "SIMULATION" });
     }
   } else {
-    l4.push({ code: "SIM_NOT_PROVIDED", severity: "WARN", message: "未提供仿真报告，跳过 L4", layer: "SIMULATION" });
+    // P1-08：未提供仿真报告由 WARN 软门禁升级为 ERROR 硬门禁，L4 必 FAIL、整体 FAIL
+    l4.push({ code: "SIM_NOT_PROVIDED", severity: "ERROR", message: "未提供仿真报告，L4 仿真门禁失败（P1-08 软门禁升级为硬门禁）", layer: "SIMULATION" });
   }
   layers.push({ layer: "SIMULATION", status: l4.some((c) => c.severity === "ERROR") ? "FAIL" : l4.some((c) => c.severity === "WARN") ? "WARN" : "PASS", checks: l4 });
   checks.push(...l4);

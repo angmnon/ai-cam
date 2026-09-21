@@ -14,10 +14,35 @@ import { createMockProvider } from "@ai-cam/model-gateway";
 // P0-4：RBAC 授权 + Prompt 注入扫描 + 审计
 import { checkPromptInjection, recordAudit } from "@ai-cam/security";
 
+// P1-21：文件名只允许安全字符 + .step/.stp，拒绝 ../ 等路径穿越
+const PartFilename = z
+  .string()
+  .min(1)
+  .max(255)
+  .regex(/^[A-Za-z0-9_-]+\.(step|stp)$/i, "仅支持 .step/.stp，且文件名不得包含路径分隔符");
+
 const CreatePartBody = z.object({
-  filename: z.string().min(1).max(255).regex(/\.(step|stp)$/i, "仅支持 .step/.stp"),
+  filename: PartFilename,
   content_type: z.string().min(1).default("model/step"),
   size_bytes: z.number().int().positive(),
+});
+
+// P1-20：AI 规划 body —— goal 文本 + 控制器方言枚举
+const AiPlanBody = z.object({
+  goal: z.string().min(1).max(500).default("粗加工优先，兼顾表面质量"),
+  dialect: z.enum(["FANUC", "SYNTEC", "MITSUBISHI", "ISO_GENERIC"]).optional(),
+});
+
+// P1-20：Release 审批/放行 body
+const ReleaseDecisionBody = z.object({
+  note: z.string().max(1000).optional(),
+  profile: z.string().max(255).optional(),
+});
+
+// P1-20：Release 驳回 body —— note 必填
+const ReleaseRejectBody = z.object({
+  note: z.string().min(1).max(1000),
+  profile: z.string().max(255).optional(),
 });
 
 const partRoutes: FastifyPluginAsync = async (app) => {
@@ -276,12 +301,15 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     const orgId = request.user!.org_id;
     const part = app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
-    const body = (request.body ?? {}) as { goal?: string; dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC" };
-    const goal = body.goal ?? "粗加工优先，兼顾表面质量";
+    const parsed = AiPlanBody.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid ai-plan payload.", stage: "ai-plan", details: { issues: parsed.error.issues } });
+    }
+    const { goal, dialect } = parsed.data;
     // Prompt 注入防护：非 LOW 命中直接拒绝，不落 ModelGateway
     const inject = checkPromptInjection(goal);
     if (inject.flagged) {
-      recordAudit(app.auditSink, { actor: request.user!.sub, role: request.user!.roles[0] ?? "", action: "ai:plan", resource: id, detail: "prompt injection blocked" }, "DENIED");
+      await recordAudit(app.auditSink, { actor: request.user!.sub, role: request.user!.roles[0] ?? "", action: "ai:plan", resource: id, detail: "prompt injection blocked" }, "DENIED");
       throw new ApiError({
         code: ErrorCodes.SYSTEM_VALIDATION,
         message: "Prompt blocked by injection guardrail.",
@@ -294,7 +322,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
       gateway,
       goal,
-      dialect: body.dialect,
+      dialect,
     });
     const before = app.cams.latest(orgId, id);
     const after = run.job.cam;
@@ -319,9 +347,13 @@ const partRoutes: FastifyPluginAsync = async (app) => {
       tool_calls: run.tool_calls.map((tc) => ({ tool: tc.tool, ok: tc.ok })),
       created_by: request.user!.sub,
     });
-    return reply.status(201).send(
-      ok({
-        plan: { id: plan.id, created_at: plan.created_at },
+    // P1-17：标注本次规划由真实 LLM 还是 MockProvider 执行
+    return reply
+      .header("x-ai-mode", app.aiLlm ? "live" : "mock")
+      .status(201)
+      .send(
+        ok({
+          plan: { id: plan.id, created_at: plan.created_at },
         intent: run.intent,
         guardrail: run.guardrail,
         setups: run.setups,
@@ -391,23 +423,31 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   // P0-4：审批需 release:approve 权限（RBAC 职责分离）
   app.post("/:id/releases/:releaseId/approve", { preHandler: app.authorize("release:approve") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
-    const body = (request.body ?? {}) as { note?: string };
-    return ok(app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
+    const parsed = ReleaseDecisionBody.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid approve payload.", stage: "releases", details: { issues: parsed.error.issues } });
+    }
+    return ok(app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // P0-4：正式放行需 release:release 权限
   app.post("/:id/releases/:releaseId/release", { preHandler: app.authorize("release:release") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
-    const body = (request.body ?? {}) as { note?: string };
-    return ok(app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
+    const parsed = ReleaseDecisionBody.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid release payload.", stage: "releases", details: { issues: parsed.error.issues } });
+    }
+    return ok(app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // P0-4：驳回属发布治理决策；矩阵无 release:reject，复用最接近的 release:approve 动作。
   app.post("/:id/releases/:releaseId/reject", { preHandler: app.authorize("release:approve") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
-    const body = (request.body ?? {}) as { note?: string };
-    if (!body.note) throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "note is required for reject.", stage: "releases", retryable: false });
-    return ok(app.releases.reject({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
+    const parsed = ReleaseRejectBody.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "note is required for reject.", stage: "releases", retryable: false, details: { issues: parsed.error.issues } });
+    }
+    return ok(app.releases.reject({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // 网格（OBJ）

@@ -28,11 +28,26 @@ export interface PartAnalyzer {
   analyze(input: AnalyzeInput): Promise<PartAnalysis>;
 }
 
+// P1-21：文件名白名单 —— 仅安全字符 + .step/.stp，拒绝 ../ 等路径穿越
+const SAFE_FILENAME = /^[A-Za-z0-9_-]+\.(step|stp)$/i;
+
+function assertSafeFilename(filename: string): void {
+  if (!SAFE_FILENAME.test(filename)) {
+    throw new ApiError({
+      code: ErrorCodes.SYSTEM_VALIDATION,
+      message: `非法文件名 "${filename}"：仅允许 [A-Za-z0-9_-].step/.stp`,
+      stage: "geometry",
+      retryable: false,
+    });
+  }
+}
+
 /** fixture 模式：按文件名 stem 查找 tests/golden/parts/<stem>.json(.obj) */
 export function createFixtureAnalyzer(fixturesDir: string): PartAnalyzer {
   return {
     mode: "fixture",
     async analyze({ orgId, partId, filename, storage }) {
+      assertSafeFilename(filename);
       const stem = filename.replace(/\.(step|stp)$/i, "");
       const jsonPath = resolve(fixturesDir, `${stem}.json`);
       const objPath = resolve(fixturesDir, `${stem}.obj`);
@@ -58,6 +73,7 @@ export function createWorkerAnalyzer(binaryPath: string, timeoutMs = 60_000): Pa
   return {
     mode: "worker",
     async analyze({ orgId, partId, filename, sourceKey, storage }) {
+      assertSafeFilename(filename);
       const { data } = await storage.get(sourceKey);
       const dir = await mkdtemp(join(tmpdir(), "geom-"));
       const stepPath = join(dir, filename);

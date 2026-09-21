@@ -7,7 +7,7 @@ import { buildFeatureGraph } from "@ai-cam/feature-engine";
 import { ModelGateway } from "@ai-cam/model-gateway";
 import { createMockProvider } from "@ai-cam/model-gateway";
 import { runCamAgent } from "./agent.js";
-import { extractFailures, adjustIntentForFailures, runWithReplan } from "./replan.js";
+import { extractFailures, adjustIntentForFailures, runWithReplan, MAX_REPLANS } from "./replan.js";
 
 const raw = readFileSync(join(process.cwd(), "../../tests/golden/parts/box.json"), "utf8");
 const part = parseWorkerOutput(raw);
@@ -26,7 +26,13 @@ describe("runCamAgent（P4-3）", () => {
     expect(toolNames).toContain("analyze");
     expect(toolNames).toContain("get_features");
     expect(toolNames).toContain("create_op");
-    expect(run.tool_calls.every((c) => c.ok)).toBe(true);
+    // P1-14：simulate/validate 不再恒 PASS，必须回填 runJob 真实状态；ok 与真实状态一致
+    const simCall = run.tool_calls.find((c) => c.tool === "simulate")!;
+    const valCall = run.tool_calls.find((c) => c.tool === "validate")!;
+    expect(simCall.result).toMatchObject({ status: run.job.simulation.status });
+    expect(valCall.result).toMatchObject({ status: run.job.validation.status });
+    expect(simCall.ok).toBe(run.job.simulation.status !== "FAIL");
+    expect(valCall.ok).toBe(run.job.validation.status !== "FAIL");
     // 规划器产出
     expect(run.setups.length).toBeGreaterThanOrEqual(1);
     expect(run.process.validation.ok).toBe(true);
@@ -39,6 +45,19 @@ describe("runCamAgent（P4-3）", () => {
   it("表面质量目标 → finish_priority 策略 + 更小步深 override", async () => {
     const run = await runCamAgent(part, features, { gateway, goal: "表面光洁度优先" });
     expect(run.intent?.strategy).toBe("finish_priority");
+  });
+
+  it("P1-14：仿真失败时 simulate 工具记 ok:false 并附真实失败摘要", async () => {
+    // 残料阈值取负值：任意关键面 h<=阈值 永不成立 → 稳定判 RESIDUAL_FAIL（box 残料恰为 0，阈值 0 会 PASS）
+    const run = await runCamAgent(part, features, { gateway, goal: "粗加工优先", simulationThresholds: { residualHeightMm: -1 } });
+    expect(run.job.simulation.status).toBe("FAIL");
+    const simCall = run.tool_calls.find((c) => c.tool === "simulate")!;
+    expect(simCall.ok).toBe(false);
+    expect((simCall.result as { status: string }).status).toBe("FAIL");
+    expect((simCall.result as { failure: string }).failure).toContain("RESIDUAL_FAIL");
+    // validate 仍反映其真实自身状态（不被 simulate 假 PASS 掩盖）
+    const valCall = run.tool_calls.find((c) => c.tool === "validate")!;
+    expect(valCall.ok).toBe(run.job.validation.status !== "FAIL");
   });
 });
 
@@ -76,6 +95,34 @@ describe("runWithReplan（P4-8）", () => {
     expect(r.attempts).toBe(1);
     expect(r.failures).toEqual([]);
     expect(r.runs[0].job.validated).toBe(true);
+  });
+
+  it("P1-15：首轮仿真失败 → 第二轮 intent 步深自适应，且重试不超过 MAX_REPLANS", async () => {
+    // 残料阈值取负值：每轮仿真都必然 RESIDUAL_FAIL，用于验证失败被喂回 adjustIntentForFailures
+    const r = await runWithReplan(part, features, {
+      gateway,
+      goal: "粗加工优先",
+      simulationThresholds: { residualHeightMm: -1 },
+      maxReplans: MAX_REPLANS,
+    });
+    // 阈值 0 永远无法收敛 → 转人工
+    expect(r.human_review).toBe(true);
+    // 循环次数 ≤ MAX_REPLANS：attempts = 1 次首轮 + ≤MAX_REPLANS 次重规划
+    expect(r.attempts).toBeLessThanOrEqual(MAX_REPLANS + 1);
+    expect(r.runs.length).toBe(r.attempts);
+
+    // 首轮 intent 来自 mock（rough_first，stepdown=2.0）
+    const s0 = r.runs[0].intent?.overrides?.stepdown_mm;
+    expect(s0).toBe(2.0);
+    // 第二轮经 adjustIntentForFailures 处理 RESIDUAL_FAIL → 步深减半为 1.0
+    const s1 = r.runs[1].intent?.overrides?.stepdown_mm;
+    expect(s1).toBeTypeOf("number");
+    expect(s1!).toBeLessThan(s0!);
+    expect(s1).toBeCloseTo(1.0, 5);
+    // 第三轮继续自适应（再减半到 0.5），证明补丁逐轮带入
+    if (r.runs.length >= 3) {
+      expect(r.runs[2].intent?.overrides?.stepdown_mm).toBeCloseTo(0.5, 5);
+    }
   });
 });
 

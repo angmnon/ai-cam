@@ -24,6 +24,23 @@ describe("parser", () => {
     const nc = parseNc("N10 G01 X10.\nthis is not nc\n");
     expect(nc.errors.length).toBeGreaterThan(0);
   });
+
+  it("P2-24 容忍 G83 固定钻孔循环：循环行/孔位行/取消行均不产生运动点", () => {
+    const nc = parseNc(
+      "N10 G21 G17 G90 G94\n" +
+        "N20 G00 X0. Y0. Z5.\n" + // 运动点 1：快速
+        "N30 G83 Z-10. R2. Q2. F100\n" + // 循环调用行：不产点
+        "N40 X10. Y10.\n" + // 循环体内模态孔位：不产点
+        "N50 X20. Y10.\n" + // 循环体内模态孔位：不产点
+        "N60 G80\n" + // 取消循环：不产点
+        "N70 G01 X30. Y10. F200\n" + // 运动点 2：直线（Z 延续自循环内 -10）
+        "N80 M30\n",
+    );
+    expect(nc.errors).toEqual([]); // G83/G80/G73 不被当作未知 G
+    expect(nc.points.length).toBe(2);
+    expect(nc.points[0]).toMatchObject({ x: 0, y: 0, z: 5, g: "G00" });
+    expect(nc.points[1]).toMatchObject({ x: 30, y: 10, z: -10, g: "G01" });
+  });
 });
 
 describe("validateNc（box 全流程）", () => {
@@ -53,6 +70,25 @@ describe("validateNc（box 全流程）", () => {
     const bad = nc.text.replace("M30", "M05");
     const rep = validateNc({ cam, ncText: bad, programNumber: nc.program_number, simulation: sim });
     expect(rep.layers.find((l) => l.layer === "SEMANTIC")!.status).toBe("FAIL");
+  });
+
+  it("P1-08 不传 simulation → L4 仿真门禁 FAIL（整体 FAIL）", () => {
+    const rep = validateNc({ cam, ncText: nc.text, programNumber: nc.program_number });
+    expect(rep.status).toBe("FAIL");
+    const l4 = rep.layers.find((l) => l.layer === "SIMULATION")!;
+    expect(l4.status).toBe("FAIL");
+    expect(l4.checks.some((c) => c.code === "SIM_NOT_PROVIDED" && c.severity === "ERROR")).toBe(true);
+  });
+
+  it("P1-09 RAPID 错写为 G01 → SEMANTIC FAIL（MOTION_TYPE_MISMATCH）", () => {
+    // 把第一个 G00 快速定位错写成 G01（坐标/点数不变，仅 G 代码类型错）
+    const bad = nc.text.replace("G00", "G01");
+    expect(bad).not.toBe(nc.text);
+    const rep = validateNc({ cam, ncText: bad, programNumber: nc.program_number, simulation: sim });
+    expect(rep.status).toBe("FAIL");
+    const l2 = rep.layers.find((l) => l.layer === "SEMANTIC")!;
+    expect(l2.status).toBe("FAIL");
+    expect(l2.checks.some((c) => c.code === "MOTION_TYPE_MISMATCH")).toBe(true);
   });
 
   it("NC 运动点与 IR 完全一致", () => {

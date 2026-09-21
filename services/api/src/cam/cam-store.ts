@@ -19,16 +19,16 @@ export interface CamRevision {
 }
 
 export interface CamStore {
-  create(input: { orgId: string; partId: string; userId: string; cam: CamIR }): CamRevision;
-  latest(orgId: string, partId: string): CamRevision | null;
-  list(orgId: string, partId: string): CamRevision[];
+  create(input: { orgId: string; partId: string; userId: string; cam: CamIR }): Promise<CamRevision>;
+  latest(orgId: string, partId: string): Promise<CamRevision | null>;
+  list(orgId: string, partId: string): Promise<CamRevision[]>;
 }
 
 export function createCamStore(): CamStore {
   const revisions = new Map<string, CamRevision>();
 
   return {
-    create({ orgId, partId, userId, cam }) {
+    async create({ orgId, partId, userId, cam }) {
       const existing = [...revisions.values()].filter((r) => r.part_id === partId && r.organization_id === orgId);
       const revision: CamRevision = {
         id: `cam_${randomUUID().replaceAll("-", "")}`,
@@ -44,13 +44,13 @@ export function createCamStore(): CamStore {
       revisions.set(revision.id, revision);
       return revision;
     },
-    latest(orgId, partId) {
+    async latest(orgId, partId) {
       const hits = [...revisions.values()]
         .filter((r) => r.part_id === partId && r.organization_id === orgId)
         .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       return hits[0] ?? null;
     },
-    list(orgId, partId) {
+    async list(orgId, partId) {
       return [...revisions.values()]
         .filter((r) => r.part_id === partId && r.organization_id === orgId)
         .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
@@ -58,8 +58,8 @@ export function createCamStore(): CamStore {
   };
 }
 
-export function mustLatest(store: CamStore, orgId: string, partId: string): CamRevision {
-  const rev = store.latest(orgId, partId);
+export async function mustLatest(store: CamStore, orgId: string, partId: string): Promise<CamRevision> {
+  const rev = await store.latest(orgId, partId);
   if (!rev) {
     throw new ApiError({ code: ErrorCodes.CAM_REVISION_NOT_FOUND, message: "No CAM revision for this part yet. POST /toolpath first.", stage: "cam", retryable: false });
   }

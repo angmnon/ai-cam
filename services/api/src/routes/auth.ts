@@ -8,7 +8,6 @@ import { z } from "zod";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import { ok } from "../plugins/response.js";
 import fp from "../plugins/fp.js";
-import { verifyLoginPassword } from "../plugins/credentials.js";
 
 // body 仍用 zod 校验；email/password 必传；不再接受 organization_id
 const LoginBody = z.object({
@@ -43,14 +42,12 @@ const authRoutes: FastifyPluginAsync = async (app) => {
         });
       }
       const { email, password } = parsed.data;
-      const boot = app.bootstrap;
 
-      // 服务端解算：邮箱必须匹配 bootstrap 账号（大小写不敏感），
-      // org_id/role 一律来自服务端配置，客户端传入的任何值都被忽略。
-      const emailOk = email.trim().toLowerCase() === boot.email;
-      const pwOk = await verifyLoginPassword(password, { password: boot.password, hash: boot.passwordHash });
-      if (!emailOk || !pwOk) {
-        // 失败统一 401，错误响应不回显堆栈/具体失败点
+      // P0-03：凭据校验走 AuthBackend（内存降级 = bootstrap 单账号；PG = users/memberships 解算 org/role）。
+      // 任何失败（用户不存在/密码错误/已禁用）统一返回 null → 401，不回显具体失败点。
+      // org_id/role 一律服务端解算，客户端传入的 organization_id 被完全忽略。
+      const identity = await app.authBackend.verify(email, password);
+      if (!identity) {
         throw new ApiError({
           code: ErrorCodes.AUTH_INVALID_CREDENTIALS,
           message: "Invalid email or password.",
@@ -60,7 +57,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
       }
 
       // JWT payload 由服务端写入：sub/org_id/roles 均为服务端解算值
-      const user = { sub: boot.email, org_id: boot.orgId, roles: [boot.role] };
+      const user = identity;
       const token = await app.auth.signToken(user);
       return reply.status(200).send(
         ok({

@@ -41,11 +41,11 @@ export interface CreatePartInput {
 }
 
 export interface PartStore {
-  create(input: CreatePartInput): PartRecord;
-  get(orgId: string, partId: string): PartRecord;
-  list(orgId: string, opts: { status?: PartStatus; offset: number; limit: number }): { items: PartRecord[]; total: number };
-  setAnalysis(orgId: string, partId: string, analysis: PartAnalysis): PartRecord;
-  fail(orgId: string, partId: string, failure: { code: string; message: string; stage?: string }): PartRecord;
+  create(input: CreatePartInput): Promise<PartRecord>;
+  get(orgId: string, partId: string): Promise<PartRecord>;
+  list(orgId: string, opts: { status?: PartStatus; offset: number; limit: number }): Promise<{ items: PartRecord[]; total: number }>;
+  setAnalysis(orgId: string, partId: string, analysis: PartAnalysis): Promise<PartRecord>;
+  fail(orgId: string, partId: string, failure: { code: string; message: string; stage?: string }): Promise<PartRecord>;
 }
 
 export function createPartStore(): PartStore {
@@ -66,7 +66,7 @@ export function createPartStore(): PartStore {
   }
 
   return {
-    create(input) {
+    async create(input) {
       const now = new Date().toISOString();
       const part: PartRecord = {
         id: `part_${randomUUID().replaceAll("-", "")}`,
@@ -82,23 +82,23 @@ export function createPartStore(): PartStore {
       };
       return save(part);
     },
-    get(orgId, partId) {
+    async get(orgId, partId) {
       return mustGet(orgId, partId);
     },
-    list(orgId, { status, offset, limit }) {
+    async list(orgId, { status, offset, limit }) {
       const all = [...parts.values()].filter((p) => p.organization_id === orgId && (!status || p.status === status));
       all.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       // P2-52：内存分页，语义对齐 SQL OFFSET ? LIMIT ?（offset 跳过、limit 截断）
       return { items: all.slice(offset, offset + limit), total: all.length };
     },
-    setAnalysis(orgId, partId, analysis) {
+    async setAnalysis(orgId, partId, analysis) {
       const part = mustGet(orgId, partId);
       part.analysis = analysis;
       part.status = "ANALYZED";
       part.updated_at = new Date().toISOString();
       return save(part);
     },
-    fail(orgId, partId, failure) {
+    async fail(orgId, partId, failure) {
       const part = mustGet(orgId, partId);
       part.status = "FAILED";
       part.failure = failure;

@@ -23,11 +23,11 @@ const PROGRESS_BY_STATUS: Record<string, number> = {
 };
 
 export interface JobStore {
-  create(input: { orgId: string; userId: string; input: JobInput; idempotencyKey?: string }): Job;
-  get(orgId: string, jobId: string): Job;
-  list(orgId: string, opts: { status?: JobStatus; offset: number; limit: number }): { items: Job[]; total: number };
-  transitionTo(orgId: string, jobId: string, to: JobStatus): Job;
-  fail(orgId: string, jobId: string, failure: { code: string; message: string; stage?: string; retryable: boolean }): Job;
+  create(input: { orgId: string; userId: string; input: JobInput; idempotencyKey?: string }): Promise<Job>;
+  get(orgId: string, jobId: string): Promise<Job>;
+  list(orgId: string, opts: { status?: JobStatus; offset: number; limit: number }): Promise<{ items: Job[]; total: number }>;
+  transitionTo(orgId: string, jobId: string, to: JobStatus): Promise<Job>;
+  fail(orgId: string, jobId: string, failure: { code: string; message: string; stage?: string; retryable: boolean }): Promise<Job>;
 }
 
 const EVENT_SOURCE = "com.aicam.job-service";
@@ -59,7 +59,7 @@ export function createJobStore(bus: EventBus): JobStore {
   }
 
   return {
-    create({ orgId, userId, input, idempotencyKey }) {
+    async create({ orgId, userId, input, idempotencyKey }) {
       const inputHash = jobInputHash(input);
       if (idempotencyKey) {
         for (const job of jobs.values()) {
@@ -93,18 +93,18 @@ export function createJobStore(bus: EventBus): JobStore {
       return job;
     },
 
-    get(orgId, jobId) {
+    async get(orgId, jobId) {
       return mustGet(orgId, jobId);
     },
 
-    list(orgId, { status, offset, limit }) {
+    async list(orgId, { status, offset, limit }) {
       const all = [...jobs.values()].filter((j) => j.organization_id === orgId && (!status || j.status === status));
       all.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       // P2-52：内存分页，语义对齐 SQL OFFSET ? LIMIT ?（offset 跳过、limit 截断）
       return { items: all.slice(offset, offset + limit), total: all.length };
     },
 
-    transitionTo(orgId, jobId, to) {
+    async transitionTo(orgId, jobId, to) {
       const job = mustGet(orgId, jobId);
       transition(job.status, to); // 非法跳转抛 StateTransitionError → 由路由转 ApiError
       job.status = to;
@@ -118,7 +118,7 @@ export function createJobStore(bus: EventBus): JobStore {
       return job;
     },
 
-    fail(orgId, jobId, failure) {
+    async fail(orgId, jobId, failure) {
       const job = mustGet(orgId, jobId);
       transition(job.status, "FAILED");
       job.status = "FAILED";

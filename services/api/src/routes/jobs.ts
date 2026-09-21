@@ -66,7 +66,7 @@ const jobRoutes: FastifyPluginAsync = async (app) => {
         throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid job payload.", stage: "jobs", details: { issues: body.error.issues } });
       }
       const idempotencyKey = typeof request.headers["idempotency-key"] === "string" ? request.headers["idempotency-key"] : undefined;
-      const job = app.jobs.create({
+      const job = await app.jobs.create({
         orgId: request.user!.org_id,
         userId: request.user!.sub,
         input: body.data.input as JobInput,
@@ -85,14 +85,14 @@ const jobRoutes: FastifyPluginAsync = async (app) => {
     if (status && !JobStatuses.includes(status)) {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: `Invalid status: ${status}`, stage: "jobs" });
     }
-    const { items, total } = app.jobs.list(request.user!.org_id, { status, offset, limit });
+    const { items, total } = await app.jobs.list(request.user!.org_id, { status, offset, limit });
     return paged(items, { offset, limit, total });
   });
 
   // 详情
   app.get("/:id", async (request) => {
     const { id } = request.params as { id: string };
-    return ok(app.jobs.get(request.user!.org_id, id));
+    return ok(await app.jobs.get(request.user!.org_id, id));
   });
 
   // 状态迁移（状态机门禁）
@@ -119,7 +119,7 @@ const jobRoutes: FastifyPluginAsync = async (app) => {
         throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid transition payload.", stage: "jobs", details: { issues: body.error.issues } });
       }
       try {
-        const job = app.jobs.transitionTo(request.user!.org_id, id, body.data.to);
+        const job = await app.jobs.transitionTo(request.user!.org_id, id, body.data.to);
         request.log.info({ job_id: id, to: body.data.to, reason: body.data.reason }, "job transitioned");
         return reply.status(200).send(ok(job));
       } catch (e) {
@@ -144,7 +144,7 @@ const jobRoutes: FastifyPluginAsync = async (app) => {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid failure payload.", stage: "jobs", details: { issues: body.error.issues } });
     }
     try {
-      const job = app.jobs.fail(request.user!.org_id, id, body.data);
+      const job = await app.jobs.fail(request.user!.org_id, id, body.data);
       return ok(job);
     } catch (e) {
       if (e instanceof Error && e.name === "StateTransitionError") {

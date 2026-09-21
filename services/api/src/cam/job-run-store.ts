@@ -58,17 +58,17 @@ export interface SimulationRecord {
 }
 
 export interface JobRunStore {
-  createRun(input: { orgId: string; partId: string; userId: string; run: Omit<JobRun, "id" | "organization_id" | "part_id" | "created_by" | "created_at"> }): JobRun;
-  createNc(input: { orgId: string; partId: string; jobRunId: string; nc: NcProgram }): NcProgramRecord;
-  createValidation(input: { orgId: string; partId: string; jobRunId: string; ncProgramId: string; report: ValidationReport }): ValidationReportRecord;
-  createSimulation(input: { orgId: string; partId: string; jobRunId: string; report: import("@ai-cam/stock-sim").SimulationReport }): SimulationRecord;
-  latestRun(orgId: string, partId: string): JobRun | null;
-  getRun(orgId: string, partId: string, jobRunId: string): JobRun;
-  getNc(orgId: string, partId: string, jobRunId: string): NcProgramRecord;
-  getValidation(orgId: string, partId: string, jobRunId: string): ValidationReportRecord;
-  getSimulation(orgId: string, partId: string, jobRunId: string): SimulationRecord;
+  createRun(input: { orgId: string; partId: string; userId: string; run: Omit<JobRun, "id" | "organization_id" | "part_id" | "created_by" | "created_at"> }): Promise<JobRun>;
+  createNc(input: { orgId: string; partId: string; jobRunId: string; nc: NcProgram }): Promise<NcProgramRecord>;
+  createValidation(input: { orgId: string; partId: string; jobRunId: string; ncProgramId: string; report: ValidationReport }): Promise<ValidationReportRecord>;
+  createSimulation(input: { orgId: string; partId: string; jobRunId: string; report: import("@ai-cam/stock-sim").SimulationReport }): Promise<SimulationRecord>;
+  latestRun(orgId: string, partId: string): Promise<JobRun | null>;
+  getRun(orgId: string, partId: string, jobRunId: string): Promise<JobRun>;
+  getNc(orgId: string, partId: string, jobRunId: string): Promise<NcProgramRecord>;
+  getValidation(orgId: string, partId: string, jobRunId: string): Promise<ValidationReportRecord>;
+  getSimulation(orgId: string, partId: string, jobRunId: string): Promise<SimulationRecord>;
   /** 汇总（P3-8 一键产物） */
-  getBundle(orgId: string, partId: string, jobRunId: string): { run: JobRun; nc: NcProgramRecord; validation: ValidationReportRecord; simulation: SimulationRecord } | null;
+  getBundle(orgId: string, partId: string, jobRunId: string): Promise<{ run: JobRun; nc: NcProgramRecord; validation: ValidationReportRecord; simulation: SimulationRecord } | null>;
 }
 
 export function createJobRunStore(): JobRunStore {
@@ -81,12 +81,12 @@ export function createJobRunStore(): JobRunStore {
     items.filter((r) => r.part_id === partId && r.organization_id === orgId).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 
   return {
-    createRun({ orgId, partId, userId, run }) {
+    async createRun({ orgId, partId, userId, run }) {
       const r: JobRun = { ...run, id: `jobrun_${randomUUID().replaceAll("-", "")}`, organization_id: orgId, part_id: partId, created_by: userId, created_at: new Date().toISOString() };
       runs.set(r.id, r);
       return r;
     },
-    createNc({ orgId, partId, jobRunId, nc }) {
+    async createNc({ orgId, partId, jobRunId, nc }) {
       const rec: NcProgramRecord = {
         id: `nc_${randomUUID().replaceAll("-", "")}`,
         organization_id: orgId,
@@ -105,7 +105,7 @@ export function createJobRunStore(): JobRunStore {
       ncs.set(rec.id, rec);
       return rec;
     },
-    createSimulation({ orgId, partId, jobRunId, report }) {
+    async createSimulation({ orgId, partId, jobRunId, report }) {
       const rec: SimulationRecord = {
         id: `sim_${randomUUID().replaceAll("-", "")}`,
         organization_id: orgId,
@@ -117,7 +117,7 @@ export function createJobRunStore(): JobRunStore {
       sims.set(rec.id, rec);
       return rec;
     },
-    createValidation({ orgId, partId, jobRunId, ncProgramId, report }) {
+    async createValidation({ orgId, partId, jobRunId, ncProgramId, report }) {
       const rec: ValidationReportRecord = {
         id: `val_${randomUUID().replaceAll("-", "")}`,
         organization_id: orgId,
@@ -133,30 +133,30 @@ export function createJobRunStore(): JobRunStore {
       vals.set(rec.id, rec);
       return rec;
     },
-    latestRun(orgId, partId) {
+    async latestRun(orgId, partId) {
       return byPart(orgId, partId, [...runs.values()])[0] ?? null;
     },
-    getRun(orgId, partId, jobRunId) {
+    async getRun(orgId, partId, jobRunId) {
       const r = runs.get(jobRunId);
       if (!r || r.part_id !== partId || r.organization_id !== orgId) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Job run not found.", stage: "jobs", retryable: false });
       return r;
     },
-    getNc(orgId, partId, jobRunId) {
+    async getNc(orgId, partId, jobRunId) {
       const rec = byPart(orgId, partId, [...ncs.values()]).find((n) => n.job_run_id === jobRunId);
       if (!rec) throw new ApiError({ code: ErrorCodes.NC_POST_FAILED, message: "NC program not found.", stage: "nc", retryable: false });
       return rec;
     },
-    getValidation(orgId, partId, jobRunId) {
+    async getValidation(orgId, partId, jobRunId) {
       const rec = byPart(orgId, partId, [...vals.values()]).find((v) => v.job_run_id === jobRunId);
       if (!rec) throw new ApiError({ code: ErrorCodes.NC_VALIDATION_FAILED, message: "Validation report not found.", stage: "nc", retryable: false });
       return rec;
     },
-    getSimulation(orgId, partId, jobRunId) {
+    async getSimulation(orgId, partId, jobRunId) {
       const rec = byPart(orgId, partId, [...sims.values()]).find((v) => v.job_run_id === jobRunId);
       if (!rec) throw new ApiError({ code: ErrorCodes.SIM_RUN_FAILED, message: "Simulation report not found.", stage: "sim", retryable: false });
       return rec;
     },
-    getBundle(orgId, partId, jobRunId) {
+    async getBundle(orgId, partId, jobRunId) {
       const run = runs.get(jobRunId);
       if (!run || run.part_id !== partId || run.organization_id !== orgId) return null;
       const nc = byPart(orgId, partId, [...ncs.values()]).find((n) => n.job_run_id === jobRunId);

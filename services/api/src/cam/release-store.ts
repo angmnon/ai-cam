@@ -25,12 +25,12 @@ export interface ReleaseRecord {
 }
 
 export interface ReleaseStore {
-  create(input: { orgId: string; partId: string; camRevisionId: string; jobRunId: string; userId: string }): ReleaseRecord;
-  list(orgId: string, partId: string): ReleaseRecord[];
-  get(orgId: string, partId: string, releaseId: string): ReleaseRecord;
-  approve(input: { orgId: string; partId: string; releaseId: string; approverId: string; note?: string }): ReleaseRecord;
-  release(input: { orgId: string; partId: string; releaseId: string; approverId: string; note?: string }): ReleaseRecord;
-  reject(input: { orgId: string; partId: string; releaseId: string; approverId: string; note: string }): ReleaseRecord;
+  create(input: { orgId: string; partId: string; camRevisionId: string; jobRunId: string; userId: string }): Promise<ReleaseRecord>;
+  list(orgId: string, partId: string): Promise<ReleaseRecord[]>;
+  get(orgId: string, partId: string, releaseId: string): Promise<ReleaseRecord>;
+  approve(input: { orgId: string; partId: string; releaseId: string; approverId: string; note?: string }): Promise<ReleaseRecord>;
+  release(input: { orgId: string; partId: string; releaseId: string; approverId: string; note?: string }): Promise<ReleaseRecord>;
+  reject(input: { orgId: string; partId: string; releaseId: string; approverId: string; note: string }): Promise<ReleaseRecord>;
 }
 
 export function createReleaseStore(): ReleaseStore {
@@ -39,7 +39,7 @@ export function createReleaseStore(): ReleaseStore {
     [...byId.values()].filter((r) => r.part_id === partId && r.organization_id === orgId).sort((a, b) => b.version_no - a.version_no);
 
   return {
-    create({ orgId, partId, camRevisionId, jobRunId, userId }) {
+    async create({ orgId, partId, camRevisionId, jobRunId, userId }) {
       const rec: ReleaseRecord = {
         id: `rel_${randomUUID().replaceAll("-", "")}`,
         organization_id: orgId,
@@ -55,16 +55,16 @@ export function createReleaseStore(): ReleaseStore {
       byId.set(rec.id, rec);
       return rec;
     },
-    list(orgId, partId) {
+    async list(orgId, partId) {
       return byPart(orgId, partId);
     },
-    get(orgId, partId, releaseId) {
+    async get(orgId, partId, releaseId) {
       const r = byId.get(releaseId);
       if (!r || r.part_id !== partId || r.organization_id !== orgId) throw new ApiError({ code: ErrorCodes.RELEASE_NOT_FOUND, message: "Release not found.", stage: "releases", retryable: false });
       return r;
     },
-    approve({ orgId, partId, releaseId, approverId, note }) {
-      const r = this.get(orgId, partId, releaseId);
+    async approve({ orgId, partId, releaseId, approverId, note }) {
+      const r = await this.get(orgId, partId, releaseId);
       if (r.status !== "PENDING_APPROVAL") throw new ApiError({ code: ErrorCodes.RELEASE_STATE_INVALID, message: `Release is ${r.status}, only PENDING_APPROVAL can be approved.`, stage: "releases", retryable: false });
       r.status = "APPROVED";
       r.approved_by = approverId;
@@ -72,8 +72,8 @@ export function createReleaseStore(): ReleaseStore {
       r.approved_at = new Date().toISOString();
       return r;
     },
-    release({ orgId, partId, releaseId, approverId, note }) {
-      const r = this.get(orgId, partId, releaseId);
+    async release({ orgId, partId, releaseId, approverId, note }) {
+      const r = await this.get(orgId, partId, releaseId);
       if (r.status !== "APPROVED") throw new ApiError({ code: ErrorCodes.RELEASE_STATE_INVALID, message: `Release is ${r.status}, only APPROVED can be released.`, stage: "releases", retryable: false });
       r.status = "RELEASED";
       r.approved_by = approverId;
@@ -81,8 +81,8 @@ export function createReleaseStore(): ReleaseStore {
       r.released_at = new Date().toISOString();
       return r;
     },
-    reject({ orgId, partId, releaseId, approverId, note }) {
-      const r = this.get(orgId, partId, releaseId);
+    async reject({ orgId, partId, releaseId, approverId, note }) {
+      const r = await this.get(orgId, partId, releaseId);
       if (r.status === "RELEASED") throw new ApiError({ code: ErrorCodes.RELEASE_STATE_INVALID, message: "RELEASED 为终态，不可驳回。", stage: "releases", retryable: false });
       r.status = "REJECTED";
       r.approved_by = approverId;

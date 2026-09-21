@@ -22,6 +22,16 @@ import { authPlugin } from "./plugins/auth.js";
 import securityPlugin from "./plugins/security.js";
 import errorHandlerPlugin from "./plugins/error-handler.js";
 import requestContext from "./plugins/request-context.js";
+import type { AuthBackend } from "./auth/backends.js";
+import { BootstrapAuthBackend, PgAuthBackend } from "./auth/backends.js";
+import { createPool } from "./db/pool.js";
+import { runMigrations } from "./db/migrate.js";
+import { seedBootstrapAdmin } from "./db/bootstrap.js";
+import { createPgPartStore } from "./db/pg/pg-part-store.js";
+import { createPgJobStore } from "./db/pg/pg-job-store.js";
+import { createPgCamStore } from "./db/pg/pg-cam-store.js";
+import { createPgJobRunStore } from "./db/pg/pg-job-run-store.js";
+import { createPgReleaseStore } from "./db/pg/pg-release-store.js";
 import healthRoutes from "./routes/health.js";
 import authRoutes from "./routes/auth.js";
 import eventRoutes from "./routes/events.js";
@@ -41,8 +51,10 @@ declare module "fastify" {
     jobRuns: JobRunStore;
     releases: ReleaseStore;
     aiPlans: AiPlanStore;
-    /** Phase 0 bootstrap 登录凭据（服务端解算 org_id/role） */
+    /** Phase 0 bootstrap 登录凭据（服务端解算 org_id/role；仅内存降级路径） */
     bootstrap: AppConfig["auth"]["bootstrap"];
+    /** P0-03：登录凭据校验后端（内存降级 = bootstrap 单账号；PG = users/memberships） */
+    authBackend: AuthBackend;
     /** P1-17：AI 规划是否接入真实 LLM（否则 MockProvider） */
     aiLlm: boolean;
   }
@@ -57,6 +69,7 @@ export interface AppDeps {
   partsAnalyzer?: PartAnalyzer;
   cams?: CamStore;
   jobRuns?: JobRunStore;
+  releases?: ReleaseStore;
 }
 
 export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
@@ -107,12 +120,46 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   const bus = deps.bus ?? new InMemoryEventBus();
   const storage =
     deps.storage ?? (config.storage.driver === "r2" ? new R2Adapter({ accountId: "", accessKeyId: "", secretAccessKey: "", bucket: "", publicUrl: "" }) : new LocalDiskAdapter(config.storage.dataDir));
-  const jobs = deps.jobs ?? createJobStore(bus);
-  const parts = deps.parts ?? createPartStore();
-  const cams = deps.cams ?? createCamStore();
-  const jobRuns = deps.jobRuns ?? createJobRunStore();
-  const releases = createReleaseStore();
-  const aiPlans = createAiPlanStore();
+
+  // P0-01：数据源选择。
+  // - 显式注入 store（测试注入路径）→ 用注入；
+  // - 配置 DATABASE_URL → 生产走 PostgreSQL（建池 + 跑迁移 + 播种 bootstrap 管理员 + PG stores + PgAuthBackend）；
+  // - 否则降级为进程内内存 store（仅开发/测试），启动打 WARN。
+  const injected = Boolean(deps.parts ?? deps.jobs ?? deps.cams ?? deps.jobRuns ?? deps.releases);
+  let pgPool: import("pg").Pool | undefined;
+  let jobs: JobStore = deps.jobs ?? createJobStore(bus);
+  let parts: PartStore = deps.parts ?? createPartStore();
+  let cams: CamStore = deps.cams ?? createCamStore();
+  let jobRuns: JobRunStore = deps.jobRuns ?? createJobRunStore();
+  let releases: ReleaseStore = deps.releases ?? createReleaseStore();
+  let authBackend: AuthBackend;
+
+  if (!injected && config.databaseUrl) {
+    app.log.info("DATABASE_URL 已配置，使用 PostgreSQL 持久层。");
+    pgPool = createPool(config.databaseUrl);
+    try {
+      await runMigrations(pgPool, { logger: { info: (m, meta) => app.log.info({ meta }, m), warn: (m, meta) => app.log.warn({ meta }, m) } });
+      await seedBootstrapAdmin(pgPool, config);
+      app.log.info("数据库迁移与 bootstrap 管理员播种完成。");
+    } catch (err) {
+      await pgPool.end().catch(() => undefined);
+      throw err;
+    }
+    jobs = createPgJobStore(pgPool, bus);
+    parts = createPgPartStore(pgPool);
+    cams = createPgCamStore(pgPool);
+    jobRuns = createPgJobRunStore(pgPool);
+    releases = createPgReleaseStore(pgPool);
+    authBackend = new PgAuthBackend(pgPool);
+  } else {
+    if (!injected) {
+      app.log.warn(
+        "未配置 DATABASE_URL：降级为进程内内存 store（仅开发/测试；生产必须配置 DATABASE_URL）。登录走 bootstrap 单账号。",
+      );
+    }
+    authBackend = new BootstrapAuthBackend(config.auth.bootstrap);
+  }
+  const aiPlans = createAiPlanStore(); // ai_plans 落库可后置，保持内存实现
   const partsAnalyzer =
     deps.partsAnalyzer ??
     (config.partsAnalyzer.mode === "worker"
@@ -127,18 +174,20 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("jobRuns", jobRuns);
   app.decorate("releases", releases);
   app.decorate("aiPlans", aiPlans);
-  // P0-1：登录路由读取的服务端 bootstrap 凭据
+  // P0-1：登录路由读取的服务端 bootstrap 凭据（仅内存降级路径使用）
   app.decorate("bootstrap", config.auth.bootstrap);
+  // P0-03：登录凭据校验后端
+  app.decorate("authBackend", authBackend);
   // P1-17：AI 规划是否接入真实 LLM（响应头 x-ai-mode 据此标注 live/mock）
   app.decorate("aiLlm", config.ai.llmLive);
   // P2-43：未显式配置 JWT_SECRET（走开发默认值）时告警；生产未配置已在 loadConfig 抛错
   if (config.jwt.usingDefault) {
     app.log.warn("使用默认开发态 JWT_SECRET。生产必须配置 JWT_SECRET（loadConfig 在 NODE_ENV=production 未设置时直接拒绝启动）。");
   }
-  // 未配置正式凭据时启动告警（仅开发态默认 demo/demo）
-  if (config.auth.bootstrap.usingDefaults) {
+  // 未配置正式凭据时启动告警（仅开发态默认 demo/demo；PG 模式此分支不触发）
+  if (!config.databaseUrl && !injected && config.auth.bootstrap.usingDefaults) {
     app.log.warn(
-      `使用默认开发态 bootstrap 凭据（${config.auth.bootstrap.email} / demo，org=${config.auth.bootstrap.orgId}）。生产请配置 CAM_BOOTSTRAP_PASSWORD 或 CAM_BOOTSTRAP_PASSWORD_HASH。`,
+      `使用默认开发态 bootstrap 凭据（${config.auth.bootstrap.email} / demo，org=${config.auth.bootstrap.orgId}）。生产请配置 DATABASE_URL + ADMIN_EMAIL/ADMIN_PASSWORD，或 CAM_BOOTSTRAP_PASSWORD(_HASH)。`,
     );
   }
 
@@ -153,6 +202,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
 
   app.addHook("onClose", async () => {
     app.log.info("api shutting down");
+    if (pgPool) await pgPool.end().catch(() => undefined);
   });
 
   return app;

@@ -12,8 +12,8 @@ export function attachSseStream(
   bus: { subscribe(subject: string | null, handler: (e: CloudEvent) => void): () => void },
   subject: string | null,
   heartbeatMs = HEARTBEAT_MS,
-  /** P1-19：可选事件过滤（如跨 org 过滤），返回 false 则不下发 */
-  filter?: (event: CloudEvent) => boolean,
+  /** P1-19：可选事件过滤（如跨 org 过滤），返回 false 则不下发；支持异步（PG store） */
+  filter?: (event: CloudEvent) => boolean | Promise<boolean>,
 ): () => void {
   const res = reply.raw;
   res.writeHead(200, {
@@ -27,7 +27,18 @@ export function attachSseStream(
   res.write(formatSse({ specversion: "1.0", id: "evt_hello", source: "com.aicam.api", type: "hello", subject: subject ?? "*", time: new Date().toISOString(), datacontenttype: "application/json" }));
 
   const unsubscribe = bus.subscribe(subject, (event) => {
-    if (filter && !filter(event)) return; // P1-19：越权事件丢弃
+    if (filter) {
+      const verdict = filter(event);
+      if (typeof verdict === "boolean") {
+        if (!verdict) return; // P1-19：越权事件丢弃
+      } else {
+        // 异步过滤（PG store）：微任务按调用顺序回写，保持 SSE 顺序
+        verdict.then((ok) => {
+          if (ok) res.write(formatSse(event));
+        });
+        return;
+      }
+    }
     res.write(formatSse(event));
   });
 
@@ -58,19 +69,17 @@ const eventRoutes: FastifyPluginAsync = async (app) => {
           throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "subject must start with job_.", stage: "events" });
         }
         // P1-19：订阅指定 job 前先校验该 job 属于当前 org，跨 org/不存在即拒绝
-        app.jobs.get(orgId, subject);
+        await app.jobs.get(orgId, subject);
       }
       // P1-19：不传 subject（订阅全部）时，仅下发归属当前 org 的 job 事件
       const filter = subject
         ? undefined
         : (event: CloudEvent) => {
             if (!event.subject || !event.subject.startsWith("job_")) return false;
-            try {
-              app.jobs.get(orgId, event.subject);
-              return true;
-            } catch {
-              return false;
-            }
+            return app.jobs
+              .get(orgId, event.subject)
+              .then(() => true)
+              .catch(() => false);
           };
       const cleanup = attachSseStream(reply, app.bus, subject, HEARTBEAT_MS, filter);
       request.raw.on("close", () => {

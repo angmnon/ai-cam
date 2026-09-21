@@ -22,8 +22,8 @@
     "@ai-cam/event-schema": "workspace:*",
     "@ai-cam/feature-engine": "workspace:*",
     "@ai-cam/geometry-schema": "workspace:*",
-    "@ai-cam/job-schema": "workspace:*",
     "@ai-cam/job-runner": "workspace:*",
+    "@ai-cam/job-schema": "workspace:*",
     "@ai-cam/master-data": "workspace:*",
     "@ai-cam/model-gateway": "workspace:*",
     "@ai-cam/nc-validator": "workspace:*",
@@ -38,11 +38,13 @@
     "fastify": "^5.2.0",
     "fastify-plugin": "^5.0.1",
     "jose": "^6.0.0",
+    "pg": "^8.23.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.23.1",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
     "typescript": "^5.7.2",

@@ -31,9 +31,13 @@ export interface AppConfig {
   /** P2-42：Fastify bodyLimit 上限（默认 64MB，BODY_LIMIT_BYTES 可覆盖） */
   bodyLimitBytes: number;
   storage: { driver: "local" | "r2"; dataDir: string };
+  /** P0-01：PostgreSQL 连接串；缺省时降级为内存 store（仅开发/测试，启动打 WARN） */
+  databaseUrl?: string;
+  /** P0-03：bootstrap 管理员（首启播种 users/memberships；PG 模式使用） */
+  admin: { email: string; password: string; orgId: string };
   /** 零件解析器：fixture（Golden 夹具，默认）| worker（OCCT 本地二进制） */
   partsAnalyzer: { mode: "fixture" | "worker"; fixturesDir: string; binaryPath?: string };
-  /** Phase 0 bootstrap 登录凭据（单账号；后续接 users/memberships 表后替换） */
+  /** Phase 0 bootstrap 登录凭据（单账号；仅在无 DATABASE_URL 的内存降级路径使用） */
   auth: { bootstrap: BootstrapAuthConfig };
   /** AI 规划：是否配置了真实 LLM 凭据（未配置则全程 MockProvider） */
   ai: { llmLive: boolean };
@@ -78,7 +82,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error("JWT_SECRET must be set when NODE_ENV=production. Refusing to start with a default dev secret.");
   }
 
-  // ---- Phase 0 bootstrap 凭据（服务端解算 org_id/role）----
+  // ---- P0-01：PostgreSQL 连接串（缺省 undefined → app 降级内存 store 并打 WARN）----
+  const databaseUrl = env.DATABASE_URL || undefined;
+
+  // ---- P0-03：bootstrap 管理员（PG 模式首启播种 users/memberships）----
+  const adminEmail = (env.ADMIN_EMAIL ?? "admin@ai-cam.local").trim().toLowerCase();
+  const adminPassword = env.ADMIN_PASSWORD ?? "changeme-admin";
+  const adminOrgId = env.ADMIN_ORG ?? "org_admin";
+
+  // ---- Phase 0 bootstrap 凭据（服务端解算 org_id/role；仅内存降级路径使用）----
   const email = env.CAM_BOOTSTRAP_EMAIL ?? "demo@ai-cam.local";
   const orgId = env.CAM_BOOTSTRAP_ORG ?? "org_demo";
   const passwordHash = parsePasswordHash(env.CAM_BOOTSTRAP_PASSWORD_HASH);
@@ -101,8 +113,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     storage: {
       driver,
-      dataDir: env.DATA_DIR ?? "./data",
+      // P0-02：优先 STORAGE_DATA_DIR（与 .env.example 对齐）；DATA_DIR 为旧变量保留兼容
+      dataDir: env.STORAGE_DATA_DIR ?? env.DATA_DIR ?? "./data",
     },
+    databaseUrl,
+    admin: { email: adminEmail, password: adminPassword, orgId: adminOrgId },
     partsAnalyzer: {
       mode: partsMode,
       fixturesDir: env.FIXTURES_DIR ?? resolve(process.cwd(), "../../tests/golden/parts"),

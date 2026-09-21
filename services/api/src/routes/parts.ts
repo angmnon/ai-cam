@@ -95,7 +95,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid part payload.", stage: "parts", details: { issues: body.error.issues } });
       }
       const orgId = request.user!.org_id;
-      const part = app.parts.create({
+      const part = await app.parts.create({
         orgId,
         userId: request.user!.sub,
         filename: body.data.filename,
@@ -124,14 +124,14 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     const q = request.query as { offset?: string; limit?: string; status?: string };
     const offset = Math.max(0, Number(q.offset ?? 0) || 0);
     const limit = Math.min(100, Math.max(1, Number(q.limit ?? 20) || 20));
-    const { items, total } = app.parts.list(request.user!.org_id, { status: q.status as never, offset, limit });
+    const { items, total } = await app.parts.list(request.user!.org_id, { status: q.status as never, offset, limit });
     return paged(items, { offset, limit, total });
   });
 
   // 详情（含分析摘要）
   app.get("/:id", async (request) => {
     const { id } = request.params as { id: string };
-    return ok(app.parts.get(request.user!.org_id, id));
+    return ok(await app.parts.get(request.user!.org_id, id));
   });
 
   // 触发分析（PARSING → ANALYZED / FAILED）
@@ -146,7 +146,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const orgId = request.user!.org_id;
-      const part = app.parts.get(orgId, id);
+      const part = await app.parts.get(orgId, id);
       if (part.status !== "PENDING" && part.status !== "FAILED") {
         throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: `Part status ${part.status} does not allow analyze.`, stage: "parts", retryable: false });
       }
@@ -160,14 +160,14 @@ const partRoutes: FastifyPluginAsync = async (app) => {
           sourceKey: part.source_key,
           storage: app.storage,
         });
-        const updated = app.parts.setAnalysis(orgId, id, analysis);
+        const updated = await app.parts.setAnalysis(orgId, id, analysis);
         return reply.status(200).send(ok(updated));
       } catch (e) {
         if (e instanceof ApiError) {
-          app.parts.fail(orgId, id, { code: e.code, message: e.message, stage: e.stage ?? "parts" });
+          await app.parts.fail(orgId, id, { code: e.code, message: e.message, stage: e.stage ?? "parts" });
           throw e;
         }
-        app.parts.fail(orgId, id, { code: ErrorCodes.PART_ANALYSIS_FAILED, message: String((e as Error).message), stage: "parts" });
+        await app.parts.fail(orgId, id, { code: ErrorCodes.PART_ANALYSIS_FAILED, message: String((e as Error).message), stage: "parts" });
         throw e;
       } finally {
         releaseCpuSlot();
@@ -178,7 +178,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   // 特征图
   app.get("/:id/features", async (request) => {
     const { id } = request.params as { id: string };
-    const part = app.parts.get(request.user!.org_id, id);
+    const part = await app.parts.get(request.user!.org_id, id);
     if (part.status !== "ANALYZED" || !part.analysis) {
       throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     }
@@ -188,7 +188,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   // DFM 报告
   app.get("/:id/dfm", async (request) => {
     const { id } = request.params as { id: string };
-    const part = app.parts.get(request.user!.org_id, id);
+    const part = await app.parts.get(request.user!.org_id, id);
     if (part.status !== "ANALYZED" || !part.analysis) {
       throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     }
@@ -199,13 +199,13 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:id/toolpath", async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const part = app.parts.get(orgId, id);
+    const part = await app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) {
       throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     }
     try {
       const { cam, toolpaths, parameterDecisions } = planPart(part.analysis.part, part.analysis.features.features);
-      const revision = app.cams.create({ orgId, partId: part.id, userId: request.user!.sub, cam });
+      const revision = await app.cams.create({ orgId, partId: part.id, userId: request.user!.sub, cam });
       return reply.status(201).send(ok({ revision, cam, toolpaths, parameter_decisions: parameterDecisions }));
     } catch (e) {
       if (e instanceof ApiError) throw e;
@@ -216,7 +216,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   // 最新 CAM 工艺计划
   app.get("/:id/toolpath", async (request) => {
     const { id } = request.params as { id: string };
-    const revision = mustLatest(app.cams, request.user!.org_id, id);
+    const revision = await mustLatest(app.cams, request.user!.org_id, id);
     return ok({ revision_id: revision.id, revision_no: revision.revision_no, engine_version: revision.engine_version, cam: revision.cam });
   });
 
@@ -225,14 +225,14 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:id/job", { preHandler: app.authorize("job:run") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const part = app.parts.get(orgId, id);
+    const part = await app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) {
       throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     }
     try {
       const job = runJob({ part: part.analysis.part, partName: id, features: part.analysis.features.features });
-      if (!app.cams.latest(orgId, id)) app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: job.cam });
-      const run = app.jobRuns.createRun({
+      if (!(await app.cams.latest(orgId, id))) await app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: job.cam });
+      const run = await app.jobRuns.createRun({
         orgId,
         partId: id,
         userId: request.user!.sub,
@@ -243,9 +243,9 @@ const partRoutes: FastifyPluginAsync = async (app) => {
           validated: job.validated,
         },
       });
-      const ncRec = app.jobRuns.createNc({ orgId, partId: id, jobRunId: run.id, nc: job.nc });
-      const valRec = app.jobRuns.createValidation({ orgId, partId: id, jobRunId: run.id, ncProgramId: ncRec.id, report: job.validation });
-      app.jobRuns.createSimulation({ orgId, partId: id, jobRunId: run.id, report: job.simulation });
+      const ncRec = await app.jobRuns.createNc({ orgId, partId: id, jobRunId: run.id, nc: job.nc });
+      const valRec = await app.jobRuns.createValidation({ orgId, partId: id, jobRunId: run.id, ncProgramId: ncRec.id, report: job.validation });
+      await app.jobRuns.createSimulation({ orgId, partId: id, jobRunId: run.id, report: job.simulation });
       return reply.status(201).send(
         ok({
           job: { id: run.id, status: run.status, validated: run.validated, pipeline: run.pipeline },
@@ -264,9 +264,9 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:id/job", async (request) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const run = app.jobRuns.latestRun(orgId, id);
+    const run = await app.jobRuns.latestRun(orgId, id);
     if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run for this part yet. POST /job first.", stage: "jobs", retryable: false });
-    const bundle = app.jobRuns.getBundle(orgId, id, run.id);
+    const bundle = await app.jobRuns.getBundle(orgId, id, run.id);
     return ok({
       run: { id: run.id, status: run.status, validated: run.validated, created_at: run.created_at, pipeline: run.pipeline },
       nc: bundle ? { program_number: bundle.nc.program_number, dialect: bundle.nc.dialect, line_count: bundle.nc.line_count } : null,
@@ -278,9 +278,9 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:id/job/nc", async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const run = app.jobRuns.latestRun(orgId, id);
+    const run = await app.jobRuns.latestRun(orgId, id);
     if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run yet.", stage: "jobs", retryable: false });
-    const nc = app.jobRuns.getNc(orgId, id, run.id);
+    const nc = await app.jobRuns.getNc(orgId, id, run.id);
     return reply
       .header("content-type", "text/plain; charset=utf-8")
       .header("content-disposition", `attachment; filename="${nc.program_number}.nc"`)
@@ -291,9 +291,9 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:id/job/validation", async (request) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const run = app.jobRuns.latestRun(orgId, id);
+    const run = await app.jobRuns.latestRun(orgId, id);
     if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run yet.", stage: "jobs", retryable: false });
-    const val = app.jobRuns.getValidation(orgId, id, run.id);
+    const val = await app.jobRuns.getValidation(orgId, id, run.id);
     return ok(val.report);
   });
 
@@ -301,11 +301,11 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:id/job/report", async (request) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const run = app.jobRuns.latestRun(orgId, id);
+    const run = await app.jobRuns.latestRun(orgId, id);
     if (!run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "No job run yet.", stage: "jobs", retryable: false });
-    const bundle = app.jobRuns.getBundle(orgId, id, run.id);
+    const bundle = await app.jobRuns.getBundle(orgId, id, run.id);
     if (!bundle) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Job bundle incomplete.", stage: "jobs", retryable: false });
-    const camRev = app.cams.latest(orgId, id);
+    const camRev = await app.cams.latest(orgId, id);
     if (!camRev) throw new ApiError({ code: ErrorCodes.CAM_REVISION_NOT_FOUND, message: "CAM revision not found.", stage: "cam", retryable: false });
     const report = buildJobReport({
       cam: camRev.cam,
@@ -329,7 +329,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:id/ai-plan", { preHandler: app.authorize("ai:plan") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const part = app.parts.get(orgId, id);
+    const part = await app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     const parsed = AiPlanBody.safeParse(request.body ?? {});
     if (!parsed.success) {
@@ -357,7 +357,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         goal,
         dialect,
       });
-    const before = app.cams.latest(orgId, id);
+    const before = await app.cams.latest(orgId, id);
     const after = run.job.cam;
     const changeSet = {
       before: before ? { cam_revision_id: before.id, operation_count: before.cam.operations.length, tools: before.cam.tools.map((t) => t.tool_id), setups: before.cam.setups.map((s2) => s2.id) } : null,
@@ -368,7 +368,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         `路由：${run.model_route}（prompt v${run.prompt_version}）`,
       ],
     };
-    const plan = app.aiPlans.create({
+    const plan = await app.aiPlans.create({
       organization_id: orgId,
       part_id: id,
       goal,
@@ -403,20 +403,20 @@ const partRoutes: FastifyPluginAsync = async (app) => {
 
   app.get("/:id/ai-plans", async (request) => {
     const { id } = request.params as { id: string };
-    return ok(app.aiPlans.list(request.user!.org_id, id));
+    return ok(await app.aiPlans.list(request.user!.org_id, id));
   });
 
   // P0-4：应用 AI 规划需 ai:apply 权限
   app.post("/:id/ai-plans/:planId/apply", { preHandler: app.authorize("ai:apply") }, async (request, reply) => {
     const { id, planId } = request.params as { id: string; planId: string };
     const orgId = request.user!.org_id;
-    const plan = app.aiPlans.get(orgId, id, planId);
-    const part = app.parts.get(orgId, id);
+    const plan = await app.aiPlans.get(orgId, id, planId);
+    const part = await app.parts.get(orgId, id);
     if (!part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     const gateway = new ModelGateway({}).register(createMockProvider());
     const run = await runCamAgent(part.analysis.part, part.analysis.features.features, { gateway, goal: plan.goal, dialect: undefined });
-    const revision = app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: run.job.cam });
-    const jobRun = app.jobRuns.createRun({
+    const revision = await app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: run.job.cam });
+    const jobRun = await app.jobRuns.createRun({
       orgId,
       partId: id,
       userId: request.user!.sub,
@@ -435,25 +435,25 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:id/release", { preHandler: app.authorize("release:request") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    const part = app.parts.get(orgId, id);
+    const part = await app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part not analyzed.", stage: "parts", retryable: false });
-    const cam = app.cams.latest(orgId, id);
-    const run = app.jobRuns.latestRun(orgId, id);
+    const cam = await app.cams.latest(orgId, id);
+    const run = await app.jobRuns.latestRun(orgId, id);
     if (!cam || !run) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Generate CAM + Job first (POST /toolpath, POST /job).", stage: "jobs", retryable: false });
-    const rel = app.releases.create({ orgId, partId: id, camRevisionId: cam.id, jobRunId: run.id, userId: request.user!.sub });
+    const rel = await app.releases.create({ orgId, partId: id, camRevisionId: cam.id, jobRunId: run.id, userId: request.user!.sub });
     return reply.status(201).send(ok(rel));
   });
 
   app.get("/:id/releases", async (request) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
-    return ok(app.releases.list(orgId, id));
+    return ok(await app.releases.list(orgId, id));
   });
 
   app.get("/:id/releases/:releaseId", async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
     const orgId = request.user!.org_id;
-    return ok(app.releases.get(orgId, id, releaseId));
+    return ok(await app.releases.get(orgId, id, releaseId));
   });
 
   // P0-4：审批需 release:approve 权限（RBAC 职责分离）
@@ -463,7 +463,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     if (!parsed.success) {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid approve payload.", stage: "releases", details: { issues: parsed.error.issues } });
     }
-    return ok(app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
+    return ok(await app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // P0-4：正式放行需 release:release 权限
@@ -473,7 +473,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     if (!parsed.success) {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Invalid release payload.", stage: "releases", details: { issues: parsed.error.issues } });
     }
-    return ok(app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
+    return ok(await app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // P0-4：驳回属发布治理决策；矩阵无 release:reject，复用最接近的 release:approve 动作。
@@ -483,13 +483,13 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     if (!parsed.success) {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "note is required for reject.", stage: "releases", retryable: false, details: { issues: parsed.error.issues } });
     }
-    return ok(app.releases.reject({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
+    return ok(await app.releases.reject({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: parsed.data.note }));
   });
 
   // 网格（OBJ）
   app.get("/:id/mesh", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const part = app.parts.get(request.user!.org_id, id);
+    const part = await app.parts.get(request.user!.org_id, id);
     if (!part.analysis?.mesh_key) {
       throw new ApiError({ code: ErrorCodes.PART_MESH_NOT_FOUND, message: "Mesh artifact not available for this part.", stage: "parts", retryable: false });
     }

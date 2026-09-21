@@ -26,23 +26,23 @@ export interface AiPlanRecord {
 }
 
 export interface AiPlanStore {
-  create(input: Omit<AiPlanRecord, "id" | "created_at">): AiPlanRecord;
-  list(orgId: string, partId: string): AiPlanRecord[];
-  get(orgId: string, partId: string, planId: string): AiPlanRecord;
+  create(input: Omit<AiPlanRecord, "id" | "created_at">): Promise<AiPlanRecord>;
+  list(orgId: string, partId: string): Promise<AiPlanRecord[]>;
+  get(orgId: string, partId: string, planId: string): Promise<AiPlanRecord>;
 }
 
 export function createAiPlanStore(): AiPlanStore {
   const byId = new Map<string, AiPlanRecord>();
   return {
-    create(input) {
+    async create(input) {
       const rec: AiPlanRecord = { ...input, id: `aiplan_${randomUUID().replaceAll("-", "")}`, created_at: new Date().toISOString() };
       byId.set(rec.id, rec);
       return rec;
     },
-    list(orgId, partId) {
+    async list(orgId, partId) {
       return [...byId.values()].filter((r) => r.part_id === partId && r.organization_id === orgId).sort((a, b) => b.created_at.localeCompare(a.created_at));
     },
-    get(orgId, partId, planId) {
+    async get(orgId, partId, planId) {
       const r = byId.get(planId);
       if (!r || r.part_id !== partId || r.organization_id !== orgId) throw new ApiError({ code: ErrorCodes.CAM_REVISION_NOT_FOUND, message: "AI plan not found.", stage: "ai-plans", retryable: false });
       return r;

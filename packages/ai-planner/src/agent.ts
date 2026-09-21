@@ -97,7 +97,7 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
     create_op: () => ({ ok: true }),
     generate: () => ({ cam_revision: "cam_ai", operation_count: 0 }),
     simulate: () => ({ status: jobResult?.simulation.status ?? "UNKNOWN" }),
-    validate: () => ({ status: jobResult?.validation.status ?? "UNKNOWN" }),
+    validate: () => ({ status: jobResult?.validation?.status ?? "UNKNOWN" }),
   };
 
   record("analyze", { part_id: part.file }, () => tools.analyze(part));
@@ -202,7 +202,7 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
 
   const valRes = tools.validate() as { status: string };
   const valOk = valRes.status !== "FAIL";
-  const valFailure = job.validation.layers
+  const valFailure = (job.validation?.layers ?? [])
     .filter((l) => l.status === "FAIL")
     .flatMap((l) => l.checks.filter((c) => c.severity === "ERROR").map((c) => `${l.layer}/${c.code}: ${c.message}`))
     .join("; ");

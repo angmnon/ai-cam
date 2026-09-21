@@ -36,10 +36,6 @@ export class ModelGateway {
     return this.config.timeout_ms ?? 15000;
   }
 
-  private get maxRetries(): number {
-    return this.config.max_retries ?? 1;
-  }
-
   register(p: ModelProvider): this {
     this.providers.set(p.spec.id, p);
     return this;

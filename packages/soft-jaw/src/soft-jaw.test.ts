@@ -38,7 +38,7 @@ describe("参数化软爪", () => {
 
   it("槽口坐标：槽深沿 X、槽宽沿 Y（Y 起始不得误用 slotD）", () => {
     const jaw = designSoftJaw({ partBBox: box, clampDir: "X", clampDepthMm: 15, wallThicknessMm: 20 });
-    const { width_mm: w, length_mm: l, height_mm: h, slot_width_mm: slotW, slot_depth_mm: slotD } = jaw.params;
+    const { width_mm: w, length_mm: l, slot_width_mm: slotW, slot_depth_mm: slotD } = jaw.params;
     const verts = toObj(jaw)
       .split("\n")
       .filter((ln) => ln.startsWith("v "))

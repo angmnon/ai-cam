@@ -119,7 +119,10 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   // 依赖注入
   const bus = deps.bus ?? new InMemoryEventBus();
   const storage =
-    deps.storage ?? (config.storage.driver === "r2" ? new R2Adapter({ accountId: "", accessKeyId: "", secretAccessKey: "", bucket: "", publicUrl: "" }) : new LocalDiskAdapter(config.storage.dataDir));
+    deps.storage ??
+    (config.storage.driver === "r2" && config.storage.r2
+      ? new R2Adapter(config.storage.r2)
+      : new LocalDiskAdapter(config.storage.dataDir));
 
   // P0-01：数据源选择。
   // - 显式注入 store（测试注入路径）→ 用注入；

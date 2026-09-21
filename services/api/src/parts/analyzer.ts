@@ -97,7 +97,7 @@ export function createWorkerAnalyzer(binaryPath: string, timeoutMs = 60_000): Pa
  */
 export function sanitizeWorkerStderr(stderr: string): string {
   const winRe = /[A-Za-z]:[\\/](?:[^\\/\s"'`]+[\\/])*[^\\/\s"'`]*/g;
-  const unixRe = /\/(?:[^\/\s"'`]+\/)*[^\/\s"'`]*/g;
+  const unixRe = /\/(?:[^/\s"'`]+\/)*[^/\s"'`]*/g;
   const toBasename = (m: string): string => {
     const base = m.split(/[\\/]/).pop() ?? "";
     return base.length > 0 ? base : "<redacted path>";

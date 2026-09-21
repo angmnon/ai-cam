@@ -1,6 +1,6 @@
 {
  "benchmark": "工厂零件验证（H-2）：真实 Golden 零件 → CAM → NC → 车间安全检查",
- "date": "2026-09-21T10:35:41.521Z",
+ "date": "2026-09-21T12:14:19.274Z",
  "total": 20,
  "pass": 19,
  "fail": 1,
@@ -11,16 +11,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 103,
+   "nc_lines": 104,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 99,
+     "blocks": 100,
      "rapid_blocks": 18,
-     "cutting_blocks": 81,
+     "cutting_blocks": 82,
      "m01_blocks": 0,
      "max_z_retract_mm": 52,
      "min_cut_z_mm": 0
@@ -33,16 +33,16 @@
    "features": 1,
    "ops": 2,
    "dfm_blockers": [],
-   "nc_lines": 76,
+   "nc_lines": 77,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 72,
+     "blocks": 73,
      "rapid_blocks": 12,
-     "cutting_blocks": 60,
+     "cutting_blocks": 61,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -57,16 +57,16 @@
    "dfm_blockers": [
     "DFM-0106"
    ],
-   "nc_lines": 142,
+   "nc_lines": 143,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 138,
+     "blocks": 139,
      "rapid_blocks": 28,
-     "cutting_blocks": 110,
+     "cutting_blocks": 111,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -79,16 +79,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 89,
+   "nc_lines": 82,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 85,
-     "rapid_blocks": 16,
-     "cutting_blocks": 69,
+     "blocks": 78,
+     "rapid_blocks": 10,
+     "cutting_blocks": 68,
      "m01_blocks": 0,
      "max_z_retract_mm": 40,
      "min_cut_z_mm": -0.5
@@ -101,16 +101,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 103,
+   "nc_lines": 104,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 99,
+     "blocks": 100,
      "rapid_blocks": 18,
-     "cutting_blocks": 81,
+     "cutting_blocks": 82,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -123,16 +123,16 @@
    "features": 3,
    "ops": 4,
    "dfm_blockers": [],
-   "nc_lines": 86,
+   "nc_lines": 79,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 82,
-     "rapid_blocks": 18,
-     "cutting_blocks": 64,
+     "blocks": 75,
+     "rapid_blocks": 10,
+     "cutting_blocks": 65,
      "m01_blocks": 0,
      "max_z_retract_mm": 40,
      "min_cut_z_mm": 0
@@ -145,16 +145,16 @@
    "features": 5,
    "ops": 6,
    "dfm_blockers": [],
-   "nc_lines": 146,
+   "nc_lines": 147,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 142,
+     "blocks": 143,
      "rapid_blocks": 18,
-     "cutting_blocks": 124,
+     "cutting_blocks": 125,
      "m01_blocks": 0,
      "max_z_retract_mm": 40,
      "min_cut_z_mm": 0
@@ -167,16 +167,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 449,
+   "nc_lines": 450,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 445,
+     "blocks": 446,
      "rapid_blocks": 32,
-     "cutting_blocks": 413,
+     "cutting_blocks": 414,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -189,16 +189,16 @@
    "features": 6,
    "ops": 7,
    "dfm_blockers": [],
-   "nc_lines": 115,
+   "nc_lines": 92,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 111,
-     "rapid_blocks": 30,
-     "cutting_blocks": 81,
+     "blocks": 88,
+     "rapid_blocks": 8,
+     "cutting_blocks": 80,
      "m01_blocks": 0,
      "max_z_retract_mm": 35,
      "min_cut_z_mm": -0.5
@@ -211,16 +211,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 105,
+   "nc_lines": 106,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 101,
+     "blocks": 102,
      "rapid_blocks": 18,
-     "cutting_blocks": 83,
+     "cutting_blocks": 84,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -233,16 +233,16 @@
    "features": 5,
    "ops": 6,
    "dfm_blockers": [],
-   "nc_lines": 89,
+   "nc_lines": 74,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 85,
-     "rapid_blocks": 24,
-     "cutting_blocks": 61,
+     "blocks": 70,
+     "rapid_blocks": 8,
+     "cutting_blocks": 62,
      "m01_blocks": 0,
      "max_z_retract_mm": 35,
      "min_cut_z_mm": -0.5
@@ -255,15 +255,15 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 73,
+   "nc_lines": 68,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 69,
-     "rapid_blocks": 13,
+     "blocks": 64,
+     "rapid_blocks": 8,
      "cutting_blocks": 56,
      "m01_blocks": 0,
      "max_z_retract_mm": 35,
@@ -277,16 +277,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 75,
+   "nc_lines": 68,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 71,
-     "rapid_blocks": 14,
-     "cutting_blocks": 57,
+     "blocks": 64,
+     "rapid_blocks": 8,
+     "cutting_blocks": 56,
      "m01_blocks": 0,
      "max_z_retract_mm": 35,
      "min_cut_z_mm": -0.5
@@ -299,16 +299,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 145,
+   "nc_lines": 146,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 141,
+     "blocks": 142,
      "rapid_blocks": 16,
-     "cutting_blocks": 125,
+     "cutting_blocks": 126,
      "m01_blocks": 0,
      "max_z_retract_mm": 45,
      "min_cut_z_mm": 0
@@ -321,16 +321,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 89,
+   "nc_lines": 82,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 85,
-     "rapid_blocks": 16,
-     "cutting_blocks": 69,
+     "blocks": 78,
+     "rapid_blocks": 10,
+     "cutting_blocks": 68,
      "m01_blocks": 0,
      "max_z_retract_mm": 40,
      "min_cut_z_mm": -0.5
@@ -343,16 +343,16 @@
    "features": 1,
    "ops": 2,
    "dfm_blockers": [],
-   "nc_lines": 86,
+   "nc_lines": 87,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 82,
+     "blocks": 83,
      "rapid_blocks": 14,
-     "cutting_blocks": 68,
+     "cutting_blocks": 69,
      "m01_blocks": 0,
      "max_z_retract_mm": 60,
      "min_cut_z_mm": 0
@@ -365,16 +365,16 @@
    "features": 3,
    "ops": 4,
    "dfm_blockers": [],
-   "nc_lines": 100,
+   "nc_lines": 101,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 96,
+     "blocks": 97,
      "rapid_blocks": 18,
-     "cutting_blocks": 78,
+     "cutting_blocks": 79,
      "m01_blocks": 0,
      "max_z_retract_mm": 40,
      "min_cut_z_mm": 0
@@ -387,16 +387,16 @@
    "features": 5,
    "ops": 6,
    "dfm_blockers": [],
-   "nc_lines": 127,
+   "nc_lines": 128,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 123,
+     "blocks": 124,
      "rapid_blocks": 24,
-     "cutting_blocks": 99,
+     "cutting_blocks": 100,
      "m01_blocks": 0,
      "max_z_retract_mm": 35,
      "min_cut_z_mm": 0
@@ -409,16 +409,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 101,
+   "nc_lines": 102,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 97,
+     "blocks": 98,
      "rapid_blocks": 18,
-     "cutting_blocks": 79,
+     "cutting_blocks": 80,
      "m01_blocks": 0,
      "max_z_retract_mm": 45,
      "min_cut_z_mm": 0
@@ -431,16 +431,16 @@
    "features": 3,
    "ops": 4,
    "dfm_blockers": [],
-   "nc_lines": 166,
+   "nc_lines": 167,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 162,
+     "blocks": 163,
      "rapid_blocks": 18,
-     "cutting_blocks": 144,
+     "cutting_blocks": 145,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0

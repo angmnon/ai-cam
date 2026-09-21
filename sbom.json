@@ -43,14 +43,16 @@
         "@ai-cam/event-schema",
         "@ai-cam/feature-engine",
         "@ai-cam/geometry-schema",
-        "@ai-cam/job-schema",
         "@ai-cam/job-runner",
+        "@ai-cam/job-schema",
         "@ai-cam/master-data",
         "@ai-cam/model-gateway",
         "@ai-cam/nc-validator",
         "@ai-cam/post-core",
         "@ai-cam/security",
         "@ai-cam/stock-sim",
+        "@aws-sdk/client-s3",
+        "@aws-sdk/s3-request-presigner",
         "@fastify/cors",
         "@fastify/helmet",
         "@fastify/swagger",
@@ -59,9 +61,11 @@
         "fastify",
         "fastify-plugin",
         "jose",
+        "pg",
         "zod",
         "@eslint/js",
         "@types/node",
+        "@types/pg",
         "eslint",
         "eslint-config-prettier",
         "typescript",
@@ -102,6 +106,7 @@
       "dependencies": [
         "@ai-cam/cam-ir",
         "@ai-cam/domain-schemas",
+        "@ai-cam/error-codes",
         "@ai-cam/feature-engine",
         "@ai-cam/geometry-schema",
         "@ai-cam/master-data",
@@ -187,6 +192,7 @@
       "dependencies": [
         "@ai-cam/dfm",
         "@ai-cam/domain-schemas",
+        "@ai-cam/error-codes",
         "@ai-cam/geometry-schema",
         "@eslint/js",
         "@types/node",
@@ -210,6 +216,7 @@
       "name": "@ai-cam/geometry-schema",
       "version": "0.1.0",
       "dependencies": [
+        "@ai-cam/error-codes",
         "zod",
         "@eslint/js",
         "@types/node",
@@ -227,12 +234,12 @@
         "@ai-cam/cam-ir",
         "@ai-cam/cam-kernel",
         "@ai-cam/domain-schemas",
-        "@ai-cam/feature-engine",
         "@ai-cam/geometry-schema",
         "@ai-cam/master-data",
         "@ai-cam/nc-validator",
         "@ai-cam/post-core",
         "@ai-cam/stock-sim",
+        "@ai-cam/feature-engine",
         "typescript",
         "vitest"
       ]
@@ -241,6 +248,7 @@
       "name": "@ai-cam/job-schema",
       "version": "0.1.0",
       "dependencies": [
+        "zod",
         "@eslint/js",
         "@types/node",
         "eslint",
@@ -283,13 +291,12 @@
       "version": "0.1.0",
       "dependencies": [
         "@ai-cam/cam-ir",
+        "@ai-cam/master-data",
+        "@ai-cam/stock-sim",
         "@ai-cam/cam-kernel",
-        "@ai-cam/domain-schemas",
         "@ai-cam/feature-engine",
         "@ai-cam/geometry-schema",
-        "@ai-cam/master-data",
         "@ai-cam/post-core",
-        "@ai-cam/stock-sim",
         "typescript",
         "vitest"
       ]
@@ -300,6 +307,7 @@
       "dependencies": [
         "@ai-cam/cam-ir",
         "@ai-cam/domain-schemas",
+        "@ai-cam/error-codes",
         "@ai-cam/master-data",
         "@eslint/js",
         "@types/node",
@@ -316,10 +324,8 @@
       "dependencies": [
         "@ai-cam/cam-ir",
         "@ai-cam/cam-kernel",
-        "@ai-cam/domain-schemas",
         "@ai-cam/feature-engine",
         "@ai-cam/geometry-schema",
-        "@ai-cam/master-data",
         "typescript",
         "vitest"
       ]
@@ -345,7 +351,6 @@
       "name": "@ai-cam/shop-floor-check",
       "version": "0.1.0",
       "dependencies": [
-        "@ai-cam/cam-ir",
         "typescript",
         "vitest"
       ]
@@ -363,11 +368,10 @@
       "version": "0.1.0",
       "dependencies": [
         "@ai-cam/cam-ir",
-        "@ai-cam/cam-kernel",
-        "@ai-cam/domain-schemas",
-        "@ai-cam/geometry-schema",
-        "@ai-cam/feature-engine",
         "@ai-cam/master-data",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
         "typescript",
         "vitest"
       ]

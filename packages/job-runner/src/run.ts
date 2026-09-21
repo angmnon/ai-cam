@@ -55,7 +55,7 @@ export function runJob(input: RunJobInput): JobResult {
 
   // 2. simulate（stock-sim）
   const simulation = simulate({ cam, partVolumeMm3: input.part.volume_mm3, thresholds: input.simulationThresholds, frameStep: input.frameStep ?? 4 });
-  pipeline.push({ stage: "SIMULATE", status: simulation.status, detail: `切除 ${simulation.removed_volume_mm3}mm³ / 残料 ${simulation.residual_volume_mm3}mm³ / ${simulation.events.length} 事件` });
+  pipeline.push({ stage: "SIMULATE", status: simulation.status === "ERROR" ? "FAIL" : simulation.status, detail: `切除 ${simulation.removed_volume_mm3}mm³ / 残料 ${simulation.residual_volume_mm3}mm³ / ${simulation.events.length} 事件` });
 
   // P1-12：仿真 FAIL 短路 —— 不做 POST/VALIDATE 阶段，直接返回未放行结果。
   if (simulation.status === "FAIL") {

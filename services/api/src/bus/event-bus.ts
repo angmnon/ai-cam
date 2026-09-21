@@ -3,6 +3,7 @@
  * Phase 0 为内存实现；接入 Cloudflare Queues / Redis Streams 时保持同接口。
  */
 import { CloudEvent, makeCloudEvent } from "@ai-cam/event-schema";
+import type { EventType } from "@ai-cam/event-schema";
 
 export type EventHandler = (event: CloudEvent) => void;
 
@@ -24,7 +25,7 @@ export class InMemoryEventBus implements EventBus {
   }
 
   publishFor(source: string, type: string, subject: string, data?: unknown): CloudEvent {
-    const event = makeCloudEvent(source, type, subject, data);
+    const event = makeCloudEvent(source, type as EventType, subject, data);
     this.publish(event);
     return event;
   }

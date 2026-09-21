@@ -12,7 +12,7 @@ export interface JobRun {
   organization_id: string;
   part_id: string;
   status: "PASS" | "WARN" | "FAIL";
-  pipeline: Array<{ stage: string; status: "PASS" | "WARN" | "FAIL"; detail: string }>;
+  pipeline: Array<{ stage: string; status: "PASS" | "WARN" | "FAIL" | "SKIPPED"; detail: string }>;
   engine_version: string;
   validated: boolean;
   created_by: string;

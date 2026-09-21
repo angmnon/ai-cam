@@ -20,7 +20,7 @@ export function extractFailures(job: AgentRun["job"]): ExtractedFailure[] {
   for (const e of job.simulation.events) {
     out.push({ layer: "SIMULATION", code: e.kind, message: e.message });
   }
-  for (const l of job.validation.layers) {
+  for (const l of job.validation?.layers ?? []) {
     if (l.status === "FAIL") {
       for (const c of l.checks) {
         if (c.severity === "ERROR" || l.status === "FAIL") out.push({ layer: `VALIDATION_${l.layer}`, code: c.code, message: c.message });

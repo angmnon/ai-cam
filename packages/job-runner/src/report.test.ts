@@ -14,7 +14,7 @@ describe("buildJobReport（box）", () => {
 
   it("生成完整 Job 报告（工艺单/刀具/Setup/仿真摘要）", () => {
     const job = runJob({ part, partName: "box", features });
-    const report = buildJobReport({ cam: job.cam, simulation: job.simulation, nc: job.nc, validation: job.validation });
+    const report = buildJobReport({ cam: job.cam, simulation: job.simulation, nc: job.nc!, validation: job.validation! });
 
     expect(report.schema_version).toBe("1.0.0");
     expect(report.program_number).toMatch(/^O\d{4}$/);
@@ -61,7 +61,7 @@ describe("buildJobReport（box）", () => {
 
   it("P2-31：process_sheet.move_count 与 camIR.toolpaths 真实 moves.length 一致", () => {
     const job = runJob({ part, partName: "box", features });
-    const report = buildJobReport({ cam: job.cam, simulation: job.simulation, nc: job.nc, validation: job.validation });
+    const report = buildJobReport({ cam: job.cam, simulation: job.simulation, nc: job.nc!, validation: job.validation! });
 
     const tpByOp = new Map((job.cam.toolpaths ?? []).map((tp) => [tp.operation_id, tp]));
     expect(report.process_sheet.length).toBe(job.cam.operations.length);

@@ -90,7 +90,6 @@ export function checkShopFloorNc(ncText: string, options: ShopFloorOptions = {})
 
   // Z 运动与模态状态
   let zModal = 0;
-  let lastCutZ: number | null = null;
   let lastRetractZ: number | null = null;
   let inCut = false;
   let m01Count = 0;
@@ -104,7 +103,6 @@ export function checkShopFloorNc(ncText: string, options: ShopFloorOptions = {})
 
   for (const l of lines) {
     const hasG0 = l.words.some(isRapid);
-    const hasRapid = hasG0;
     const zWord = l.words.find((w) => w.startsWith("Z"));
     const zVal = zWord ? Number(zWord.slice(1)) : null;
     const prevZModal = zModal;
@@ -145,7 +143,6 @@ export function checkShopFloorNc(ncText: string, options: ShopFloorOptions = {})
       cutCount++;
       inCut = true;
       if (zVal != null) {
-        lastCutZ = zVal;
         if (minCutZ == null || zVal < minCutZ) minCutZ = zVal;
       }
     }

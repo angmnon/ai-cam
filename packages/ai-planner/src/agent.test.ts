@@ -30,16 +30,16 @@ describe("runCamAgent（P4-3）", () => {
     const simCall = run.tool_calls.find((c) => c.tool === "simulate")!;
     const valCall = run.tool_calls.find((c) => c.tool === "validate")!;
     expect(simCall.result).toMatchObject({ status: run.job.simulation.status });
-    expect(valCall.result).toMatchObject({ status: run.job.validation.status });
+    expect(valCall.result).toMatchObject({ status: run.job.validation!.status });
     expect(simCall.ok).toBe(run.job.simulation.status !== "FAIL");
-    expect(valCall.ok).toBe(run.job.validation.status !== "FAIL");
+    expect(valCall.ok).toBe((run.job.validation?.status ?? "UNKNOWN") !== "FAIL");
     // 规划器产出
     expect(run.setups.length).toBeGreaterThanOrEqual(1);
     expect(run.process.validation.ok).toBe(true);
     expect(run.tool_choices.length).toBeGreaterThan(0);
     // Job 验证
     expect(run.job.validated).toBe(true);
-    expect(run.job.nc.program_number).toMatch(/^O\d{4}$/);
+    expect(run.job.nc!.program_number).toMatch(/^O\d{4}$/);
   });
 
   it("表面质量目标 → finish_priority 策略 + 更小步深 override", async () => {
@@ -57,7 +57,7 @@ describe("runCamAgent（P4-3）", () => {
     expect((simCall.result as { failure: string }).failure).toContain("RESIDUAL_FAIL");
     // validate 仍反映其真实自身状态（不被 simulate 假 PASS 掩盖）
     const valCall = run.tool_calls.find((c) => c.tool === "validate")!;
-    expect(valCall.ok).toBe(run.job.validation.status !== "FAIL");
+    expect(valCall.ok).toBe((run.job.validation?.status ?? "UNKNOWN") !== "FAIL");
   });
 });
 

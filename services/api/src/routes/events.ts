@@ -1,6 +1,6 @@
 /** SSE 事件流路由（P0-9）：GET /api/v1/events/stream?subject=job_xxx */
 import type { FastifyPluginAsync } from "fastify";
-import type { CloudEvent } from "@ai-cam/event-schema";
+import type { CloudEvent, EventType } from "@ai-cam/event-schema";
 import { formatSse, sseComment, sseRetry } from "@ai-cam/event-schema";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import fp from "../plugins/fp.js";
@@ -24,7 +24,7 @@ export function attachSseStream(
   });
   res.write(sseComment("connected to ai-cam event stream"));
   res.write(sseRetry(3_000));
-  res.write(formatSse({ specversion: "1.0", id: "evt_hello", source: "com.aicam.api", type: "hello", subject: subject ?? "*", time: new Date().toISOString(), datacontenttype: "application/json" }));
+  res.write(formatSse({ specversion: "1.0", id: "evt_hello", source: "com.aicam.api", type: "hello" as EventType, subject: subject ?? "*", time: new Date().toISOString(), datacontenttype: "application/json" }));
 
   const unsubscribe = bus.subscribe(subject, (event) => {
     if (filter) {

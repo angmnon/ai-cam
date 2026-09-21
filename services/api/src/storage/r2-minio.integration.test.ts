@@ -40,7 +40,6 @@ async function prepare(): Promise<{ available: boolean; adapter?: R2Adapter }> {
       bucket: BUCKET,
       publicUrl: ENDPOINT,
       endpoint: ENDPOINT,
-      pathStyle: true,
     });
     return { available: true, adapter };
   } catch {

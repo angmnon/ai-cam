@@ -793,7 +793,7 @@ export const seedMaterials: Material[] = [
 const R = (
   id: string,
   material_id: string,
-  tool_type: string,
+  tool_type: CuttingRule["tool_type"],
   vc: [number, number],
   fz: [number, number],
   doc: [number, number],

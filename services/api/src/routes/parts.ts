@@ -231,6 +231,16 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     }
     try {
       const job = runJob({ part: part.analysis.part, partName: id, features: part.analysis.features.features });
+      // 仿真/POST 被阻断时 runJob 不产出 NC 与校验报告（nc/validation 为 null）：落 FAIL run 并报错，避免空指针
+      if (!job.nc || !job.validation) {
+        await app.jobRuns.createRun({
+          orgId,
+          partId: id,
+          userId: request.user!.sub,
+          run: { status: "FAIL", pipeline: job.pipeline, engine_version: job.cam.metadata?.generator_version ?? "0.1.0", validated: false },
+        });
+        throw new ApiError({ code: ErrorCodes.JOB_EXECUTION_FAILED, message: `NC 未生成（simulation=${job.simulation.status}）`, stage: "jobs", retryable: true });
+      }
       if (!(await app.cams.latest(orgId, id))) await app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: job.cam });
       const run = await app.jobRuns.createRun({
         orgId,
@@ -317,7 +327,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         controller_id: bundle.nc.controller_id,
         text: bundle.nc.nc_text,
         lines: bundle.nc.nc_text.split("\n"),
-        metadata: { ir_id: camRev.cam.ir_id, job_id: camRev.cam.job_id, part_id: id, machine_id: camRev.cam.machine.machine_id, operation_count: camRev.cam.operations.length, tool_changes: bundle.nc.tool_changes, move_count: bundle.nc.move_count, generated_by: "post-core", generator_version: bundle.nc.engine_version },
+        metadata: { ir_id: camRev.cam.ir_id, job_id: camRev.cam.job_id, part_id: id, machine_id: camRev.cam.machine.machine_id, operation_count: camRev.cam.operations.length, tool_changes: bundle.nc.tool_changes, move_count: bundle.nc.move_count, generated_by: "post-core", generator_version: bundle.nc.engine_version, unsupported_move_count: 0, coolant_fallback_count: 0, tool_library_version: "unknown", material_version: "unknown", machine_firmware: "unknown" },
       },
       validation: bundle.validation.report,
     });
@@ -393,7 +403,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         process: run.process,
         tool_choices: run.tool_choices,
         change_set: changeSet,
-        job: { validated: run.job.validated, simulation_status: run.job.simulation.status, validation_status: run.job.validation.status },
+        job: { validated: run.job.validated, simulation_status: run.job.simulation.status, validation_status: run.job.validation?.status ?? "FAIL" },
       }),
     );
     } finally {
@@ -421,7 +431,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
       partId: id,
       userId: request.user!.sub,
       run: {
-        status: run.job.validation.status === "FAIL" ? "FAIL" : run.job.validation.status,
+        status: run.job.validation?.status === "FAIL" ? "FAIL" : (run.job.validation?.status ?? "FAIL"),
         pipeline: run.job.pipeline,
         engine_version: run.job.cam.metadata?.generator_version ?? "0.1.0",
         validated: run.job.validated,

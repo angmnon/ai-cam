@@ -127,7 +127,7 @@ export function buildJobReport(input: { cam: CamIR; simulation: SimulationReport
       };
     }),
     simulation: {
-      status: simulation.status,
+      status: simulation.status === "ERROR" ? "FAIL" : simulation.status,
       voxel_size_mm: simulation.voxel_size_mm,
       initial_volume_mm3: simulation.initial_volume_mm3,
       removed_volume_mm3: simulation.removed_volume_mm3,

@@ -37,7 +37,7 @@ vi.mock("@ai-cam/post-core", async (importOriginal) => {
   return {
     ...actual,
     postProcess: (...args: unknown[]) => {
-      const real = actual.postProcess(...(args as never));
+      const real = actual.postProcess(...(args as Parameters<typeof actual.postProcess>));
       return post.override ? post.override(real) : real;
     },
   };

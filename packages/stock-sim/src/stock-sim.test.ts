@@ -152,7 +152,7 @@ describe("P2-17 多层 FACE 顶面残料误判", () => {
    * 旧实现用全 op 最深 minZ=z2=4 当期望顶面，会把仅第一层区域判成 h-z2=4mm 残料（误报）。
    */
   function buildMultiLayerFaceCam(z1: number, z2: number): CamIR {
-    const moves: Array<{ type: CamIR["toolpaths"][number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
+    const moves: Array<{ type: NonNullable<CamIR["toolpaths"]>[number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
     const rapid = (x: number, y: number) => moves.push({ type: "RAPID", x, y, z: 12 });
     const plunge = (x: number, y: number, z: number) => moves.push({ type: "PLUNGE", x, y, z, feed_mm_min: 200 });
     const linear = (x: number, y: number, z: number) => moves.push({ type: "LINEAR", x, y, z, feed_mm_min: 500 });
@@ -189,13 +189,14 @@ describe("P2-17 多层 FACE 顶面残料误判", () => {
           type: "FACE",
           setup_id: "su1",
           feature_ids: ["feat_face1"],
+          depends_on: [],
           tool: { tool_id: "tool_em_10" },
           parameters: { spindle_speed_rpm: 3000, feed_mm_min: 500, coolant: "FLOOD", source: "ENGINE" },
           safe_z_mm: 12,
         },
       ],
       toolpaths: [
-        { operation_id: "op_face1", toolpath_id: "tp_face1", engine_version: "test", move_count: moves.length, moves: moves as CamIR["toolpaths"][number]["moves"] },
+        { operation_id: "op_face1", toolpath_id: "tp_face1", engine_version: "test", move_count: moves.length, moves: moves as NonNullable<CamIR["toolpaths"]>[number]["moves"] },
       ],
     };
   }
@@ -256,7 +257,7 @@ describe("P2-19 球头体积球冠修正", () => {
    * 体素网格仍做圆柱扫掠碰撞判定；仅 removed_volume 估算走球冠公式。
    */
   function buildBallCam(): CamIR {
-    const moves: Array<{ type: CamIR["toolpaths"][number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
+    const moves: Array<{ type: NonNullable<CamIR["toolpaths"]>[number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
     const rapid = (x: number, y: number) => moves.push({ type: "RAPID", x, y, z: 12 });
     const plunge = (x: number, y: number, z: number) => moves.push({ type: "PLUNGE", x, y, z, feed_mm_min: 200 });
     const linear = (x: number, y: number, z: number) => moves.push({ type: "LINEAR", x, y, z, feed_mm_min: 500 });
@@ -294,7 +295,7 @@ describe("P2-19 球头体积球冠修正", () => {
         },
       ],
       toolpaths: [
-        { operation_id: "op_ball1", toolpath_id: "tp_ball1", engine_version: "test", move_count: moves.length, moves: moves as CamIR["toolpaths"][number]["moves"] },
+        { operation_id: "op_ball1", toolpath_id: "tp_ball1", engine_version: "test", move_count: moves.length, moves: moves as NonNullable<CamIR["toolpaths"]>[number]["moves"] },
       ],
     };
   }

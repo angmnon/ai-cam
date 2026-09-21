@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError, ErrorCodes, isApiError } from "./error-codes.js";
+import { ApiError, ErrorCodes, isApiError, type ErrorCode } from "./error-codes.js";
 
 describe("error-codes", () => {
   it("错误码唯一", () => {
@@ -40,7 +40,7 @@ describe("error-codes", () => {
   });
 
   it("CAM/SIM/NC 码有合理的非 500 HTTP 映射", () => {
-    const cases: Array<[string, number]> = [
+    const cases: Array<[ErrorCode, number]> = [
       [ErrorCodes.CAM_PARAMETER_OUT_OF_RANGE, 422],
       [ErrorCodes.CAM_IR_INVALID, 422],
       [ErrorCodes.CAM_TOOL_REACH_FAILED, 409],

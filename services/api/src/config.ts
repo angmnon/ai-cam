@@ -20,6 +20,17 @@ export interface BootstrapAuthConfig {
   usingDefaults: boolean;
 }
 
+/** P0-04：R2 / S3 兼容对象存储配置（STORAGE_DRIVER=r2 时必填核心字段） */
+export interface R2StorageConfig {
+  accountId: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
+  publicUrl: string;
+  /** 自定义 S3 端点（如本地 MinIO）；缺省走 R2 官方域名 */
+  endpoint?: string;
+}
+
 export interface AppConfig {
   port: number;
   host: string;
@@ -30,7 +41,7 @@ export interface AppConfig {
   corsOrigins: string[];
   /** P2-42：Fastify bodyLimit 上限（默认 64MB，BODY_LIMIT_BYTES 可覆盖） */
   bodyLimitBytes: number;
-  storage: { driver: "local" | "r2"; dataDir: string };
+  storage: { driver: "local" | "r2"; dataDir: string; r2?: R2StorageConfig };
   /** P0-01：PostgreSQL 连接串；缺省时降级为内存 store（仅开发/测试，启动打 WARN） */
   databaseUrl?: string;
   /** P0-03：bootstrap 管理员（首启播种 users/memberships；PG 模式使用） */
@@ -90,6 +101,31 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const adminPassword = env.ADMIN_PASSWORD ?? "changeme-admin";
   const adminOrgId = env.ADMIN_ORG ?? "org_admin";
 
+  // ---- P0-04：R2 / S3 兼容对象存储（driver=r2 时必填核心字段，缺参即拒绝启动）----
+  let r2: R2StorageConfig | undefined;
+  if (driver === "r2") {
+    const accountId = env.R2_ACCOUNT_ID ?? "";
+    const accessKeyId = env.R2_ACCESS_KEY_ID ?? "";
+    const secretAccessKey = env.R2_SECRET_ACCESS_KEY ?? "";
+    const bucket = env.R2_BUCKET ?? "";
+    for (const [name, val] of [
+      ["R2_ACCOUNT_ID", accountId],
+      ["R2_ACCESS_KEY_ID", accessKeyId],
+      ["R2_SECRET_ACCESS_KEY", secretAccessKey],
+      ["R2_BUCKET", bucket],
+    ] as const) {
+      if (!val) throw new Error(`STORAGE_DRIVER=r2 requires ${name} to be set.`);
+    }
+    r2 = {
+      accountId,
+      accessKeyId,
+      secretAccessKey,
+      bucket,
+      publicUrl: env.R2_PUBLIC_URL ?? "",
+      endpoint: env.R2_ENDPOINT?.trim() || undefined,
+    };
+  }
+
   // ---- Phase 0 bootstrap 凭据（服务端解算 org_id/role；仅内存降级路径使用）----
   const email = env.CAM_BOOTSTRAP_EMAIL ?? "demo@ai-cam.local";
   const orgId = env.CAM_BOOTSTRAP_ORG ?? "org_demo";
@@ -115,6 +151,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       driver,
       // P0-02：优先 STORAGE_DATA_DIR（与 .env.example 对齐）；DATA_DIR 为旧变量保留兼容
       dataDir: env.STORAGE_DATA_DIR ?? env.DATA_DIR ?? "./data",
+      r2,
     },
     databaseUrl,
     admin: { email: adminEmail, password: adminPassword, orgId: adminOrgId },

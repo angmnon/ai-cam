@@ -35,6 +35,8 @@ import { createPgJobRunStore } from "./db/pg/pg-job-run-store.js";
 import { createPgReleaseStore } from "./db/pg/pg-release-store.js";
 import { PgAuditSink } from "./db/pg/pg-audit-sink.js";
 import { MemoryAuditSink, FileAuditSink, type AuditSink } from "@ai-cam/security";
+import { LoginService } from "./auth/login-service.js";
+import metricsPlugin from "./plugins/metrics.js";
 import healthRoutes from "./routes/health.js";
 import authRoutes from "./routes/auth.js";
 import eventRoutes from "./routes/events.js";
@@ -125,6 +127,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.addContentTypeParser("application/octet-stream", { parseAs: "buffer" }, (_req, body, done) => done(null, body));
 
   await app.register(requestContext);
+  // P2-01：/metrics + HTTP 埋点钩子（fpRoot，全局生效）；METRICS_TOKEN 鉴权在路由内
+  await app.register(metricsPlugin, { token: config.metricsToken });
   await app.register(authPlugin(config.jwt));
 
   // 依赖注入
@@ -190,6 +194,9 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   await app.register(securityPlugin, { auditSink });
   await app.register(errorHandlerPlugin);
 
+  // P2-06：登录限流/锁定 + 密码重置编排（PG 模式走 pgPool 持久化；内存降级路径无持久化限流）
+  app.decorate("loginService", new LoginService(pgPool, authBackend, config.login, auditSink));
+
   const aiPlans = createAiPlanStore(); // ai_plans 落库可后置，保持内存实现
   const partsAnalyzer =
     deps.partsAnalyzer ??
@@ -197,6 +204,12 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
       ? createWorkerAnalyzer(config.partsAnalyzer.binaryPath ?? "geometry_worker")
       : createFixtureAnalyzer(config.partsAnalyzer.fixturesDir));
   app.decorate("bus", bus);
+  // P2-01：订阅作业生命周期事件 → jobs_completed_total{status}（终态：*.completed / *.released=completed；job.failed=failed）
+  bus.subscribe(null, (ev) => {
+    const t = ev.type;
+    if (t === "job.failed") app.metrics.recordJob("failed");
+    else if (t.endsWith(".completed") || t === "job.released") app.metrics.recordJob("completed");
+  });
   app.decorate("storage", storage);
   app.decorate("jobs", jobs);
   app.decorate("parts", parts);

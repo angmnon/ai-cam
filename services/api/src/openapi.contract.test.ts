@@ -58,6 +58,9 @@ describe("P1-04 OpenAPI 3.1 契约", () => {
     const paths = spec.paths ?? {};
     const expected: Array<[string, string]> = [
       ["/api/v1/auth/login", "post"],
+      ["/api/v1/auth/forgot-password", "post"],
+      ["/api/v1/auth/reset-password", "post"],
+      ["/metrics", "get"],
       ["/api/v1/parts/", "post"],
       ["/api/v1/parts/", "get"],
       ["/api/v1/parts/{id}/analyze", "post"],
@@ -105,6 +108,23 @@ describe("P1-04 OpenAPI 3.1 契约", () => {
     const idParam = (op.parameters ?? []).find((p) => p.name === "id");
     expect(idParam).toBeTruthy();
     expect(idParam?.required).toBe(true);
+  });
+
+  it("POST /auth/reset-password 请求体契约：token+new_password 必填", async () => {
+    const spec = await fetchSpec();
+    const op = (spec.paths?.["/api/v1/auth/reset-password"] as Record<string, Record<string, unknown>>).post as {
+      requestBody?: { content: { "application/json": { schema: { required?: string[] } } } };
+    };
+    const required = op.requestBody?.content["application/json"].schema.required ?? [];
+    expect(required).toEqual(expect.arrayContaining(["token", "new_password"]));
+  });
+
+  it("P2-06 forgot/reset-password 行为（内存模式）：统一 200；reset 假 token → 401", async () => {
+    const forgot = await app.inject({ method: "POST", url: "/api/v1/auth/forgot-password", payload: { email: "demo@ai-cam.local" } });
+    expect(forgot.statusCode).toBe(200);
+    // 内存模式无令牌表：reset 任意 token 都应返回 invalid（401）
+    const reset = await app.inject({ method: "POST", url: "/api/v1/auth/reset-password", payload: { token: "x", new_password: "new-password-123" } });
+    expect(reset.statusCode).toBe(401);
   });
 
   it("live 流程响应信封与契约一致", async () => {

@@ -59,6 +59,14 @@ export function authPlugin(opts: AuthOptions): FastifyPluginAsync {
       if (request.routeOptions.url === "/api/v1/auth/login") {
         return;
       }
+      // P2-06：密码自助端点无需 JWT（token 自身即凭据）
+      if (request.routeOptions.url === "/api/v1/auth/forgot-password" || request.routeOptions.url === "/api/v1/auth/reset-password") {
+        return;
+      }
+      // P2-01：Prometheus 抓取端点（由路由内自行用 METRICS_TOKEN 校验）
+      if (request.routeOptions.url === "/metrics") {
+        return;
+      }
       const header = request.headers.authorization;
       if (!header || !header.startsWith("Bearer ")) {
         throw new ApiError({ code: ErrorCodes.AUTH_UNAUTHORIZED, message: "Missing bearer token.", stage: "auth" });

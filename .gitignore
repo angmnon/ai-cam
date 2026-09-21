@@ -35,3 +35,5 @@ coverage/
 infra/terraform/.terraform/
 infra/terraform/*.tfstate
 infra/terraform/*.tfstate.*
+
+.turbo/

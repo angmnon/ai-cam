@@ -3,7 +3,7 @@
  * 用 node:crypto 的 scrypt 做恒定时间比对，避免时序侧信道；
  * 不引入外部密码哈希依赖（本轮约束：不装新 npm 包）。
  */
-import { scrypt, timingSafeEqual } from "node:crypto";
+import { scrypt, timingSafeEqual, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
 
 const scryptAsync = promisify(scrypt);
@@ -32,4 +32,14 @@ export async function verifyLoginPassword(plain: string, cred: CredentialCheck):
   const a = (await scryptAsync(plain, DEMO_PEPPER, KEYLEN)) as Buffer;
   const b = (await scryptAsync(cred.password ?? "", DEMO_PEPPER, KEYLEN)) as Buffer;
   return timingSafeEqual(a, b);
+}
+
+/**
+ * P2-06：把明文密码派生为 `salt$hashHex` 存储格式（与 PgAuthBackend / bootstrap.ts 切分一致）。
+ * 每次调用随机 16 字节 salt；KEYLEN=64 → hashHex 128 字符。零新依赖（node:crypto scrypt）。
+ */
+export async function hashPassword(plain: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const derived = (await scryptAsync(plain, salt, KEYLEN)) as Buffer;
+  return `${salt}$${derived.toString("hex")}`;
 }

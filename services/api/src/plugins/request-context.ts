@@ -36,6 +36,8 @@ const requestContext: FastifyPluginAsync = async (app) => {
       parseIncomingTraceId(typeof request.headers["traceparent"] === "string" ? request.headers["traceparent"] : undefined) ??
       crypto.randomUUID().replaceAll("-", "").slice(0, 32);
     request.traceId = traceId;
+    // P2-01：让后续结构化日志（含 Fastify 自带的 request completed / responseTime）都携带 traceId
+    request.log = request.log.child({ traceId });
     reply.header("x-request-id", requestId);
     reply.header("traceparent", `00-${traceId}-${crypto.randomUUID().replaceAll("-", "").slice(0, 16)}-01`);
   });

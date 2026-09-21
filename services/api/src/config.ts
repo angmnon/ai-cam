@@ -61,6 +61,10 @@ export interface AppConfig {
   /** P1-08：审计持久化落点 memory|file|pg（默认 memory 保测试；生产建议 pg） */
   auditSink: "memory" | "file" | "pg";
   otlpEndpoint?: string;
+  /** P2-06：登录失败限流阈值（连续 maxAttempts 次失败锁 lockMinutes 分钟） */
+  login: { maxAttempts: number; lockMinutes: number };
+  /** P2-01：/metrics 抓取鉴权令牌（未配置时端点仍可访问并打 WARN；生产必须配置） */
+  metricsToken?: string;
 }
 
 /** 解析 CAM_BOOTSTRAP_PASSWORD_HASH（格式 `salt$hashHex`），非法格式返回 undefined */
@@ -215,5 +219,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     // ---- P1-08：审计 sink 落点（默认 memory 保测试；生产建议 pg）----
     auditSink: (env.AUDIT_SINK as "memory" | "file" | "pg" | undefined) ?? "memory",
+
+    // ---- P2-06：登录失败限流阈值（连续 5 次失败锁 15 分钟；LOGIN_MAX_ATTEMPTS/LOCK_MINUTES 可覆盖）----
+    login: {
+      maxAttempts: Math.max(1, Math.floor(Number(env.LOGIN_MAX_ATTEMPTS ?? 5)) || 5),
+      lockMinutes: Math.max(1, Math.floor(Number(env.LOCK_MINUTES ?? 15)) || 15),
+    },
+    // ---- P2-01：/metrics 抓取鉴权令牌（Prometheus 抓取侧 Bearer 携带；未配置则端点开放并打 WARN）----
+    metricsToken: env.METRICS_TOKEN?.trim() || undefined,
   };
 }

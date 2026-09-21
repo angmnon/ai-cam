@@ -24,6 +24,14 @@ import { rect2, rectFromBBox } from "./geometry2d.js";
 
 export const CAM_KERNEL_VERSION = "0.2.0";
 
+/**
+ * P2-08 声明式合成特征 id：CONTOUR_OUTER（零件整体外轮廓多深度精修）并非由面识别产生，
+ * 而是规划器对整个 part 包络外轮廓合成的工序。这里以稳定常量注册该“边界轮廓特征”，
+ * 替代原先的悬空 magic string。它不对应 FeatureGraph 中的任一识别面，是规划器自声明的
+ * 约定 id；cam-ir 校验层不跨查 feature_id 引用，故允许此约定 id 存在。
+ */
+export const PART_PROFILE_FEATURE_ID = "part_profile";
+
 export interface PlannerOptions {
   /** 退刀平面高于零件顶面（默认 20mm） */
   safeClearance?: number;
@@ -99,6 +107,11 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
   const rules = options.rules ?? seedCuttingRules;
   const machine: Machine = machines.find((m) => m.id === (options.machineId ?? "mch_vmc850")) ?? machines[0];
   const material: Material = materials.find((m) => m.id === (options.materialId ?? "mat_al_6061")) ?? materials[0];
+
+  // P2-10：axis_config 不再硬编码 "3AXIS"，改由所选机床传入（缺省即 3AXIS）。
+  // cam-ir MachineProfile 仅接受 3/4/5 轴三值；domain 的 INDEXED_4AXIS 归入 4AXIS。
+  const irAxisConfig: "3AXIS" | "4AXIS" | "5AXIS" =
+    machine.axis_config === "INDEXED_4AXIS" ? "4AXIS" : machine.axis_config;
 
   const zTop = part.bbox_mm.max[2];
   const zBottom = part.bbox_mm.min[2];
@@ -252,7 +265,7 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
     ops.push({
       type: "CONTOUR",
       name: "外轮廓精加工",
-      featureIds: ["part_profile"], // CamIR 要求 feature_ids min(1)
+      featureIds: [PART_PROFILE_FEATURE_ID], // CamIR 要求 feature_ids min(1)；P2-08 稳定约定 id
       tool,
       params: p.parameters,
       generate: () =>
@@ -298,9 +311,10 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
     job_id: `job_${partId}`,
     part_id: partId,
     units: { length: "mm", angle: "deg", speed: "rpm", feed: "mm/min" },
-    machine: { machine_id: machine.id, machine_name: machine.name, controller_id: machine.supported_controllers[0], axis_config: "3AXIS", travel: machine.kinematics.travel, max_spindle_rpm: machine.kinematics.max_spindle_rpm, max_feed: machine.kinematics.max_feed_mm_min },
+    machine: { machine_id: machine.id, machine_name: machine.name, controller_id: machine.supported_controllers[0], axis_config: irAxisConfig, travel: machine.kinematics.travel, max_spindle_rpm: machine.kinematics.max_spindle_rpm, max_feed: machine.kinematics.max_feed_mm_min },
     material: { material_id: material.id, material_name: material.name, grade: material.grade },
-    stock: { id: "stock_1", kind: "BOX", dimensions: { x: stockRect.x1 - stockRect.x0, y: stockRect.y1 - stockRect.y0, z: zTop + margin }, origin: { x: stockRect.x0, y: stockRect.y0, z: 0 }, margin: { x: margin, y: margin, z: margin } },
+    // P2-10：毛坯底面 origin.z 不再硬编码 0，对齐 part 包络底面 bbox.min.z，保证毛坯真正包络零件底面。
+    stock: { id: "stock_1", kind: "BOX", dimensions: { x: stockRect.x1 - stockRect.x0, y: stockRect.y1 - stockRect.y0, z: zTop + margin }, origin: { x: stockRect.x0, y: stockRect.y0, z: zBottom }, margin: { x: margin, y: margin, z: margin } },
     setups: [{ id: "setup_1", name: "G54 底定位", wcs: "G54", origin: { x: 0, y: 0, z: 0 } }],
     tools: [...toolRefs.entries()].map(([tool_id, tool_number]) => ({ tool_id, tool_number })),
     operations,

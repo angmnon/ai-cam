@@ -1,6 +1,6 @@
 {
  "benchmark": "工厂零件验证（H-2）：真实 Golden 零件 → CAM → NC → 车间安全检查",
- "date": "2026-09-21T03:06:31.313Z",
+ "date": "2026-09-21T03:29:49.212Z",
  "total": 20,
  "pass": 19,
  "fail": 1,
@@ -167,16 +167,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 439,
+   "nc_lines": 449,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 435,
+     "blocks": 445,
      "rapid_blocks": 32,
-     "cutting_blocks": 403,
+     "cutting_blocks": 413,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0
@@ -299,16 +299,16 @@
    "features": 2,
    "ops": 3,
    "dfm_blockers": [],
-   "nc_lines": 143,
+   "nc_lines": 145,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 139,
+     "blocks": 141,
      "rapid_blocks": 16,
-     "cutting_blocks": 123,
+     "cutting_blocks": 125,
      "m01_blocks": 0,
      "max_z_retract_mm": 45,
      "min_cut_z_mm": 0
@@ -431,16 +431,16 @@
    "features": 3,
    "ops": 4,
    "dfm_blockers": [],
-   "nc_lines": 164,
+   "nc_lines": 166,
    "shop_floor": {
     "status": "PASS",
     "items": [
      "SFC-0106:INFO"
     ],
     "stats": {
-     "blocks": 160,
+     "blocks": 162,
      "rapid_blocks": 18,
-     "cutting_blocks": 142,
+     "cutting_blocks": 144,
      "m01_blocks": 0,
      "max_z_retract_mm": 50,
      "min_cut_z_mm": 0

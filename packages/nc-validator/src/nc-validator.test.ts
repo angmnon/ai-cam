@@ -161,4 +161,15 @@ describe("validateNc（box 全流程）", () => {
     // 注释里的 M03/S 不应被识别 → 每个 op 都报 SPINDLE_MISMATCH
     expect(l2.checks.filter((c) => c.code === "SPINDLE_MISMATCH").length).toBeGreaterThan(0);
   });
+
+  it("P2-26 machine 不在种子库 → L3 report 含 MACHINE_NOT_IN_SEED WARN（不再静默降级）", () => {
+    // 把 machine_id 改成种子库中不存在的值，强制 L3 走降级分支
+    const unknownCam = { ...cam, machine: { ...cam.machine, machine_id: "m_unknown_seed_machine" } };
+    const rep = validateNc({ cam: unknownCam, ncText: nc.text, programNumber: nc.program_number, simulation: sim });
+    const l3 = rep.layers.find((l) => l.layer === "MACHINE")!;
+    const warn = l3.checks.find((c) => c.code === "MACHINE_NOT_IN_SEED");
+    expect(warn).toBeDefined();
+    expect(warn!.severity).toBe("WARN");
+    expect(l3.status).toBe("WARN");
+  });
 });

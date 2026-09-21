@@ -44,11 +44,11 @@ describe("VoxelGrid", () => {
   });
 });
 
-describe("simulate（box 样本）", () => {
-  const raw = readFileSync(join(process.cwd(), "../../tests/golden/parts/box.json"), "utf8");
-  const part = parseWorkerOutput(raw);
-  const { cam } = planPart(part, buildFeatureGraph(part, "box").features);
+const raw = readFileSync(join(process.cwd(), "../../tests/golden/parts/box.json"), "utf8");
+const part = parseWorkerOutput(raw);
+const { cam } = planPart(part, buildFeatureGraph(part, "box").features);
 
+describe("simulate（box 样本）", () => {
   it("跑通并给出 PASS/量化指标", () => {
     const rep = simulate({ cam, partVolumeMm3: part.volume_mm3, frameStep: 4 });
     expect(rep.schema_version).toBe("1.0.0");
@@ -177,5 +177,108 @@ describe("P2-17 多层 FACE 顶面残料误判", () => {
     // 不得产生残料误报事件（深度下探触发的 gouge 属 P1-04 另一检测轴，不在本用例范围）
     const residualEvents = rep.events.filter((e) => e.kind === "RESIDUAL_WARN" || e.kind === "RESIDUAL_FAIL");
     expect(residualEvents).toEqual([]);
+  });
+});
+
+describe("P2-18 stock 兜底显式化 / 刀具缺失 ERROR", () => {
+  it("stock dimensions/origin 缺失 → 显式 WARN 事件 + metadata.stock_fallback=true", () => {
+    const cam2 = structuredClone(cam);
+    delete (cam2.stock as Record<string, unknown>).dimensions;
+    delete (cam2.stock as Record<string, unknown>).origin;
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    const warn = rep.events.filter((e) => e.kind === "STOCK_FALLBACK" && e.severity === "WARN");
+    expect(warn.length).toBeGreaterThan(0);
+    expect(rep.metadata.stock_fallback).toBe(true);
+  });
+
+  it("stock 字段齐全 → 无 STOCK_FALLBACK，metadata.stock_fallback=false", () => {
+    const rep = simulate({ cam, partVolumeMm3: part.volume_mm3 });
+    expect(rep.events.some((e) => e.kind === "STOCK_FALLBACK")).toBe(false);
+    expect(rep.metadata.stock_fallback).toBe(false);
+  });
+
+  it("刀具缺失（不在种子库）→ CONFIG_ERROR（severity ERROR），状态 FAIL", () => {
+    const cam2 = structuredClone(cam);
+    for (const op of cam2.operations) op.tool.tool_id = "tool_ghost_999";
+    const rep = simulate({ cam: cam2, partVolumeMm3: part.volume_mm3 });
+    const err = rep.events.filter((e) => e.kind === "CONFIG_ERROR" && e.severity === "ERROR");
+    expect(err.length).toBeGreaterThan(0);
+    // 不再伪装成 COLLISION 事件
+    expect(rep.events.filter((e) => e.kind === "COLLISION" && e.message.includes("种子刀具库")).length).toBe(0);
+    expect(rep.status).toBe("FAIL");
+  });
+});
+
+describe("P2-19 球头体积球冠修正", () => {
+  /**
+   * 构造单一 POCKET op，BALL 刀 tool_ball_6（diameter=6 → R=3, corner_radius=3）：
+   * RAPID 上方 → PLUNGE 到顶面 z=10 → PLUNGE 下探到 z=7（h=3）→ LINEAR 水平扫掠 Lxy=40 → RETRACT。
+   * 体素网格仍做圆柱扫掠碰撞判定；仅 removed_volume 估算走球冠公式。
+   */
+  function buildBallCam(): CamIR {
+    const moves: Array<{ type: CamIR["toolpaths"][number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
+    const rapid = (x: number, y: number) => moves.push({ type: "RAPID", x, y, z: 12 });
+    const plunge = (x: number, y: number, z: number) => moves.push({ type: "PLUNGE", x, y, z, feed_mm_min: 200 });
+    const linear = (x: number, y: number, z: number) => moves.push({ type: "LINEAR", x, y, z, feed_mm_min: 500 });
+    const retract = (x: number, y: number) => moves.push({ type: "RETRACT", x, y, z: 12 });
+
+    rapid(10, 30);
+    plunge(10, 30, 10); // 到毛坯顶面（首个切削 move，prev=null 不计段）
+    plunge(10, 30, 7); // 下探 h=3（球冠段）
+    linear(50, 30, 7); // 水平扫掠 Lxy=40
+    retract(50, 30);
+
+    return {
+      schema_version: "1.0.0",
+      ir_id: "ir_p2_19",
+      job_id: "job_p2_19",
+      part_id: "part_p2_19",
+      units: { length: "mm", angle: "deg", speed: "rpm", feed: "mm/min" },
+      machine: { machine_id: "mch_vmc850", controller_id: "siemens_828d", axis_config: "3AXIS", travel: { x: 200, y: 200, z: 200 } },
+      material: { material_id: "mat_al6061" },
+      stock: { id: "stk_p2_19", kind: "BOX", dimensions: { x: 60, y: 60, z: 10 }, origin: { x: 0, y: 0, z: 0 } },
+      setups: [{ id: "su1", wcs: "G54", origin: { x: 0, y: 0, z: 0 } }],
+      tools: [{ tool_id: "tool_ball_6" }],
+      operations: [
+        {
+          id: "op_ball1",
+          op_index: 1,
+          name: "BALL 球头",
+          type: "POCKET",
+          setup_id: "su1",
+          feature_ids: ["feat_ball1"],
+          tool: { tool_id: "tool_ball_6" },
+          parameters: { spindle_speed_rpm: 3000, feed_mm_min: 500, coolant: "FLOOD", source: "ENGINE" },
+          depends_on: [],
+          safe_z_mm: 12,
+        },
+      ],
+      toolpaths: [
+        { operation_id: "op_ball1", toolpath_id: "tp_ball1", engine_version: "test", move_count: moves.length, moves: moves as CamIR["toolpaths"][number]["moves"] },
+      ],
+    };
+  }
+
+  it("BALL 刀 removed_volume 用球冠公式（而非圆柱近似）", () => {
+    const cam = buildBallCam();
+    const rep = simulate({ cam, partVolumeMm3: 0, voxel: { voxelSize: 2 } });
+    expect(rep.op_details.length).toBe(1);
+    const op = rep.op_details[0];
+    expect(op.tool_id).toBe("tool_ball_6");
+
+    // tool_ball_6: diameter=6 → R=3, corner_radius=3 → rCap=3
+    // 水平段 Lxy=40：π·R²·Lxy = π·9·40 = 360π
+    // 下探 h=3：球冠 V = π·h²·(3R-h)/3 = π·9·(9-3)/3 = 18π
+    const R = 3;
+    const Lxy = 40;
+    const h = 3;
+    const expected = Math.PI * R * R * Lxy + (Math.PI * h * h / 3) * (3 * R - h);
+    expect(op.removed_volume_mm3).toBeCloseTo(expected, 1);
+
+    // 若用圆柱近似下探（π·R²·h = 27π），总量为 387π；球冠仅 378π → 明显更小
+    const naiveCylinder = Math.PI * R * R * Lxy + Math.PI * R * R * h;
+    expect(op.removed_volume_mm3).toBeLessThan(naiveCylinder - 1);
+
+    expect(rep.estimate_method).toBe("spherical_cap");
   });
 });

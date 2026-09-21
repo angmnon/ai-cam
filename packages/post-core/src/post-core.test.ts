@@ -16,6 +16,19 @@ describe("formatter", () => {
     expect(fmt(52, 3)).toBe("52");
     expect(fmt(1.5, 3)).toBe("1.5");
   });
+
+  // P2-23：精度下限 4 位小数，小非零值不被截为 0；去尾零仍生效。
+  it("fmt P2-23 小数值不丢精度", () => {
+    expect(fmt(0.0004, 3)).toBe("0.0004");
+    expect(fmt(-0.0004, 3)).toBe("-0.0004");
+    expect(fmt(0, 3)).toBe("0");
+    expect(fmt(12.5, 3)).toBe("12.5");
+    expect(fmt(3.14, 3)).toBe("3.14");
+    // 超过 3 位的精度也按 4 位保留再去尾零
+    expect(fmt(3.14159, 3)).toBe("3.1416");
+    // decimals > 4 时仍按调用方要求
+    expect(fmt(2.5, 6)).toBe("2.5");
+  });
 });
 
 describe("postProcess（box 样本）", () => {

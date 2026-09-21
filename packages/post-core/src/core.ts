@@ -69,7 +69,11 @@ export function createModalState(): ModalState {
 // ---------- Formatter ----------
 export function fmt(v: number | null | undefined, decimals: number): string {
   if (v == null) return "";
-  const s = v.toFixed(decimals);
+  // P2-23：精度下限为 4 位小数。旧逻辑直接 toFixed(decimals)（profile 多为 3 位），
+  // 导致 |x|<0.0005 被四舍五入成 "0.000" → 去尾零后丢成 "0"。
+  // 现按 max(decimals, 4) 定精度再去尾零，保证最小非零值保留到 0.0001 级。
+  const eff = Math.max(decimals, 4);
+  const s = v.toFixed(eff);
   // 去尾零（保留 1 位最少）
   let out = s.replace(/\.?0+$/, "");
   if (out === "-0") out = "0";

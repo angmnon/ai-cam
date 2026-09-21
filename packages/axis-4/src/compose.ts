@@ -4,7 +4,7 @@
 import type { CamIR, Operation, Setup, ToolpathIR } from "@ai-cam/cam-ir";
 import type { Feature } from "@ai-cam/domain-schemas";
 import type { NormalizedPartModel } from "@ai-cam/geometry-schema";
-import { planPart, type PlannerOptions } from "@ai-cam/cam-kernel";
+import { planPart, type PlannerOptions, type PlanResult } from "@ai-cam/cam-kernel";
 import { assignFeaturesToSetups, type FeatureAssignment } from "./assign.js";
 import type { IndexAxis } from "./transform.js";
 
@@ -33,12 +33,43 @@ export function planIndexed4Axis(part: NormalizedPartModel, features: Feature[],
   for (const a of angles) byAngle.set(a, []);
   for (const as of assignments) byAngle.get(as.angle)?.push(features.find((f) => f.id === as.feature_id)!);
 
+  // P2-15(1)：毛坯从 part bbox 计算，各方向外放 1mm 余量（替代原 80×50×30 / margin 5 硬编码）
+  const STOCK_ALLOWANCE_MM = 1;
+  const bmin = part.bbox_mm.min;
+  const bmax = part.bbox_mm.max;
+  const stockDimensions = {
+    x: (bmax[0] - bmin[0]) + 2 * STOCK_ALLOWANCE_MM,
+    y: (bmax[1] - bmin[1]) + 2 * STOCK_ALLOWANCE_MM,
+    z: (bmax[2] - bmin[2]) + 2 * STOCK_ALLOWANCE_MM,
+  };
+  const stockMargin = { x: STOCK_ALLOWANCE_MM, y: STOCK_ALLOWANCE_MM, z: STOCK_ALLOWANCE_MM };
+
+  // P2-15(3)：INDEX_ROTATE 为非切削分度动作（空转、不换刀）。原占位刀具 id "INDEX" 在
+  // master-data 中不存在（非法引用）；改绑 master-data 真实常备刀 tool_em_6（平刀 Ø6，
+  // 见 packages/master-data/src/seeds.ts）作为 IR 引用占位，Post 层对该动作不输出换刀。
+  const INDEX_TOOL_ID = "tool_em_6";
+
+  // P2-15(4)：同一 subset（角度）只 planPart 一次并缓存复用（替代原每角度重复 planPart 两次）。
+  const subPlans = new Map<number, PlanResult>();
+  for (const angle of angles) {
+    const subset = byAngle.get(angle) ?? [];
+    if (subset.length === 0) continue;
+    subPlans.set(angle, planPart(part, subset, { ...options, machineId: options.machineId ?? "mch_vmc850", materialId: options.materialId ?? "mat_al_6061" }));
+  }
+
+  // P2-15(5)：跨角度/跨工序统一刀号——同一物理刀具 id（master-data 刀唯一键）首次出现分配 T，
+  // 之后复用同一 T（替代原每工序 toolNumberSeq++ 导致同一把物理刀跨 op 拿到不同 T）。
+  const toolNumberByToolId = new Map<string, number>();
+  const nextToolNumber = (toolId: string): number => {
+    if (!toolNumberByToolId.has(toolId)) toolNumberByToolId.set(toolId, toolNumberByToolId.size + 1);
+    return toolNumberByToolId.get(toolId)!;
+  };
+
   const setups: Setup[] = [];
   const ops: Operation[] = [];
   const toolpaths: ToolpathIR[] = [];
   const per_setup: Indexed4AxisResult["per_setup"] = {};
   let opIndex = 0;
-  let toolNumberSeq = 1;
 
   for (const angle of angles) {
     const subset = byAngle.get(angle) ?? [];
@@ -60,7 +91,7 @@ export function planIndexed4Axis(part: NormalizedPartModel, features: Feature[],
         type: "INDEX_ROTATE",
         setup_id: setupId,
         feature_ids: subset.length > 0 ? [subset[0].id] : [],
-        tool: { tool_id: "INDEX", tool_number: toolNumberSeq },
+        tool: { tool_id: INDEX_TOOL_ID, tool_number: nextToolNumber(INDEX_TOOL_ID) },
         parameters: { spindle_speed_rpm: 1, feed_mm_min: 1, coolant: "OFF", source: "ENGINE" },
         depends_on: [],
       };
@@ -70,30 +101,24 @@ export function planIndexed4Axis(part: NormalizedPartModel, features: Feature[],
       per_setup[angle] = { operation_count: 0, feature_count: 0, wcs: angle === 0 ? "G54" : "G55" };
       continue;
     }
-    const sub = planPart(part, subset, { ...options, machineId: options.machineId ?? "mch_vmc850", materialId: options.materialId ?? "mat_al_6061" });
+    const sub = subPlans.get(angle)!;
     for (const op of sub.cam.operations) {
       ops.push({
         ...op,
         id: `${op.id}`,
         op_index: ++opIndex,
         setup_id: setupId,
-        tool: { ...op.tool, tool_number: toolNumberSeq++ },
+        tool: { ...op.tool, tool_number: nextToolNumber(op.tool.tool_id) },
       });
     }
     for (const tp of sub.toolpaths) toolpaths.push({ ...tp });
     per_setup[angle] = { operation_count: sub.cam.operations.length, feature_count: subset.length, wcs: angle === 0 ? "G54" : "G55" };
   }
 
-  const toolSet = new Map<string, { tool_id: string; tool_number: number }>();
-  toolSet.set("INDEX", { tool_id: "INDEX", tool_number: 1 });
-  const subCams: CamIR[] = [];
-  for (const angle of angles) {
-    const subset = byAngle.get(angle) ?? [];
-    if (subset.length === 0) continue;
-    const sub = planPart(part, subset, { ...options, machineId: options.machineId ?? "mch_vmc850", materialId: options.materialId ?? "mat_al_6061" });
-    subCams.push(sub.cam);
-  }
-  for (const c of subCams) for (const t of c.tools) if (!toolSet.has(t.tool_id)) toolSet.set(t.tool_id, { tool_id: t.tool_id, tool_number: toolSet.size + 1 });
+  // P2-15(2)：真实控制器 id 取自 master-data 种子（cam-kernel 已按 machineId 解析
+  // supported_controllers[0]，如 mch_vmc850 → ctl_fanuc_0imf）；替代原硬编码方言串 "FANUC"。
+  const firstSub = subPlans.size > 0 ? [...subPlans.values()][0] : undefined;
+  const controllerId = firstSub?.cam.machine.controller_id ?? "ctl_fanuc_0imf";
 
   const cam: CamIR = {
     schema_version: "1.0.0",
@@ -104,15 +129,17 @@ export function planIndexed4Axis(part: NormalizedPartModel, features: Feature[],
     machine: {
       machine_id: options.machineId ?? "mch_vmc850",
       machine_name: "VMC850 (4-Axis Index)",
-      axis_config: "INDEXED_4AXIS",
-      controller_id: "FANUC",
+      // cam-ir MachineProfile 仅接受 3AXIS/4AXIS/5AXIS 三值；domain 的 INDEXED_4AXIS 归入 4AXIS
+      // （与 cam-kernel planner.ts 的 axis_config 映射保持一致）。
+      axis_config: "4AXIS",
+      controller_id: controllerId,
       max_spindle_rpm: 8000,
       max_feed: 12000,
     },
     material: { material_id: options.materialId ?? "mat_al_6061", material_name: "6061-T6", grade: "Al" },
-    stock: { id: "stock_box", kind: "BOX", dimensions: { x: 80, y: 50, z: 30 }, margin: { x: 5, y: 5, z: 5 } },
+    stock: { id: "stock_box", kind: "BOX", dimensions: stockDimensions, margin: stockMargin },
     setups,
-    tools: [...toolSet.values()],
+    tools: [...toolNumberByToolId.entries()].map(([tool_id, tool_number]) => ({ tool_id, tool_number })),
     operations: ops,
     toolpaths,
     metadata: { generated_by: "axis-4", generator_version: "0.1.0", created_at: new Date().toISOString() },

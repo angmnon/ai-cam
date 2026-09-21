@@ -11,10 +11,20 @@ import { VoxelGrid, voxelizeStock, sampleMove, type VoxelOptions } from "./voxel
 
 export const STOCK_SIM_VERSION = "0.1.0";
 
-export type Verdict = "PASS" | "WARN" | "FAIL";
+export type Verdict = "PASS" | "WARN" | "ERROR" | "FAIL";
 
 export interface SimEvent {
-  kind: "COLLISION" | "GOUGE" | "RESIDUAL_WARN" | "RESIDUAL_FAIL" | "OVERTRAVEL" | "COVERAGE_WARN";
+  kind:
+    | "COLLISION"
+    | "GOUGE"
+    | "RESIDUAL_WARN"
+    | "RESIDUAL_FAIL"
+    | "OVERTRAVEL"
+    | "COVERAGE_WARN"
+    /** P2-18：stock 关键字段（dimensions/origin）缺失，使用了默认毛坯尺寸 */
+    | "STOCK_FALLBACK"
+    /** P2-18：配置类错误（如刀具不在种子库），无法仿真该 op */
+    | "CONFIG_ERROR";
   severity: Verdict;
   operation_id?: string;
   move_index?: number;
@@ -63,6 +73,10 @@ export interface SimulationReport {
   collision_coverage: { holder: string; fixture: string; machine_envelope: string };
   /** 播放快照（默认 step=4 降采样；每 op 一个关键帧） */
   frames: Array<{ operation_id: string; step: number; snapshot: Array<{ x: number; y: number; z: number; solid: boolean }> }>;
+  /** P2-19 体积估算方法：cylinder=圆柱扫掠；spherical_cap=球头(BALL/BULL)按球冠修正 */
+  estimate_method: "cylinder" | "spherical_cap";
+  /** P2-18 运行期元信息：stock 关键字段缺失时使用了默认毛坯尺寸（不再静默） */
+  metadata: { stock_fallback: boolean };
 }
 
 export interface SimulateInput {
@@ -118,6 +132,24 @@ export function simulate(input: SimulateInput): SimulationReport {
 
   let cumulativeRemoved = 0;
   let opCounter = 0;
+  let anyBallNose = false; // P2-19：是否存在 BALL/BULL 刀（决定 estimate_method）
+
+  // P2-18：stock 关键字段缺失 → 不再静默默认，显式 WARN 事件 + metadata 暴露
+  const stockDims = cam.stock?.dimensions;
+  const stockOrigin = cam.stock?.origin;
+  const stockFallback =
+    stockDims == null || stockDims.x == null || stockDims.y == null || stockDims.z == null ||
+    stockOrigin == null || stockOrigin.x == null || stockOrigin.y == null || stockOrigin.z == null;
+  if (stockFallback) {
+    events.push({
+      kind: "STOCK_FALLBACK",
+      severity: "WARN",
+      x: 0,
+      y: 0,
+      z: 0,
+      message: "stock dimensions/origin 缺失，静默默认毛坯 100×100×40 @(-50,-50,0)",
+    });
+  }
 
   for (const op of ops) {
     const tp = toolpaths.get(op.id);
@@ -127,9 +159,13 @@ export function simulate(input: SimulateInput): SimulationReport {
     }
     const tool = toolById.get(op.tool.tool_id);
     if (!tool) {
-      events.push({ kind: "COLLISION", severity: "FAIL", x: 0, y: 0, z: 0, operation_id: op.id, message: `刀具 ${op.tool.tool_id} 不在种子刀具库，无法仿真` });
+      // P2-18：刀具缺失从 COLLISION/FAIL 升级为 CONFIG_ERROR（severity ERROR）
+      events.push({ kind: "CONFIG_ERROR", severity: "ERROR", x: 0, y: 0, z: 0, operation_id: op.id, message: `刀具 ${op.tool.tool_id} 不在种子刀具库，无法仿真` });
       continue;
     }
+    // P2-19：BALL/BULL 刀的球头体积按球冠修正（仅体积估算，不影响碰撞判定）
+    const isBallNose = tool.type === "BALL_END_MILL" || tool.type === "BULL_NOSE";
+    if (isBallNose) anyBallNose = true;
     const radius = tool.diameter_mm / 2;
     const opStartVolume = initialVolume - cumulativeRemoved;
     const opEvents: SimEvent[] = [];
@@ -206,8 +242,11 @@ export function simulate(input: SimulateInput): SimulationReport {
     }
 
     const after = grid.stats();
-    const removed = Math.max(0, opStartVolume - after.volume_mm3);
-    cumulativeRemoved += removed;
+    const voxelRemoved = Math.max(0, opStartVolume - after.volume_mm3);
+    // P2-19：BALL/BULL 球头按球冠（spherical cap）估算切除体积；碰撞判定仍走体素圆柱扫掠（不改）。
+    // 累计与残料仍用体素实测，仅上报体积估算切换方法，避免 golden 漂移。
+    const removed = isBallNose ? Math.max(0, estimateBallNoseVolume(tp, tool.diameter_mm, tool.corner_radius_mm)) : voxelRemoved;
+    cumulativeRemoved += voxelRemoved;
     opDetails.push({
       operation_id: op.id,
       type: op.type,
@@ -249,8 +288,9 @@ export function simulate(input: SimulateInput): SimulationReport {
   }
 
   const hasFail = events.some((e) => e.severity === "FAIL");
+  const hasError = events.some((e) => e.severity === "ERROR");
   const hasWarn = events.some((e) => e.severity === "WARN");
-  const status: Verdict = hasFail ? "FAIL" : hasWarn ? "WARN" : "PASS";
+  const status: Verdict = hasFail || hasError ? "FAIL" : hasWarn ? "WARN" : "PASS";
 
   // P1-05 碰撞覆盖度：fixture AABB 未在 CamIR setup 建模 → not_checked
   const setup0 = cam.setups?.[0] as (typeof cam.setups[number] & { fixture_bbox?: unknown }) | undefined;
@@ -280,7 +320,42 @@ export function simulate(input: SimulateInput): SimulationReport {
     key_surfaces: keySurfaces,
     collision_coverage: collisionCoverage,
     frames,
+    estimate_method: anyBallNose ? "spherical_cap" : "cylinder",
+    metadata: { stock_fallback: stockFallback },
   };
+}
+
+/**
+ * P2-19 球头扫掠体积估算（spherical cap）。
+ * 旧圆柱近似把球头下半按半径 R 直筒扣除；球头实际为半球/球冠。这里按刀路几何估算：
+ * - 水平扫掠段：按赤道全啮合截面积 π·R²·Lxy；
+ * - 垂直下探段（dz<0）：球冠体积 V = π·h²·(3·rCap - h)/3（h≤2·rCap），替代圆柱 π·R²·h。
+ * 仅改体积估算；碰撞/残料判定仍走体素圆柱扫掠，不受影响。
+ */
+function estimateBallNoseVolume(tp: ToolpathIR, diameterMm: number, cornerRadiusMm?: number): number {
+  const R = diameterMm / 2;
+  const rCap = Math.min(R, cornerRadiusMm ?? R);
+  let vol = 0;
+  let prev: ToolpathMove | null = null;
+  for (const m of tp.moves) {
+    if (m.type === "RAPID" || m.type === "RETRACT") {
+      prev = null;
+      continue;
+    }
+    if (prev) {
+      const dx = m.x - prev.x;
+      const dy = m.y - prev.y;
+      const dz = m.z - prev.z;
+      const Lxy = Math.hypot(dx, dy);
+      if (Lxy > 0) vol += Math.PI * R * R * Lxy; // 水平段（赤道截面）
+      if (dz < 0) {
+        const h = Math.min(2 * rCap, -dz); // 球冠高
+        vol += (Math.PI * h * h / 3) * (3 * rCap - h);
+      }
+    }
+    prev = m;
+  }
+  return vol;
 }
 
 /** 切削触发点：RAPID 后紧跟这些类型即视为进刀，其终点免 safeZ 低空断言 */

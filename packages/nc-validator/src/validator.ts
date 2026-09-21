@@ -182,7 +182,9 @@ export function validateNc(input: {
       }
     }
   }
-  if (!machine) l3.push({ code: "MACHINE_NOT_FOUND", severity: "WARN", message: `机床 ${cam.machine.machine_id} 不在种子库，限制检查降级`, layer: "MACHINE" });
+  // P2-26：机床不在种子库时 L3 限制检查静默降级，必须把"降级事实"写入 report
+  // （WARN，code=MACHINE_NOT_IN_SEED），避免静默放行导致超限限制被遗漏。
+  if (!machine) l3.push({ code: "MACHINE_NOT_IN_SEED", severity: "WARN", message: `机床 ${cam.machine.machine_id} 不在种子库，L3 主轴/进给/行程限制检查按默认上限降级（P2-26）`, layer: "MACHINE" });
   layers.push({ layer: "MACHINE", status: l3.some((c) => c.severity === "ERROR") ? "FAIL" : l3.some((c) => c.severity === "WARN") ? "WARN" : "PASS", checks: l3 });
   checks.push(...l3);
 

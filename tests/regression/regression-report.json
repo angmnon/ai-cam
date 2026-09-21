@@ -1,6 +1,6 @@
 {
  "benchmark": "golden-300 全量回归",
- "date": "2026-09-21T03:06:29.533Z",
+ "date": "2026-09-21T03:29:48.166Z",
  "total": 300,
  "pass": 300,
  "fail": 0,
@@ -12,13 +12,13 @@
   "complex": "100/100"
  },
  "perf": {
-  "fast_p50_ms": 0.2,
-  "fast_p95_ms": 0.6,
-  "fast_p99_ms": 1.3,
-  "full_p50_ms": 271.3,
-  "full_p95_ms": 500.8,
-  "full_p99_ms": 737.8,
-  "wall_sec": 16.2
+  "fast_p50_ms": 1.6,
+  "fast_p95_ms": 4.1,
+  "fast_p99_ms": 6.3,
+  "full_p50_ms": 170.8,
+  "full_p95_ms": 340.8,
+  "full_p99_ms": 422.1,
+  "wall_sec": 10.7
  },
  "failures": [],
  "rows": [
@@ -31,11 +31,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 164,
+   "moves": 168,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 10.2
+   "ms": 14.2
   },
   {
    "id": "gv2_simple_002",
@@ -50,7 +50,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1.2
+   "ms": 2
   },
   {
    "id": "gv2_simple_003",
@@ -61,11 +61,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 320,
+   "moves": 328,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 338,
-   "ms": 142.6
+   "nc_lines": 346,
+   "ms": 100.4
   },
   {
    "id": "gv2_simple_004",
@@ -80,7 +80,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1.3
+   "ms": 1.9
   },
   {
    "id": "gv2_simple_005",
@@ -95,7 +95,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2
   },
   {
    "id": "gv2_simple_006",
@@ -110,7 +110,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_007",
@@ -125,7 +125,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 65,
-   "ms": 66.9
+   "ms": 48.9
   },
   {
    "id": "gv2_simple_008",
@@ -136,11 +136,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 328,
+   "moves": 336,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 3.8
   },
   {
    "id": "gv2_simple_009",
@@ -155,7 +155,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_010",
@@ -166,11 +166,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 226,
+   "moves": 232,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.5
   },
   {
    "id": "gv2_simple_011",
@@ -181,11 +181,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 133,
+   "moves": 136,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.6
   },
   {
    "id": "gv2_simple_012",
@@ -200,7 +200,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.7
   },
   {
    "id": "gv2_simple_013",
@@ -211,11 +211,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 198,
+   "moves": 202,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.7
   },
   {
    "id": "gv2_simple_014",
@@ -230,7 +230,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 67,
-   "ms": 99.8
+   "ms": 81.9
   },
   {
    "id": "gv2_simple_015",
@@ -245,7 +245,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_016",
@@ -260,7 +260,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_017",
@@ -275,7 +275,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_018",
@@ -286,11 +286,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 131,
+   "moves": 134,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1
   },
   {
    "id": "gv2_simple_019",
@@ -305,7 +305,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 64,
-   "ms": 132.6
+   "ms": 102.6
   },
   {
    "id": "gv2_simple_020",
@@ -316,11 +316,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 159,
-   "ms": 77
+   "nc_lines": 162,
+   "ms": 52
   },
   {
    "id": "gv2_simple_021",
@@ -331,11 +331,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 94,
+   "moves": 96,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_022",
@@ -346,11 +346,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 284,
+   "moves": 291,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.9
+   "ms": 1.7
   },
   {
    "id": "gv2_simple_023",
@@ -365,7 +365,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 75,
-   "ms": 153.2
+   "ms": 100.1
   },
   {
    "id": "gv2_simple_024",
@@ -376,11 +376,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 164,
+   "moves": 168,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.2
   },
   {
    "id": "gv2_simple_025",
@@ -395,7 +395,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_026",
@@ -406,11 +406,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 170,
+   "moves": 174,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 189,
-   "ms": 93.2
+   "nc_lines": 193,
+   "ms": 62.3
   },
   {
    "id": "gv2_simple_027",
@@ -421,11 +421,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 195,
+   "moves": 200,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.4
   },
   {
    "id": "gv2_simple_028",
@@ -440,7 +440,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_029",
@@ -451,11 +451,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 148,
+   "moves": 151,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1
   },
   {
    "id": "gv2_simple_030",
@@ -470,7 +470,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_031",
@@ -485,7 +485,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_032",
@@ -496,11 +496,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 195,
+   "moves": 200,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.1
   },
   {
    "id": "gv2_simple_033",
@@ -515,7 +515,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_034",
@@ -526,11 +526,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 170,
+   "moves": 174,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.6
   },
   {
    "id": "gv2_simple_035",
@@ -541,11 +541,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 240,
+   "moves": 246,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.4
   },
   {
    "id": "gv2_simple_036",
@@ -560,7 +560,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 57,
-   "ms": 101.5
+   "ms": 68.7
   },
   {
    "id": "gv2_simple_037",
@@ -575,7 +575,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.7
   },
   {
    "id": "gv2_simple_038",
@@ -586,11 +586,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 133,
+   "moves": 136,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 152,
-   "ms": 69.5
+   "nc_lines": 155,
+   "ms": 58.7
   },
   {
    "id": "gv2_simple_039",
@@ -605,7 +605,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_040",
@@ -620,7 +620,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_041",
@@ -631,11 +631,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 164,
+   "moves": 168,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.6
   },
   {
    "id": "gv2_simple_042",
@@ -646,11 +646,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 184,
+   "moves": 188,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1.3
+   "ms": 1
   },
   {
    "id": "gv2_simple_043",
@@ -665,7 +665,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_044",
@@ -680,7 +680,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_045",
@@ -691,11 +691,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 192,
+   "moves": 196,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1
   },
   {
    "id": "gv2_simple_046",
@@ -710,7 +710,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 71,
-   "ms": 81.2
+   "ms": 57.5
   },
   {
    "id": "gv2_simple_047",
@@ -721,11 +721,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 178,
+   "moves": 182,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 199,
-   "ms": 128.7
+   "nc_lines": 203,
+   "ms": 85.2
   },
   {
    "id": "gv2_simple_048",
@@ -736,11 +736,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 125,
+   "moves": 128,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1
   },
   {
    "id": "gv2_simple_049",
@@ -751,11 +751,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_050",
@@ -766,11 +766,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_051",
@@ -781,11 +781,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 184,
+   "moves": 188,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1
   },
   {
    "id": "gv2_simple_052",
@@ -800,7 +800,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 65,
-   "ms": 43.1
+   "ms": 33.1
   },
   {
    "id": "gv2_simple_053",
@@ -811,11 +811,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 226,
+   "moves": 232,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.4
   },
   {
    "id": "gv2_simple_054",
@@ -830,7 +830,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 72,
-   "ms": 42.6
+   "ms": 38
   },
   {
    "id": "gv2_simple_055",
@@ -841,11 +841,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 133,
+   "moves": 136,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1
   },
   {
    "id": "gv2_simple_056",
@@ -860,7 +860,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_057",
@@ -875,7 +875,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.3
   },
   {
    "id": "gv2_simple_058",
@@ -890,7 +890,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_059",
@@ -905,7 +905,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_060",
@@ -920,7 +920,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 82,
-   "ms": 52.9
+   "ms": 39.6
   },
   {
    "id": "gv2_simple_061",
@@ -931,11 +931,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 406,
+   "moves": 416,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.3
   },
   {
    "id": "gv2_simple_062",
@@ -950,7 +950,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 66,
-   "ms": 62.2
+   "ms": 51.6
   },
   {
    "id": "gv2_simple_063",
@@ -965,7 +965,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_064",
@@ -980,7 +980,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_065",
@@ -995,7 +995,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_066",
@@ -1010,7 +1010,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_067",
@@ -1021,11 +1021,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 240,
+   "moves": 246,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.3
   },
   {
    "id": "gv2_simple_068",
@@ -1040,7 +1040,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_069",
@@ -1055,7 +1055,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_070",
@@ -1070,7 +1070,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_071",
@@ -1081,11 +1081,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 146,
+   "moves": 149,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 168,
-   "ms": 75.7
+   "nc_lines": 171,
+   "ms": 67
   },
   {
    "id": "gv2_simple_072",
@@ -1100,7 +1100,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_073",
@@ -1115,7 +1115,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_074",
@@ -1130,7 +1130,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 57,
-   "ms": 86.9
+   "ms": 63.4
   },
   {
    "id": "gv2_simple_075",
@@ -1141,11 +1141,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 192,
+   "moves": 196,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 211,
-   "ms": 101.6
+   "nc_lines": 215,
+   "ms": 77.4
   },
   {
    "id": "gv2_simple_076",
@@ -1160,7 +1160,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_simple_077",
@@ -1171,11 +1171,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 190,
+   "moves": 194,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.1
   },
   {
    "id": "gv2_simple_078",
@@ -1186,11 +1186,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 146,
+   "moves": 149,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_079",
@@ -1205,7 +1205,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_080",
@@ -1220,7 +1220,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_081",
@@ -1235,7 +1235,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_082",
@@ -1246,11 +1246,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 178,
+   "moves": 182,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1
   },
   {
    "id": "gv2_simple_083",
@@ -1265,7 +1265,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_084",
@@ -1280,7 +1280,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_085",
@@ -1291,11 +1291,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 133,
+   "moves": 136,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 152,
-   "ms": 95
+   "nc_lines": 155,
+   "ms": 58.4
   },
   {
    "id": "gv2_simple_086",
@@ -1306,11 +1306,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 170,
+   "moves": 174,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 192,
-   "ms": 84.9
+   "nc_lines": 196,
+   "ms": 64.1
   },
   {
    "id": "gv2_simple_087",
@@ -1325,7 +1325,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_088",
@@ -1340,7 +1340,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_089",
@@ -1351,11 +1351,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 172,
+   "moves": 176,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1
   },
   {
    "id": "gv2_simple_090",
@@ -1370,7 +1370,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_091",
@@ -1381,11 +1381,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 195,
+   "moves": 200,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1
   },
   {
    "id": "gv2_simple_092",
@@ -1396,11 +1396,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_093",
@@ -1415,7 +1415,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_094",
@@ -1426,11 +1426,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_095",
@@ -1441,11 +1441,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 240,
+   "moves": 246,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_simple_096",
@@ -1456,11 +1456,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 148,
+   "moves": 151,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_097",
@@ -1471,11 +1471,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
-   "moves": 170,
+   "moves": 174,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1
   },
   {
    "id": "gv2_simple_098",
@@ -1486,11 +1486,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 195,
+   "moves": 200,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.2
   },
   {
    "id": "gv2_simple_099",
@@ -1501,11 +1501,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
-   "moves": 140,
+   "moves": 143,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.8
   },
   {
    "id": "gv2_simple_100",
@@ -1520,7 +1520,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_001",
@@ -1531,11 +1531,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 253,
+   "moves": 258,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_002",
@@ -1546,11 +1546,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 272,
+   "moves": 278,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_003",
@@ -1561,11 +1561,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 242,
+   "moves": 246,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 266,
-   "ms": 217
+   "nc_lines": 270,
+   "ms": 153
   },
   {
    "id": "gv2_medium_004",
@@ -1576,11 +1576,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 227,
+   "moves": 232,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_005",
@@ -1591,11 +1591,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 274,
+   "moves": 280,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_006",
@@ -1610,7 +1610,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.8
   },
   {
    "id": "gv2_medium_007",
@@ -1621,11 +1621,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 206,
+   "moves": 210,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 228,
-   "ms": 410.4
+   "nc_lines": 232,
+   "ms": 276.9
   },
   {
    "id": "gv2_medium_008",
@@ -1636,11 +1636,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 305,
+   "moves": 310,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.2
   },
   {
    "id": "gv2_medium_009",
@@ -1651,11 +1651,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 227,
+   "moves": 232,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.3
   },
   {
    "id": "gv2_medium_010",
@@ -1666,11 +1666,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 474,
+   "moves": 485,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.2
   },
   {
    "id": "gv2_medium_011",
@@ -1681,11 +1681,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 210,
+   "moves": 214,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.1
   },
   {
    "id": "gv2_medium_012",
@@ -1696,11 +1696,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 430,
+   "moves": 440,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2
   },
   {
    "id": "gv2_medium_013",
@@ -1711,11 +1711,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 190,
+   "moves": 194,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.1
   },
   {
    "id": "gv2_medium_014",
@@ -1726,11 +1726,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 278,
+   "moves": 283,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 300,
-   "ms": 233.7
+   "nc_lines": 305,
+   "ms": 167.3
   },
   {
    "id": "gv2_medium_015",
@@ -1741,11 +1741,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 264,
+   "moves": 270,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_016",
@@ -1756,11 +1756,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 245,
+   "moves": 250,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_017",
@@ -1771,11 +1771,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 245,
+   "moves": 250,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.3
   },
   {
    "id": "gv2_medium_018",
@@ -1786,11 +1786,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 201,
+   "moves": 204,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_019",
@@ -1801,11 +1801,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 270,
+   "moves": 275,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 292,
-   "ms": 472
+   "nc_lines": 297,
+   "ms": 282.4
   },
   {
    "id": "gv2_medium_020",
@@ -1820,7 +1820,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 114,
-   "ms": 315.4
+   "ms": 196.4
   },
   {
    "id": "gv2_medium_021",
@@ -1835,7 +1835,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.2
   },
   {
    "id": "gv2_medium_022",
@@ -1850,7 +1850,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_023",
@@ -1861,11 +1861,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 297,
+   "moves": 302,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 319,
-   "ms": 440
+   "nc_lines": 324,
+   "ms": 253.6
   },
   {
    "id": "gv2_medium_024",
@@ -1876,11 +1876,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 214,
+   "moves": 218,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.3
   },
   {
    "id": "gv2_medium_025",
@@ -1895,7 +1895,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_026",
@@ -1906,11 +1906,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 522,
+   "moves": 534,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 544,
-   "ms": 329
+   "nc_lines": 556,
+   "ms": 200.2
   },
   {
    "id": "gv2_medium_027",
@@ -1921,11 +1921,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 962,
+   "moves": 987,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 4.1
   },
   {
    "id": "gv2_medium_028",
@@ -1940,7 +1940,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.8
   },
   {
    "id": "gv2_medium_029",
@@ -1951,11 +1951,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 198,
+   "moves": 202,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1
   },
   {
    "id": "gv2_medium_030",
@@ -1966,11 +1966,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 274,
+   "moves": 279,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.8
   },
   {
    "id": "gv2_medium_031",
@@ -1981,11 +1981,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 1116,
+   "moves": 1147,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.9
+   "ms": 7.5
   },
   {
    "id": "gv2_medium_032",
@@ -1996,11 +1996,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 249,
+   "moves": 254,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_033",
@@ -2011,11 +2011,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 182,
+   "moves": 185,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.2
   },
   {
    "id": "gv2_medium_034",
@@ -2030,7 +2030,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_035",
@@ -2041,11 +2041,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 266,
+   "moves": 271,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_036",
@@ -2056,11 +2056,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 206,
+   "moves": 210,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 229,
-   "ms": 212.9
+   "nc_lines": 233,
+   "ms": 159
   },
   {
    "id": "gv2_medium_037",
@@ -2071,11 +2071,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 246,
+   "moves": 250,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_038",
@@ -2090,7 +2090,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 118,
-   "ms": 200.6
+   "ms": 142.6
   },
   {
    "id": "gv2_medium_039",
@@ -2105,7 +2105,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.1
   },
   {
    "id": "gv2_medium_040",
@@ -2116,11 +2116,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 234,
+   "moves": 238,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 3.1
   },
   {
    "id": "gv2_medium_041",
@@ -2131,11 +2131,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 333,
+   "moves": 342,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_042",
@@ -2146,11 +2146,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 229,
+   "moves": 234,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.2
   },
   {
    "id": "gv2_medium_043",
@@ -2161,11 +2161,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 325,
+   "moves": 334,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_044",
@@ -2176,11 +2176,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 411,
+   "moves": 422,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2
   },
   {
    "id": "gv2_medium_045",
@@ -2191,11 +2191,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 514,
+   "moves": 526,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.3
   },
   {
    "id": "gv2_medium_046",
@@ -2210,7 +2210,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 130,
-   "ms": 296.5
+   "ms": 196.4
   },
   {
    "id": "gv2_medium_047",
@@ -2221,11 +2221,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 246,
+   "moves": 250,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 268,
-   "ms": 299
+   "nc_lines": 272,
+   "ms": 187.2
   },
   {
    "id": "gv2_medium_048",
@@ -2236,11 +2236,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 197,
+   "moves": 200,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_049",
@@ -2251,11 +2251,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 198,
+   "moves": 202,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.3
   },
   {
    "id": "gv2_medium_050",
@@ -2266,11 +2266,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 278,
+   "moves": 283,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.4
   },
   {
    "id": "gv2_medium_051",
@@ -2281,11 +2281,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 422,
+   "moves": 432,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.4
   },
   {
    "id": "gv2_medium_052",
@@ -2296,11 +2296,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 324,
+   "moves": 332,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 348,
-   "ms": 204.2
+   "nc_lines": 356,
+   "ms": 141.8
   },
   {
    "id": "gv2_medium_053",
@@ -2311,11 +2311,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 228,
+   "moves": 232,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_medium_054",
@@ -2326,11 +2326,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 363,
+   "moves": 372,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 388,
-   "ms": 271.3
+   "nc_lines": 397,
+   "ms": 170.8
   },
   {
    "id": "gv2_medium_055",
@@ -2345,7 +2345,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 1.3
   },
   {
    "id": "gv2_medium_056",
@@ -2356,11 +2356,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 204,
+   "moves": 208,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_057",
@@ -2371,11 +2371,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 287,
+   "moves": 294,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_058",
@@ -2386,11 +2386,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 202,
+   "moves": 206,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1
   },
   {
    "id": "gv2_medium_059",
@@ -2401,11 +2401,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 245,
+   "moves": 250,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 1.6
   },
   {
    "id": "gv2_medium_060",
@@ -2420,7 +2420,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 118,
-   "ms": 375.1
+   "ms": 240.9
   },
   {
    "id": "gv2_medium_061",
@@ -2435,7 +2435,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_062",
@@ -2446,11 +2446,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 307,
+   "moves": 314,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 327,
-   "ms": 329.3
+   "nc_lines": 334,
+   "ms": 201.1
   },
   {
    "id": "gv2_medium_063",
@@ -2461,11 +2461,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 257,
+   "moves": 262,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 2.2
   },
   {
    "id": "gv2_medium_064",
@@ -2476,11 +2476,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 436,
+   "moves": 447,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.6
+   "ms": 2.2
   },
   {
    "id": "gv2_medium_065",
@@ -2495,7 +2495,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_066",
@@ -2510,7 +2510,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_067",
@@ -2521,11 +2521,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 338,
+   "moves": 346,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_068",
@@ -2536,11 +2536,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 238,
+   "moves": 242,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.6
+   "ms": 1.1
   },
   {
    "id": "gv2_medium_069",
@@ -2551,11 +2551,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 345,
+   "moves": 354,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_medium_070",
@@ -2570,7 +2570,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_071",
@@ -2581,11 +2581,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 206,
+   "moves": 210,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 227,
-   "ms": 364.2
+   "nc_lines": 231,
+   "ms": 218.7
   },
   {
    "id": "gv2_medium_072",
@@ -2596,11 +2596,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 492,
+   "moves": 504,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 2.2
   },
   {
    "id": "gv2_medium_073",
@@ -2615,7 +2615,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_074",
@@ -2626,11 +2626,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 311,
+   "moves": 318,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 331,
-   "ms": 737.8
+   "nc_lines": 338,
+   "ms": 360.2
   },
   {
    "id": "gv2_medium_075",
@@ -2641,11 +2641,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 306,
+   "moves": 313,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 328,
-   "ms": 204.5
+   "nc_lines": 335,
+   "ms": 170.8
   },
   {
    "id": "gv2_medium_076",
@@ -2656,11 +2656,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 165,
+   "moves": 168,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_077",
@@ -2671,11 +2671,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 436,
+   "moves": 447,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.4
   },
   {
    "id": "gv2_medium_078",
@@ -2686,11 +2686,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 202,
+   "moves": 206,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.7
   },
   {
    "id": "gv2_medium_079",
@@ -2701,11 +2701,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 233,
+   "moves": 238,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 3.7
   },
   {
    "id": "gv2_medium_080",
@@ -2720,7 +2720,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_081",
@@ -2731,11 +2731,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 264,
+   "moves": 270,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.1
   },
   {
    "id": "gv2_medium_082",
@@ -2746,11 +2746,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 355,
+   "moves": 364,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.6
   },
   {
    "id": "gv2_medium_083",
@@ -2761,11 +2761,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 444,
+   "moves": 456,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 4.5
   },
   {
    "id": "gv2_medium_084",
@@ -2776,11 +2776,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 395,
+   "moves": 406,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 4.3
   },
   {
    "id": "gv2_medium_085",
@@ -2791,11 +2791,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 274,
+   "moves": 279,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 299,
-   "ms": 544.3
+   "nc_lines": 304,
+   "ms": 422.1
   },
   {
    "id": "gv2_medium_086",
@@ -2810,7 +2810,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 126,
-   "ms": 320.3
+   "ms": 198.1
   },
   {
    "id": "gv2_medium_087",
@@ -2821,11 +2821,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 247,
+   "moves": 252,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.5
   },
   {
    "id": "gv2_medium_088",
@@ -2840,7 +2840,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.8
   },
   {
    "id": "gv2_medium_089",
@@ -2855,7 +2855,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_090",
@@ -2866,11 +2866,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 224,
+   "moves": 228,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.8
   },
   {
    "id": "gv2_medium_091",
@@ -2881,11 +2881,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 218,
+   "moves": 222,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.3
   },
   {
    "id": "gv2_medium_092",
@@ -2900,7 +2900,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1
   },
   {
    "id": "gv2_medium_093",
@@ -2911,11 +2911,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 543,
+   "moves": 557,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.5
   },
   {
    "id": "gv2_medium_094",
@@ -2926,11 +2926,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 307,
+   "moves": 314,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.8
   },
   {
    "id": "gv2_medium_095",
@@ -2941,11 +2941,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 471,
+   "moves": 483,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.9
   },
   {
    "id": "gv2_medium_096",
@@ -2956,11 +2956,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 218,
+   "moves": 222,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.2
   },
   {
    "id": "gv2_medium_097",
@@ -2971,11 +2971,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 288,
+   "moves": 294,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.4
   },
   {
    "id": "gv2_medium_098",
@@ -2986,11 +2986,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 380,
+   "moves": 390,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.4
   },
   {
    "id": "gv2_medium_099",
@@ -3001,11 +3001,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 746,
+   "moves": 764,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 3.8
   },
   {
    "id": "gv2_medium_100",
@@ -3016,11 +3016,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
-   "moves": 447,
+   "moves": 457,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_001",
@@ -3031,11 +3031,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 396,
+   "moves": 404,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_002",
@@ -3046,11 +3046,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 337,
+   "moves": 345,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_003",
@@ -3061,11 +3061,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 328,
+   "moves": 335,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 359,
-   "ms": 500.8
+   "nc_lines": 366,
+   "ms": 340.8
   },
   {
    "id": "gv2_complex_004",
@@ -3076,11 +3076,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 342,
+   "moves": 349,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.1
   },
   {
    "id": "gv2_complex_005",
@@ -3091,11 +3091,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 421,
+   "moves": 430,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2
   },
   {
    "id": "gv2_complex_006",
@@ -3106,11 +3106,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 558,
+   "moves": 571,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 4.3
   },
   {
    "id": "gv2_complex_007",
@@ -3121,11 +3121,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 342,
+   "moves": 350,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 364,
-   "ms": 286.6
+   "nc_lines": 372,
+   "ms": 190.3
   },
   {
    "id": "gv2_complex_008",
@@ -3136,11 +3136,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 335,
+   "moves": 342,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 3.4
   },
   {
    "id": "gv2_complex_009",
@@ -3151,11 +3151,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 369,
+   "moves": 376,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 3.5
   },
   {
    "id": "gv2_complex_010",
@@ -3166,11 +3166,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 420,
+   "moves": 430,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.8
   },
   {
    "id": "gv2_complex_011",
@@ -3181,11 +3181,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 548,
+   "moves": 562,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 4.9
   },
   {
    "id": "gv2_complex_012",
@@ -3196,11 +3196,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 386,
+   "moves": 394,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 4.4
   },
   {
    "id": "gv2_complex_013",
@@ -3211,11 +3211,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 365,
+   "moves": 374,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 3.3
   },
   {
    "id": "gv2_complex_014",
@@ -3226,11 +3226,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 436,
+   "moves": 445,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 464,
-   "ms": 377.5
+   "nc_lines": 473,
+   "ms": 225.3
   },
   {
    "id": "gv2_complex_015",
@@ -3241,11 +3241,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 441,
+   "moves": 451,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_016",
@@ -3256,11 +3256,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 416,
+   "moves": 426,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_017",
@@ -3271,11 +3271,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 335,
+   "moves": 342,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.1
   },
   {
    "id": "gv2_complex_018",
@@ -3286,11 +3286,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 328,
+   "moves": 334,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.8
   },
   {
    "id": "gv2_complex_019",
@@ -3301,11 +3301,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 457,
+   "moves": 467,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 482,
-   "ms": 376.9
+   "nc_lines": 492,
+   "ms": 205.8
   },
   {
    "id": "gv2_complex_020",
@@ -3316,11 +3316,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 346,
+   "moves": 354,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 368,
-   "ms": 293.6
+   "nc_lines": 376,
+   "ms": 174.5
   },
   {
    "id": "gv2_complex_021",
@@ -3331,11 +3331,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 424,
+   "moves": 434,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_022",
@@ -3346,11 +3346,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 405,
+   "moves": 414,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.8
   },
   {
    "id": "gv2_complex_023",
@@ -3361,11 +3361,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 338,
+   "moves": 345,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 363,
-   "ms": 580.9
+   "nc_lines": 370,
+   "ms": 376.1
   },
   {
    "id": "gv2_complex_024",
@@ -3376,11 +3376,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 406,
+   "moves": 414,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 4.4
   },
   {
    "id": "gv2_complex_025",
@@ -3391,11 +3391,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 364,
+   "moves": 371,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 3.3
   },
   {
    "id": "gv2_complex_026",
@@ -3406,11 +3406,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 481,
+   "moves": 492,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 510,
-   "ms": 370.1
+   "nc_lines": 521,
+   "ms": 223.8
   },
   {
    "id": "gv2_complex_027",
@@ -3421,11 +3421,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 451,
+   "moves": 460,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 3.1
   },
   {
    "id": "gv2_complex_028",
@@ -3436,11 +3436,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 408,
+   "moves": 416,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_029",
@@ -3451,11 +3451,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 644,
+   "moves": 659,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_030",
@@ -3466,11 +3466,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 370,
+   "moves": 378,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.6
   },
   {
    "id": "gv2_complex_031",
@@ -3481,11 +3481,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 605,
+   "moves": 618,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.8
   },
   {
    "id": "gv2_complex_032",
@@ -3496,11 +3496,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 385,
+   "moves": 394,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_033",
@@ -3511,11 +3511,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 349,
+   "moves": 356,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_034",
@@ -3526,11 +3526,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 316,
+   "moves": 322,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.7
   },
   {
    "id": "gv2_complex_035",
@@ -3541,11 +3541,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 463,
+   "moves": 474,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_036",
@@ -3556,11 +3556,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 438,
+   "moves": 447,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 463,
-   "ms": 397.6
+   "nc_lines": 472,
+   "ms": 245.9
   },
   {
    "id": "gv2_complex_037",
@@ -3571,11 +3571,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 499,
+   "moves": 512,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_038",
@@ -3586,11 +3586,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 490,
+   "moves": 501,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 512,
-   "ms": 380.8
+   "nc_lines": 523,
+   "ms": 241.6
   },
   {
    "id": "gv2_complex_039",
@@ -3601,11 +3601,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 458,
+   "moves": 466,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 3.8
   },
   {
    "id": "gv2_complex_040",
@@ -3616,11 +3616,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 329,
+   "moves": 335,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.6
   },
   {
    "id": "gv2_complex_041",
@@ -3631,11 +3631,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 316,
+   "moves": 322,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.7
   },
   {
    "id": "gv2_complex_042",
@@ -3646,11 +3646,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 400,
+   "moves": 408,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_043",
@@ -3661,11 +3661,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 343,
+   "moves": 351,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.3
   },
   {
    "id": "gv2_complex_044",
@@ -3676,11 +3676,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 449,
+   "moves": 459,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_045",
@@ -3691,11 +3691,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 356,
+   "moves": 364,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.6
   },
   {
    "id": "gv2_complex_046",
@@ -3706,11 +3706,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 355,
+   "moves": 362,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 384,
-   "ms": 219.5
+   "nc_lines": 391,
+   "ms": 154.2
   },
   {
    "id": "gv2_complex_047",
@@ -3721,11 +3721,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 448,
+   "moves": 457,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 473,
-   "ms": 475.9
+   "nc_lines": 482,
+   "ms": 312
   },
   {
    "id": "gv2_complex_048",
@@ -3736,11 +3736,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 374,
+   "moves": 382,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.5
   },
   {
    "id": "gv2_complex_049",
@@ -3751,11 +3751,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 286,
+   "moves": 292,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.5
   },
   {
    "id": "gv2_complex_050",
@@ -3766,11 +3766,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 358,
+   "moves": 366,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_051",
@@ -3781,11 +3781,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 858,
+   "moves": 878,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 3.6
   },
   {
    "id": "gv2_complex_052",
@@ -3796,11 +3796,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 454,
+   "moves": 464,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 476,
-   "ms": 380
+   "nc_lines": 486,
+   "ms": 203.2
   },
   {
    "id": "gv2_complex_053",
@@ -3811,11 +3811,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 370,
+   "moves": 378,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_054",
@@ -3826,11 +3826,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 506,
+   "moves": 517,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 532,
-   "ms": 485.3
+   "nc_lines": 543,
+   "ms": 286.4
   },
   {
    "id": "gv2_complex_055",
@@ -3841,11 +3841,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 552,
+   "moves": 564,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_056",
@@ -3856,11 +3856,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 388,
+   "moves": 396,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.8
   },
   {
    "id": "gv2_complex_057",
@@ -3871,11 +3871,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 383,
+   "moves": 392,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 1.7
   },
   {
    "id": "gv2_complex_058",
@@ -3886,11 +3886,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 932,
+   "moves": 955,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 4.2
   },
   {
    "id": "gv2_complex_059",
@@ -3901,11 +3901,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 390,
+   "moves": 398,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_060",
@@ -3916,11 +3916,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 367,
+   "moves": 375,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 395,
-   "ms": 427.6
+   "nc_lines": 403,
+   "ms": 338.9
   },
   {
    "id": "gv2_complex_061",
@@ -3931,11 +3931,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 310,
+   "moves": 317,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_062",
@@ -3946,11 +3946,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 462,
+   "moves": 472,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 484,
-   "ms": 421.2
+   "nc_lines": 494,
+   "ms": 239
   },
   {
    "id": "gv2_complex_063",
@@ -3961,11 +3961,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 477,
+   "moves": 488,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_064",
@@ -3976,11 +3976,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 399,
+   "moves": 407,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2.6
   },
   {
    "id": "gv2_complex_065",
@@ -3991,11 +3991,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 415,
+   "moves": 424,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.1
   },
   {
    "id": "gv2_complex_066",
@@ -4006,11 +4006,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 398,
+   "moves": 407,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_067",
@@ -4021,11 +4021,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 348,
+   "moves": 355,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.7
   },
   {
    "id": "gv2_complex_068",
@@ -4036,11 +4036,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 348,
+   "moves": 356,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.7
   },
   {
    "id": "gv2_complex_069",
@@ -4051,11 +4051,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 487,
+   "moves": 497,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.3
   },
   {
    "id": "gv2_complex_070",
@@ -4066,11 +4066,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 287,
+   "moves": 294,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.8
   },
   {
    "id": "gv2_complex_071",
@@ -4081,11 +4081,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 338,
+   "moves": 345,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 363,
-   "ms": 408
+   "nc_lines": 370,
+   "ms": 230.9
   },
   {
    "id": "gv2_complex_072",
@@ -4096,11 +4096,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 392,
+   "moves": 401,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 2
   },
   {
    "id": "gv2_complex_073",
@@ -4111,11 +4111,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 541,
+   "moves": 554,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_074",
@@ -4126,11 +4126,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 338,
+   "moves": 345,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 360,
-   "ms": 215.5
+   "nc_lines": 367,
+   "ms": 124.8
   },
   {
    "id": "gv2_complex_075",
@@ -4141,11 +4141,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 435,
+   "moves": 444,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 464,
-   "ms": 365.4
+   "nc_lines": 473,
+   "ms": 186.1
   },
   {
    "id": "gv2_complex_076",
@@ -4156,11 +4156,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 416,
+   "moves": 424,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 3.8
   },
   {
    "id": "gv2_complex_077",
@@ -4171,11 +4171,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 732,
+   "moves": 749,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 6.3
   },
   {
    "id": "gv2_complex_078",
@@ -4186,11 +4186,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 349,
+   "moves": 355,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 4.1
   },
   {
    "id": "gv2_complex_079",
@@ -4201,11 +4201,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 448,
+   "moves": 456,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 4.2
   },
   {
    "id": "gv2_complex_080",
@@ -4216,11 +4216,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 486,
+   "moves": 498,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 4.2
   },
   {
    "id": "gv2_complex_081",
@@ -4231,11 +4231,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 444,
+   "moves": 454,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 3.7
   },
   {
    "id": "gv2_complex_082",
@@ -4246,11 +4246,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 423,
+   "moves": 432,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_083",
@@ -4261,11 +4261,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 438,
+   "moves": 448,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 2.8
   },
   {
    "id": "gv2_complex_084",
@@ -4276,11 +4276,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 440,
+   "moves": 450,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_085",
@@ -4291,11 +4291,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 363,
+   "moves": 371,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 387,
-   "ms": 447
+   "nc_lines": 395,
+   "ms": 227
   },
   {
    "id": "gv2_complex_086",
@@ -4306,11 +4306,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 276,
+   "moves": 282,
    "sim": "PASS",
    "nc_validator": "PASS",
-   "nc_lines": 302,
-   "ms": 172.3
+   "nc_lines": 308,
+   "ms": 91.9
   },
   {
    "id": "gv2_complex_087",
@@ -4321,11 +4321,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 330,
+   "moves": 337,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.8
   },
   {
    "id": "gv2_complex_088",
@@ -4336,11 +4336,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 438,
+   "moves": 448,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2
   },
   {
    "id": "gv2_complex_089",
@@ -4351,11 +4351,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 271,
+   "moves": 276,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.3
   },
   {
    "id": "gv2_complex_090",
@@ -4366,11 +4366,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 343,
+   "moves": 351,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 2.4
   },
   {
    "id": "gv2_complex_091",
@@ -4381,11 +4381,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 373,
+   "moves": 382,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_092",
@@ -4396,11 +4396,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 400,
+   "moves": 408,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.1
   },
   {
    "id": "gv2_complex_093",
@@ -4411,11 +4411,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 372,
+   "moves": 380,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.7
   },
   {
    "id": "gv2_complex_094",
@@ -4426,11 +4426,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 417,
+   "moves": 426,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_095",
@@ -4441,11 +4441,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 398,
+   "moves": 406,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 1.9
   },
   {
    "id": "gv2_complex_096",
@@ -4456,11 +4456,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 491,
+   "moves": 500,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 2.9
   },
   {
    "id": "gv2_complex_097",
@@ -4471,11 +4471,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
-   "moves": 483,
+   "moves": 493,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.8
+   "ms": 2.2
   },
   {
    "id": "gv2_complex_098",
@@ -4486,11 +4486,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 238,
+   "moves": 242,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.4
   },
   {
    "id": "gv2_complex_099",
@@ -4501,11 +4501,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
-   "moves": 480,
+   "moves": 490,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 2.7
   },
   {
    "id": "gv2_complex_100",
@@ -4516,11 +4516,11 @@
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
-   "moves": 322,
+   "moves": 328,
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 1.6
   }
  ]
 }

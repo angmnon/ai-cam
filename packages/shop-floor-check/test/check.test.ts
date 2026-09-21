@@ -41,4 +41,21 @@ describe("shop-floor-check 工厂零件验证", () => {
     const r = checkShopFloorNc(nc);
     expect(r.status).not.toBe("FAIL");
   });
+
+  it("P2-28 '抬刀-暂停-再抬刀'序列不被误判（部分抬刀后经 M01 再抬到安全高度 → 不报 SFC-0103）", () => {
+    // 切削 Z5 → G0 Z10（部分抬刀，未到安全高度 20）→ M01 暂停 → G0 Z30（再抬到安全高度）
+    const nc =
+      "O1002 (PLATE_B2)\n" +
+      "N10 G90 G54 G17 G21\n" +
+      "N20 G0 Z30.0\n" +
+      "N30 G0 X0 Y0\n" +
+      "N40 G1 Z5.0 F200\n" +
+      "N50 G1 X50 F600\n" +
+      "N60 G0 Z10.0\n" +
+      "N65 M01\n" +
+      "N70 G0 Z30.0\n" +
+      "N80 M30";
+    const r = checkShopFloorNc(nc);
+    expect(r.items.some((i) => i.code === "SFC-0103")).toBe(false);
+  });
 });

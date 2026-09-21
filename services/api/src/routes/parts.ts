@@ -14,6 +14,32 @@ import { createMockProvider } from "@ai-cam/model-gateway";
 // P0-4：RBAC 授权 + Prompt 注入扫描 + 审计
 import { checkPromptInjection, recordAudit } from "@ai-cam/security";
 
+/**
+ * P2-45：CPU 密集 handler 并发信号量。
+ * 原因：POST /:id/analyze（几何解析）与 POST /:id/ai-plan（CAM 规划 runCamAgent）
+ * 在 Node 事件循环上执行同步 CPU 密集计算，并发过高会阻塞事件循环、拖垮其它请求。
+ * 模块级 Promise 队列限制在事件循环上同时占用 CPU 的任务数；默认 maxConcurrent=2，
+ * 可用 env CPU_MAX_CONCURRENCY 覆盖。超限的 handler 排队等待（测试串行，不阻塞现有用例）。
+ */
+const CPU_MAX_CONCURRENCY = Math.max(1, Number(process.env.CPU_MAX_CONCURRENCY ?? 2) || 2);
+let activeCpuJobs = 0;
+const cpuQueue: Array<() => void> = [];
+
+async function acquireCpuSlot(): Promise<void> {
+  if (activeCpuJobs < CPU_MAX_CONCURRENCY) {
+    activeCpuJobs++;
+    return;
+  }
+  await new Promise<void>((resolve) => cpuQueue.push(resolve));
+  activeCpuJobs++;
+}
+
+function releaseCpuSlot(): void {
+  activeCpuJobs = Math.max(0, activeCpuJobs - 1);
+  const next = cpuQueue.shift();
+  if (next) next();
+}
+
 // P1-21：文件名只允许安全字符 + .step/.stp，拒绝 ../ 等路径穿越
 const PartFilename = z
   .string()
@@ -125,6 +151,8 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: `Part status ${part.status} does not allow analyze.`, stage: "parts", retryable: false });
       }
       try {
+        // P2-45：几何解析为 CPU 密集同步计算，经模块级信号量限流
+        await acquireCpuSlot();
         const analysis = await app.partsAnalyzer.analyze({
           orgId,
           partId: part.id,
@@ -141,6 +169,8 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         }
         app.parts.fail(orgId, id, { code: ErrorCodes.PART_ANALYSIS_FAILED, message: String((e as Error).message), stage: "parts" });
         throw e;
+      } finally {
+        releaseCpuSlot();
       }
     },
   );
@@ -318,12 +348,15 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         details: { guardrail: true, findings: inject.findings },
       });
     }
-    const gateway = new ModelGateway({}).register(createMockProvider());
-    const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
-      gateway,
-      goal,
-      dialect,
-    });
+    // P2-45：CAM 规划（runCamAgent）为 CPU 密集同步计算，经模块级信号量限流（注入拦截等轻量前置校验不占槽）
+    await acquireCpuSlot();
+    try {
+      const gateway = new ModelGateway({}).register(createMockProvider());
+      const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
+        gateway,
+        goal,
+        dialect,
+      });
     const before = app.cams.latest(orgId, id);
     const after = run.job.cam;
     const changeSet = {
@@ -363,6 +396,9 @@ const partRoutes: FastifyPluginAsync = async (app) => {
         job: { validated: run.job.validated, simulation_status: run.job.simulation.status, validation_status: run.job.validation.status },
       }),
     );
+    } finally {
+      releaseCpuSlot();
+    }
   });
 
   app.get("/:id/ai-plans", async (request) => {

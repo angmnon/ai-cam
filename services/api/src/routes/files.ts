@@ -78,11 +78,20 @@ const fileRoutes: FastifyPluginAsync = async (app) => {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Missing x-session-id header.", stage: "files" });
     }
     // 服务端按 session_id 取回 key（内部已校验 org 归属 + 一次性 + 过期）
-    const { key } = await app.storage.consumeUploadSession(sessionId, request.user!.org_id);
+    const { key, sizeBytes } = await app.storage.consumeUploadSession(sessionId, request.user!.org_id);
     const payload = (request.body as Buffer) ?? Buffer.alloc(0);
     // P1-20：上传 body 校验 —— 必须是非空二进制 Buffer
     if (!Buffer.isBuffer(payload) || payload.length === 0) {
       throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Empty or invalid upload body.", stage: "files" });
+    }
+    // P2-50：实际 body 长度不得超过会话声明的 size_bytes，超限 413 PAYLOAD_TOO_LARGE
+    if (payload.length > sizeBytes) {
+      throw new ApiError({
+        code: ErrorCodes.FILE_TOO_LARGE,
+        message: `Upload body ${payload.length} bytes exceeds declared session size ${sizeBytes} bytes.`,
+        stage: "files",
+        details: { declared_size_bytes: sizeBytes, actual_size_bytes: payload.length },
+      });
     }
     // put 内部再次强制 orgId 前缀 + 路径穿越校验
     const meta = await app.storage.put(key, payload, String(contentType), request.user!.org_id);

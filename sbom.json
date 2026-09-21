@@ -1,0 +1,376 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "name": "ai-cam-sbom",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "name": "@ai-cam/ai-planner",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/job-runner",
+        "@ai-cam/master-data",
+        "@ai-cam/model-gateway",
+        "@ai-cam/nc-validator",
+        "@ai-cam/parameter-engine",
+        "@ai-cam/post-core",
+        "@ai-cam/security",
+        "@ai-cam/stock-sim",
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/api",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/ai-planner",
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/dfm",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/error-codes",
+        "@ai-cam/event-schema",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/job-schema",
+        "@ai-cam/job-runner",
+        "@ai-cam/master-data",
+        "@ai-cam/model-gateway",
+        "@ai-cam/nc-validator",
+        "@ai-cam/post-core",
+        "@ai-cam/security",
+        "@ai-cam/stock-sim",
+        "@fastify/cors",
+        "@fastify/helmet",
+        "@fastify/swagger",
+        "@fastify/swagger-ui",
+        "@opentelemetry/api",
+        "fastify",
+        "fastify-plugin",
+        "jose",
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/axis-4",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/cam-ir",
+      "version": "1.0.0",
+      "dependencies": [
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/cam-kernel",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/master-data",
+        "@ai-cam/parameter-engine",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/dfm",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/domain-schemas",
+        "@ai-cam/geometry-schema",
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/domain-schemas",
+      "version": "0.1.0",
+      "dependencies": [
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/enterprise-rules",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/domain-schemas",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/error-codes",
+      "version": "0.1.0",
+      "dependencies": [
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/event-schema",
+      "version": "0.1.0",
+      "dependencies": [
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/feature-engine",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/dfm",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/geometry-schema",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/fixture-engine",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/domain-schemas",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/geometry-schema",
+      "version": "0.1.0",
+      "dependencies": [
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/job-runner",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/master-data",
+        "@ai-cam/nc-validator",
+        "@ai-cam/post-core",
+        "@ai-cam/stock-sim",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/job-schema",
+      "version": "0.1.0",
+      "dependencies": [
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/master-data",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/domain-schemas",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/model-gateway",
+      "version": "0.1.0",
+      "dependencies": [
+        "zod",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/nc-validator",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/master-data",
+        "@ai-cam/post-core",
+        "@ai-cam/stock-sim",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/parameter-engine",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/master-data",
+        "@eslint/js",
+        "@types/node",
+        "eslint",
+        "eslint-config-prettier",
+        "typescript",
+        "typescript-eslint",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/post-core",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/feature-engine",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/master-data",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/process-retrieval",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/domain-schemas",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/security",
+      "version": "0.1.0",
+      "dependencies": [
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/shop-floor-check",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/soft-jaw",
+      "version": "0.1.0",
+      "dependencies": [
+        "typescript",
+        "vitest"
+      ]
+    },
+    {
+      "name": "@ai-cam/stock-sim",
+      "version": "0.1.0",
+      "dependencies": [
+        "@ai-cam/cam-ir",
+        "@ai-cam/cam-kernel",
+        "@ai-cam/domain-schemas",
+        "@ai-cam/geometry-schema",
+        "@ai-cam/feature-engine",
+        "@ai-cam/master-data",
+        "typescript",
+        "vitest"
+      ]
+    }
+  ]
+}

@@ -65,7 +65,7 @@ export class LocalDiskAdapter implements StorageAdapter {
     };
   }
 
-  async consumeUploadSession(sessionId: string, orgId: string): Promise<{ key: string }> {
+  async consumeUploadSession(sessionId: string, orgId: string): Promise<{ key: string; sizeBytes: number }> {
     const entry = this.sessions.get(sessionId);
     if (!entry) {
       throw new ApiError({ code: ErrorCodes.FILE_SIGNATURE_INVALID, message: "Unknown or expired upload session.", stage: "files" });
@@ -81,7 +81,7 @@ export class LocalDiskAdapter implements StorageAdapter {
     }
     // 一次性：取回即作废
     this.sessions.delete(sessionId);
-    return { key: entry.key };
+    return { key: entry.key, sizeBytes: entry.size };
   }
 
   async put(key: string, data: Buffer, contentType: string, orgId: string): Promise<FileMeta> {

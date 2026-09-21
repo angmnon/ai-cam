@@ -25,7 +25,11 @@ export interface AppConfig {
   host: string;
   logLevel: string;
   nodeEnv: string;
-  jwt: { secret: string; issuer: string; expiresIn: string };
+  jwt: { secret: string; issuer: string; expiresIn: string; usingDefault: boolean };
+  /** P2-40：CORS 白名单 Origin（逗号分隔的 CORS_ORIGINS；非白名单 Origin 不回 ACAO） */
+  corsOrigins: string[];
+  /** P2-42：Fastify bodyLimit 上限（默认 64MB，BODY_LIMIT_BYTES 可覆盖） */
+  bodyLimitBytes: number;
   storage: { driver: "local" | "r2"; dataDir: string };
   /** 零件解析器：fixture（Golden 夹具，默认）| worker（OCCT 本地二进制） */
   partsAnalyzer: { mode: "fixture" | "worker"; fixturesDir: string; binaryPath?: string };
@@ -57,6 +61,23 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     throw new Error(`Unknown PARTS_ANALYZER: ${partsMode}`);
   }
 
+  // ---- P2-40 CORS 白名单（逗号分隔；仅白名单 Origin 回 ACCESS-CONTROL-ALLOW-ORIGIN）----
+  const corsOrigins = (env.CORS_ORIGINS ?? "http://localhost:5173,http://127.0.0.1:5173")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  // ---- P2-42 bodyLimit 上限（默认 64MB）----
+  const bodyLimitBytesRaw = Number(env.BODY_LIMIT_BYTES ?? 64 * 1024 * 1024);
+  const bodyLimitBytes = Number.isFinite(bodyLimitBytesRaw) && bodyLimitBytesRaw > 0 ? Math.floor(bodyLimitBytesRaw) : 64 * 1024 * 1024;
+
+  // ---- P2-43 JWT secret：生产必须显式配置，开发保留默认值 ----
+  const jwtSecret = env.JWT_SECRET;
+  const jwtUsingDefault = !jwtSecret;
+  if (env.NODE_ENV === "production" && !jwtSecret) {
+    throw new Error("JWT_SECRET must be set when NODE_ENV=production. Refusing to start with a default dev secret.");
+  }
+
   // ---- Phase 0 bootstrap 凭据（服务端解算 org_id/role）----
   const email = env.CAM_BOOTSTRAP_EMAIL ?? "demo@ai-cam.local";
   const orgId = env.CAM_BOOTSTRAP_ORG ?? "org_demo";
@@ -70,10 +91,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     host: env.HOST ?? "0.0.0.0",
     logLevel: env.LOG_LEVEL ?? "info",
     nodeEnv: env.NODE_ENV ?? "development",
+    corsOrigins,
+    bodyLimitBytes,
     jwt: {
-      secret: env.JWT_SECRET ?? "dev-secret-change-me",
+      secret: jwtSecret ?? "dev-secret-change-me",
       issuer: env.JWT_ISSUER ?? "ai-cam-api",
       expiresIn: env.JWT_EXPIRES_IN ?? "24h",
+      usingDefault: jwtUsingDefault,
     },
     storage: {
       driver,

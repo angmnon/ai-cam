@@ -60,6 +60,36 @@ describe("api skeleton", () => {
     expect(res.headers["x-request-id"]).toBeTruthy();
   });
 
+  it("P2-40 CORS：非白名单 Origin 不回 ACAO；白名单 Origin 回 ACAO", async () => {
+    const evil = await app.inject({ method: "GET", url: "/health", headers: { origin: "http://evil.example.com" } });
+    expect(evil.statusCode).toBe(200);
+    expect(evil.headers["access-control-allow-origin"]).toBeUndefined();
+
+    const allowed = await app.inject({ method: "GET", url: "/health", headers: { origin: "http://localhost:5173" } });
+    expect(allowed.statusCode).toBe(200);
+    expect(allowed.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+  });
+
+  it("P2-41：响应携带手工 CSP 头", async () => {
+    const res = await app.inject({ method: "GET", url: "/health" });
+    const csp = String(res.headers["content-security-policy"]);
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("connect-src");
+    expect(csp).toContain("ws://localhost:*");
+  });
+
+  it("P2-51 traceparent：合法入站 traceid 透传；非法则生成新 32hex traceid", async () => {
+    const traceId = "4bf92f3577b34da6a3ce929d0e0e4736";
+    const valid = await app.inject({ method: "GET", url: "/health", headers: { traceparent: `00-${traceId}-00f067aa0ba902b7-01` } });
+    const respTp = String(valid.headers["traceparent"]);
+    expect(respTp.startsWith(`00-${traceId}-`)).toBe(true);
+
+    const invalid = await app.inject({ method: "GET", url: "/health", headers: { traceparent: "garbage-not-a-traceparent" } });
+    const badTp = String(invalid.headers["traceparent"]);
+    expect(badTp).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
+    expect(badTp.startsWith(`00-${traceId}-`)).toBe(false);
+  });
+
   it("未携带 token 访问受保护路由 → 401 AUTH_UNAUTHORIZED", async () => {
     const res = await app.inject({ method: "GET", url: "/api/v1/jobs" });
     expect(res.statusCode).toBe(401);
@@ -228,6 +258,26 @@ describe("api skeleton", () => {
       payload: body,
     });
     expect(noSession.statusCode).toBe(422);
+  });
+
+  it("P2-50：上传 body 超过会话声明 size → 413 FILE_TOO_LARGE", async () => {
+    const token = await login();
+    const session = await app.inject({
+      method: "POST",
+      url: "/api/v1/files/upload-sessions",
+      headers: authHeaders(token),
+      payload: { filename: "big.step", content_type: "model/step", size_bytes: 5, resource_type: "CAD_SOURCE", resource_id: "part_x", version: "v0" },
+    });
+    expect(session.statusCode).toBe(200);
+    const s = session.json().data;
+    const upload = await app.inject({
+      method: "POST",
+      url: "/api/v1/files/upload",
+      headers: { ...authHeaders(token), "x-session-id": s.session_id, "content-type": "application/octet-stream" },
+      payload: Buffer.from("this-is-way-longer-than-5-bytes"),
+    });
+    expect(upload.statusCode).toBe(413);
+    expect(upload.json().error.code).toBe("FILE_TOO_LARGE");
   });
 
   it("P0-1 安全：错误密码 → 401 AUTH_INVALID_CREDENTIALS", async () => {

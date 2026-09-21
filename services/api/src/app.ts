@@ -68,13 +68,22 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
       redact: ["req.headers.authorization"],
     },
     genReqId: () => `req_${randomUUID().replaceAll("-", "").slice(0, 16)}`,
-    bodyLimit: 512 * 1024 * 1024,
+    // P2-42：bodyLimit 由 config 注入（默认 64MB，BODY_LIMIT_BYTES 可覆盖；原 512MB 过宽）
+    bodyLimit: config.bodyLimitBytes,
     // 允许 OpenAPI 扩展关键字（tags 等）进入 route schema，供 @fastify/swagger 生成文档
     ajv: { customOptions: { strict: false } },
   });
 
-  await app.register(cors, { origin: true });
+  // P2-40：CORS 仅放行白名单 Origin；@fastify/cors 对不在列表中的 Origin 不回 ACAO 头
+  await app.register(cors, { origin: config.corsOrigins });
   await app.register(helmet, { contentSecurityPolicy: false });
+  // P2-41：手工设置 CSP（不新增 helmet 依赖；helmet 其余安全头仍生效）
+  const CSP =
+    "default-src 'self'; script-src 'self'; connect-src 'self' http://localhost:* ws://localhost:*; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:";
+  app.addHook("onSend", async (_request, reply, payload) => {
+    reply.header("content-security-policy", CSP);
+    return payload;
+  });
   await app.register(swagger, {
     openapi: {
       info: { title: "AI CNC CAM API", version: "0.1.0", description: "Phase 0 骨架" },
@@ -122,6 +131,10 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("bootstrap", config.auth.bootstrap);
   // P1-17：AI 规划是否接入真实 LLM（响应头 x-ai-mode 据此标注 live/mock）
   app.decorate("aiLlm", config.ai.llmLive);
+  // P2-43：未显式配置 JWT_SECRET（走开发默认值）时告警；生产未配置已在 loadConfig 抛错
+  if (config.jwt.usingDefault) {
+    app.log.warn("使用默认开发态 JWT_SECRET。生产必须配置 JWT_SECRET（loadConfig 在 NODE_ENV=production 未设置时直接拒绝启动）。");
+  }
   // 未配置正式凭据时启动告警（仅开发态默认 demo/demo）
   if (config.auth.bootstrap.usingDefaults) {
     app.log.warn(

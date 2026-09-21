@@ -54,6 +54,11 @@ jobs:
       - name: Migration check
         run: pnpm run check:migrations
 
+      # P2-38：SBOM 生成门禁（非零退出即失败）
+      # 注：pnpm 11 内置同名 sbom 命令会遮蔽包脚本，故用 pnpm run sbom 显式调用 package.json 脚本
+      - name: SBOM
+        run: pnpm run sbom
+
   security:
     name: security & supply-chain scan
     runs-on: ubuntu-latest

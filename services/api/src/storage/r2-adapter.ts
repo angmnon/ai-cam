@@ -41,7 +41,7 @@ export class R2Adapter implements StorageAdapter {
   }
 
   /** R2 模式下由前端直传预签名 URL，本地会话表不参与；接入时按 R2 预签名流程实现 */
-  async consumeUploadSession(_sessionId: string, _orgId: string): Promise<{ key: string }> {
+  async consumeUploadSession(_sessionId: string, _orgId: string): Promise<{ key: string; sizeBytes: number }> {
     throw new ApiError({
       code: ErrorCodes.SYSTEM_UPSTREAM_UNAVAILABLE,
       message: "R2 consumeUploadSession not implemented yet.",

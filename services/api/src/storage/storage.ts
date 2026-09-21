@@ -60,8 +60,9 @@ export interface StorageAdapter {
     contentType: string,
     sizeBytes: number,
   ): Promise<UploadSession>;
-  /** 按 session_id 取回服务端 key，并校验属于当前 org（一次性，取回即作废） */
-  consumeUploadSession(sessionId: string, orgId: string): Promise<{ key: string }>;
+  /** 按 session_id 取回服务端 key，并校验属于当前 org（一次性，取回即作废）。
+   *  P2-50：同时返回创建会话时声明的 size_bytes，供 /upload 校验实际 body 长度。 */
+  consumeUploadSession(sessionId: string, orgId: string): Promise<{ key: string; sizeBytes: number }>;
   /** 保存已上传内容并计算 SHA-256；orgId 用于校验 key 租户前缀与路径安全 */
   put(key: string, data: Buffer, contentType: string, orgId: string): Promise<FileMeta>;
   get(key: string): Promise<{ data: Buffer; contentType: string }>;

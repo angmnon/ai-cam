@@ -150,21 +150,100 @@ class ApiErrorClient extends Error {
   }
 }
 
-let token: string | null = localStorage.getItem("ai_cam_token");
+// ---- P2-44: Auth token 读取与风险标注 ----
+//
+// 【风险】当前 token 存放于 localStorage（key: ai_cam_token）。localStorage 可被任意同源
+// JavaScript 读取，一旦前端存在 XSS 漏洞，攻击者即可读取并盗用 token，进而冒用用户身份
+// 调用后端 API。
+//
+// 【后续迁移方向】将 token 改为后端下发的 HttpOnly + Secure + SameSite Cookie，前端不再
+// 持有 token 明文，由浏览器自动携带，从根本上消除 XSS 对 token 的窃取面。在迁移完成前，
+// 本文件兼容三种 token 来源以支持嵌入式 / 网关注入场景：
+//   1) 显式注入 token（setAuthToken 或首次 ?token= URL 注入）——优先级最高
+//   2) localStorage ai_cam_token（现有登录写入路径，保持不变）
+//   3) Cookie ai_cam_token（document.cookie 解析）
+
+const TOKEN_STORAGE_KEY = "ai_cam_token";
+
+// 显式注入的 token：来自 setAuthToken() 或模块加载时对 URL ?token= 的一次性捕获。
+let injectedToken: string | null = null;
+
+// 兼容旧路径：登录后写入 localStorage 的 token 仍由 setToken() 维护（登录流程不改）。
+let token: string | null = localStorage.getItem(TOKEN_STORAGE_KEY);
+
+function readCookieToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const raw: string = document.cookie || "";
+  for (const part of raw.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq < 0) continue;
+    const name = part.slice(0, eq).trim();
+    if (name === TOKEN_STORAGE_KEY) {
+      const val = part.slice(eq + 1).trim();
+      try {
+        return decodeURIComponent(val);
+      } catch {
+        return val;
+      }
+    }
+  }
+  return null;
+}
+
+// 首次 URL 注入：?token=xxx 在模块加载时捕获，并立即从地址栏抹除，
+// 避免 token 泄漏到浏览器历史 / Referer / 服务端访问日志。
+function captureUrlToken(): string | null {
+  if (typeof window === "undefined" || !window.location) return null;
+  try {
+    const u = new URL(window.location.href);
+    const t = u.searchParams.get("token");
+    if (t) {
+      u.searchParams.delete("token");
+      window.history.replaceState(null, "", u.toString());
+      return t;
+    }
+  } catch {
+    /* noop */
+  }
+  return null;
+}
+
+/** P2-44：显式注入 token（嵌入式 / 网关 / 临时调试用）。传 null 清除。 */
+export function setAuthToken(t: string | null): void {
+  injectedToken = t;
+}
+
+/** P2-44：按 显式注入 > localStorage > Cookie 优先级解析当前 token。 */
+export function getAuthToken(): string | null {
+  if (injectedToken) return injectedToken;
+  const ls = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (ls) return ls;
+  return readCookieToken();
+}
+
+// 模块加载时执行一次 URL ?token= 注入捕获。
+injectedToken = captureUrlToken();
 
 export function setToken(t: string | null): void {
   token = t;
-  if (t) localStorage.setItem("ai_cam_token", t);
-  else localStorage.removeItem("ai_cam_token");
+  if (t) localStorage.setItem(TOKEN_STORAGE_KEY, t);
+  else localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 export function hasToken(): boolean {
-  return !!token;
+  return !!getAuthToken();
+}
+
+/** P2-44：统一构造 Authorization 头（fetchMeshBlob 除外，按既有路径保留）。 */
+function buildAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const t = getAuthToken();
+  if (t) headers.authorization = `Bearer ${t}`;
+  return headers;
 }
 
 async function request<T>(method: string, path: string, body?: unknown, raw?: boolean, extraHeaders?: Record<string, string>): Promise<T> {
-  const headers: Record<string, string> = {};
-  if (token) headers.authorization = `Bearer ${token}`;
+  const headers = buildAuthHeaders();
   if (body !== undefined && !raw) headers["content-type"] = "application/json";
   if (extraHeaders) Object.assign(headers, extraHeaders);
   const res = await fetch(`${BASE}${path}`, {

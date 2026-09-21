@@ -41,6 +41,19 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # P1-18 阶段③：golden 回归 / 工厂验证 / Beta 采样 / 迁移检查独立门禁（非零退出即 job 失败）
+      - name: Golden regression
+        run: pnpm --filter @ai-cam/regression run regression
+
+      - name: Factory validation
+        run: pnpm --filter @ai-cam/factory-validation run factory-check
+
+      - name: Beta sample
+        run: pnpm --filter @ai-cam/beta-sample run sample
+
+      - name: Migration check
+        run: pnpm run check:migrations
+
   security:
     name: security & supply-chain scan
     runs-on: ubuntu-latest

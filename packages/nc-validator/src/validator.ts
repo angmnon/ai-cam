@@ -120,7 +120,14 @@ export function validateNc(input: {
   // NC 运动点 vs IR 点序列（确定性生成应完全一致）；P1-09 同时比对 G 代码类型
   const ncPts = parsed.points.map((p) => ({ x: p.x, y: p.y, z: p.z, g: p.g }));
   const irPts: Array<{ x: number; y: number; z: number; g: string }> = [];
+  // P2-24 对称口径：post-core 对 DRILL 工序折叠为 G81/G83/G73 固定钻循环时，
+  // 其 RAPID/PLUNGE/RETRACT 不再输出显式 G0/G1/G2/G3 运动块（parser 对循环调用行/
+  // 模态孔位行/G80 取消均不产点）。为保持两侧口径一致，当 NC 实际使用过固定钻循环时，
+  // IR 侧同步不计入 DRILL 工序的逐点 move（其孔位几何由循环表达）；未用钻循环（逐行钻）
+  // 则照常计入。这不是凑数：与 parser 既有的"循环行不产点"设计严格对称。
+  const skipDrillMoves = parsed.drillCycleUsed;
   for (const op of cam.operations) {
+    if (skipDrillMoves && op.type === "DRILL") continue;
     const tp = toolpaths.get(op.id);
     if (tp) for (const m of tp.moves) irPts.push({ x: m.x, y: m.y, z: m.z, g: irTypeToG(m.type) });
   }

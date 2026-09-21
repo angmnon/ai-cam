@@ -1,0 +1,13 @@
+# 构建上下文裁剪：不把宿主机 node_modules / 产物 / 历史带进镜像（镜像内重装重建）
+.git
+**/.git
+**/node_modules
+node_modules
+**/.turbo
+.turbo
+**/dist
+dist
+data
+**/*.log
+*.log
+.doubao*

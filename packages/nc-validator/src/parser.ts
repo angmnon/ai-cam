@@ -28,13 +28,16 @@ export interface ParsedNc {
   /** 模态解析后的运动点序列（含坐标延续） */
   points: Array<{ x: number; y: number; z: number; g: string; lineNo: number }>;
   programNumber: string | null;
+  /** 程序是否使用过固定钻循环（G73-G89 调用行；G80 取消不算）。
+   *  用于 validator 对称口径：钻循环折叠的 DRILL move 不产显式运动点，IR 侧亦不计。 */
+  drillCycleUsed: boolean;
   errors: Array<{ lineNo: number; message: string }>;
 }
 
 const WORD_RE = /[A-Za-z][+-]?(?:\d+\.?\d*|\.\d+)/g;
 
 export function parseNc(text: string): ParsedNc {
-  const out: ParsedNc = { lines: [], motions: [], points: [], programNumber: null, errors: [] };
+  const out: ParsedNc = { lines: [], motions: [], points: [], programNumber: null, drillCycleUsed: false, errors: [] };
   let lastX = 0;
   let lastY = 0;
   let lastZ = 0;
@@ -89,7 +92,10 @@ export function parseNc(text: string): ParsedNc {
     const isCycleCancel = drillG === "G80";
     const isCycleStart = drillG !== null && !isCycleCancel;
     if (isCycleCancel) inDrillCycle = false;
-    else if (isCycleStart) inDrillCycle = true;
+    else if (isCycleStart) {
+      inDrillCycle = true;
+      out.drillCycleUsed = true; // 记录：本程序用过固定钻循环
+    }
     const x = num("X");
     const y = num("Y");
     const z = num("Z");

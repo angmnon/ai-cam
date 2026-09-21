@@ -50,8 +50,14 @@ export interface AppConfig {
   partsAnalyzer: { mode: "fixture" | "worker"; fixturesDir: string; binaryPath?: string };
   /** Phase 0 bootstrap 登录凭据（单账号；仅在无 DATABASE_URL 的内存降级路径使用） */
   auth: { bootstrap: BootstrapAuthConfig };
-  /** AI 规划：是否配置了真实 LLM 凭据（未配置则全程 MockProvider） */
-  ai: { llmLive: boolean };
+  /** AI 规划：是否配置了真实 LLM 凭据（未配置则全程 MockProvider）+ 真实 provider 连接信息 */
+  ai: {
+    llmLive: boolean;
+    provider: "openai" | "deepseek" | "generic";
+    baseUrl: string;
+    apiKey?: string;
+    model: string;
+  };
   /** P1-08：审计持久化落点 memory|file|pg（默认 memory 保测试；生产建议 pg） */
   auditSink: "memory" | "file" | "pg";
   otlpEndpoint?: string;
@@ -136,6 +142,31 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   // 未配置任何凭据时走开发态默认密码 demo；usingDefaults 供启动日志告警
   const password = hasExplicitCred ? env.CAM_BOOTSTRAP_PASSWORD : "demo";
 
+  // ---- P1-06：真实 LLM provider 解析（OpenAI Chat Completions 兼容协议）----
+  // 优先级：DEEPSEEK_API_KEY > OPENAI_API_KEY > LLM_API_KEY（通用 OpenAI 兼容网关）。
+  // 任一 key 存在即 llmLive=true；apiKey 不进日志。LLM_BASE_URL 仅 generic 时必填，缺失则不视为 live。
+  let aiProvider: "openai" | "deepseek" | "generic" = "openai";
+  let aiBaseUrl = "";
+  let aiApiKey: string | undefined;
+  let aiModel = "";
+  if (env.DEEPSEEK_API_KEY) {
+    aiProvider = "deepseek";
+    aiBaseUrl = env.DEEPSEEK_BASE_URL?.replace(/\/+$/, "") || "https://api.deepseek.com/v1";
+    aiApiKey = env.DEEPSEEK_API_KEY;
+    aiModel = env.LLM_MODEL || "deepseek-chat";
+  } else if (env.OPENAI_API_KEY) {
+    aiProvider = "openai";
+    aiBaseUrl = env.OPENAI_BASE_URL?.replace(/\/+$/, "") || "https://api.openai.com/v1";
+    aiApiKey = env.OPENAI_API_KEY;
+    aiModel = env.LLM_MODEL || "gpt-4o-mini";
+  } else if (env.LLM_API_KEY && env.LLM_BASE_URL) {
+    aiProvider = "generic";
+    aiBaseUrl = env.LLM_BASE_URL.replace(/\/+$/, "");
+    aiApiKey = env.LLM_API_KEY;
+    aiModel = env.LLM_MODEL || "default";
+  }
+  const llmLive = Boolean(aiApiKey);
+
   return {
     port: Number(env.PORT ?? 8080),
     host: env.HOST ?? "0.0.0.0",
@@ -166,17 +197,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       bootstrap: {
         email: email.trim().toLowerCase(),
         orgId,
-        // 服务端固定角色：Phase 0 单账号默认工程师；角色经 RBAC 矩阵校验
-        role: "ENGINEER",
+        // 服务端固定角色：Phase 0 单账号默认工程师；可用 CAM_BOOTSTRAP_ROLE 覆盖（如 E2E/压测用 ADMIN）；角色经 RBAC 矩阵校验
+        role: (env.CAM_BOOTSTRAP_ROLE ?? "ENGINEER").toUpperCase(),
         password,
         passwordHash,
         usingDefaults: !hasExplicitCred,
       },
     },
     otlpEndpoint: env.OTLP_ENDPOINT,
-    // P1-17：任一真实 LLM 厂商 key 存在即视为 live；否则全程 MockProvider
+    // P1-06：真实 provider 连接信息；未配置 key 时 llmLive=false，全程 MockProvider
     ai: {
-      llmLive: Boolean(env.OPENAI_API_KEY || env.ANTHROPIC_API_KEY || env.DEEPSEEK_API_KEY || env.LLM_API_KEY),
+      llmLive,
+      provider: aiProvider,
+      baseUrl: aiBaseUrl,
+      apiKey: aiApiKey,
+      model: aiModel,
     },
     // ---- P1-08：审计 sink 落点（默认 memory 保测试；生产建议 pg）----
     auditSink: (env.AUDIT_SINK as "memory" | "file" | "pg" | undefined) ?? "memory",

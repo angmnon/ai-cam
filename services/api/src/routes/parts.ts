@@ -9,8 +9,6 @@ import { planPart } from "@ai-cam/cam-kernel";
 import { mustLatest } from "../cam/cam-store.js";
 import { runJob, buildJobReport } from "@ai-cam/job-runner";
 import { runCamAgent } from "@ai-cam/ai-planner";
-import { ModelGateway } from "@ai-cam/model-gateway";
-import { createMockProvider } from "@ai-cam/model-gateway";
 // P0-4：RBAC 授权 + Prompt 注入扫描 + 审计
 import { checkPromptInjection, recordAudit } from "@ai-cam/security";
 
@@ -361,7 +359,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     // P2-45：CAM 规划（runCamAgent）为 CPU 密集同步计算，经模块级信号量限流（注入拦截等轻量前置校验不占槽）
     await acquireCpuSlot();
     try {
-      const gateway = new ModelGateway({}).register(createMockProvider());
+      const gateway = app.llmGateway;
       const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
         gateway,
         goal,
@@ -423,7 +421,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     const plan = await app.aiPlans.get(orgId, id, planId);
     const part = await app.parts.get(orgId, id);
     if (!part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
-    const gateway = new ModelGateway({}).register(createMockProvider());
+    const gateway = app.llmGateway;
     const run = await runCamAgent(part.analysis.part, part.analysis.features.features, { gateway, goal: plan.goal, dialect: undefined });
     const revision = await app.cams.create({ orgId, partId: id, userId: request.user!.sub, cam: run.job.cam });
     const jobRun = await app.jobRuns.createRun({

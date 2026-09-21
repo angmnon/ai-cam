@@ -167,7 +167,6 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
   useEffect(() => {
     void load();
     void loadReleases();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [partId]);
 
   if (busy && !part) {

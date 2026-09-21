@@ -1,0 +1,13 @@
+ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('AI-CAM E2E dummy STEP (box)'),'2;1');
+FILE_NAME('box.step','2026-01-01T00:00:00',('e2e'),('ai-cam'),'fixture','fixture','');
+FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
+ENDSEC;
+DATA;
+#1 = CARTESIAN_POINT('origin',(0.,0.,0.));
+#2 = CARTESIAN_POINT('x',(100.,0.,0.));
+#3 = CARTESIAN_POINT('y',(0.,80.,0.));
+#4 = CARTESIAN_POINT('z',(0.,0.,50.));
+ENDSEC;
+END-ISO-10303-21;

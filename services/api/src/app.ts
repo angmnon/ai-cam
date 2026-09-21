@@ -42,6 +42,8 @@ import fileRoutes from "./routes/files.js";
 import jobRoutes from "./routes/jobs.js";
 import partRoutes from "./routes/parts.js";
 import masterRoutes from "./routes/master.js";
+import { ModelGateway } from "@ai-cam/model-gateway";
+import { buildLlmGateway } from "./llm/build-gateway.js";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -60,6 +62,8 @@ declare module "fastify" {
     authBackend: AuthBackend;
     /** P1-17：AI 规划是否接入真实 LLM（否则 MockProvider） */
     aiLlm: boolean;
+    /** P1-06：装配好的 LLM 网关（真实 provider 承担任务，mock 作优雅回退；无 key 时仅 mock） */
+    llmGateway: ModelGateway;
   }
 }
 
@@ -108,6 +112,13 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   });
   await app.register(swaggerUi, {
     routePrefix: "/docs",
+  });
+
+  // P1-04：导出 OpenAPI 3.1 原始 spec（从 route schema/ajv 提取；契约测试与 CI 快照比对用）。
+  // 鉴权插件对 /docs 与 /docs/* 放行，故该端点公开可读。
+  app.get("/docs/openapi.json", async (_req, reply) => {
+    reply.header("content-type", "application/json; charset=utf-8");
+    return app.swagger();
   });
 
   // 原始二进制解析（上传端点）
@@ -200,6 +211,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("authBackend", authBackend);
   // P1-17：AI 规划是否接入真实 LLM（响应头 x-ai-mode 据此标注 live/mock）
   app.decorate("aiLlm", config.ai.llmLive);
+  // P1-06：LLM 网关（真实 provider 承担任务；无 key 时仅 mock，失败自动降级）
+  app.decorate("llmGateway", buildLlmGateway(config.ai));
   // P2-43：未显式配置 JWT_SECRET（走开发默认值）时告警；生产未配置已在 loadConfig 抛错
   if (config.jwt.usingDefault) {
     app.log.warn("使用默认开发态 JWT_SECRET。生产必须配置 JWT_SECRET（loadConfig 在 NODE_ENV=production 未设置时直接拒绝启动）。");

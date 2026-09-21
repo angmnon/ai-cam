@@ -25,7 +25,7 @@ export class LocalDiskAdapter implements StorageAdapter {
   /** 进程内上传会话表（Phase 0；阶段②换 PG/Redis） */
   private readonly sessions = new Map<string, UploadSessionEntry>();
 
-  constructor(private readonly dataDir: string, private readonly baseUrl = "http://localhost:8080") {}
+  constructor(private readonly dataDir: string) {}
 
   private async ensureDir(dir: string): Promise<void> {
     await mkdir(dir, { recursive: true });
@@ -53,11 +53,12 @@ export class LocalDiskAdapter implements StorageAdapter {
     const expiresAt = Date.now() + 60 * 60 * 1000;
     // 落内存会话表：后续 /upload 凭 session_id 取回，客户端不可改 key
     this.sessions.set(sessionId, { key, orgId, size: sizeBytes, expiresAt });
+    // 下发相对路径：前端客户端统一以 BASE + path 发起上传，避免硬编码 host/port（跨端口/代理/E2E 均正确）。
     return {
       file_id: fileId,
       session_id: sessionId,
       key,
-      upload_url: `${this.baseUrl}/api/v1/files/upload`,
+      upload_url: "/api/v1/files/upload",
       method: "POST",
       // 不再下发 x-file-key；客户端只回传 x-session-id
       headers: { "content-type": "application/octet-stream", "x-session-id": sessionId },

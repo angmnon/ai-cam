@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { existsSync, rmSync } from "node:fs";
-import { can, assertCan, AccessDeniedError, ROLES, type Role } from "./rbac.js";
+import { can, assertCan, AccessDeniedError, CrossTenantError, ROLES, type Role } from "./rbac.js";
 import { checkPromptInjection } from "./prompt-guard.js";
 import { generateSbom, summarize, type PkgInfo } from "./sbom.js";
-import { MemoryAuditSink, FileAuditSink, recordAudit, queryAudit, type AuditSink } from "./audit.js";
+import { MemoryAuditSink, JsonlAuditSink, FileAuditSink, recordAudit, queryAudit, type AuditSink } from "./audit.js";
 
 describe("RBAC 权限矩阵", () => {
   it("ADMIN 拥有全部权限，VIEWER 只读", () => {
@@ -35,6 +35,19 @@ describe("RBAC 权限矩阵", () => {
     // ADMIN 仍可审批与执行发布
     expect(() => assertCan("ADMIN", "release:approve")).not.toThrow();
     expect(() => assertCan("ADMIN", "release:release")).not.toThrow();
+  });
+
+  it("P2-39：同 role 跨 org 拒绝；同 org / 不传 org 不受影响", () => {
+    // ADMIN 本拥有 users:manage，但身份 org 与目标资源 org 不一致 → 跨租户拒绝
+    expect(() => assertCan("ADMIN", "users:manage", { orgId: "org-a", resourceOrgId: "org-b" })).toThrow(CrossTenantError);
+    // 同 org 内仍按 role 矩阵授权，不被租户校验误拦
+    expect(() => assertCan("ADMIN", "users:manage", { orgId: "org-a", resourceOrgId: "org-a" })).not.toThrow();
+    // 不传 org 上下文时行为与基线一致
+    expect(() => assertCan("ADMIN", "users:manage")).not.toThrow();
+    // 仅提供单侧 orgId 不构成跨租户，不触发拒绝
+    expect(() => assertCan("ADMIN", "users:manage", { orgId: "org-a" })).not.toThrow();
+    // 跨租户拒绝仍按 role 矩阵叠加：VIEWER 无 users:manage，即便同 org 也拒（AccessDeniedError 而非 CrossTenantError）
+    expect(() => assertCan("VIEWER", "users:manage", { orgId: "org-a", resourceOrgId: "org-a" })).toThrow(AccessDeniedError);
   });
 
   it("矩阵覆盖所有角色与关键动作", () => {
@@ -147,6 +160,26 @@ describe("审计日志", () => {
     } finally {
       if (existsSync(file)) rmSync(file);
     }
+  });
+
+  it("P2-34：JsonlAuditSink 写入 → 读回 → queryAudit 过滤", async () => {
+    const sink = new JsonlAuditSink();
+    await recordAudit(sink, { actor: "alice", role: "ENGINEER", action: "release:request", resource: "rel_1" }, "ALLOWED");
+    await recordAudit(sink, { actor: "bob", role: "VIEWER", action: "release:approve", resource: "rel_2" }, "DENIED");
+    // 缓冲确实是 JSONL 行
+    expect(sink.export()).toContain(`"actor":"alice"`);
+    expect(sink.export()).toContain(`"actor":"bob"`);
+    // readAll 把 JSONL 读回为事件流
+    const all = await sink.readAll();
+    expect(all).toHaveLength(2);
+    // queryAudit 走 readAll 后按条件过滤
+    const denied = await queryAudit(sink, { action: "release:approve", outcome: "DENIED" });
+    expect(denied).toHaveLength(1);
+    expect(denied[0].actor).toBe("bob");
+    expect(denied[0].resource).toBe("rel_2");
+    const alice = await queryAudit(sink, { actor: "alice" });
+    expect(alice).toHaveLength(1);
+    expect(alice[0].outcome).toBe("ALLOWED");
   });
 
   it("进程内多次 recordAudit 顺序正确", async () => {

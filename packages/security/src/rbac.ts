@@ -36,15 +36,39 @@ export function can(role: Role, action: Action): boolean {
   return MATRIX[role].includes(action);
 }
 
-export function assertCan(role: Role, action: Action): void {
+/**
+ * P2-39 租户（org）维度上下文：role 矩阵本身不变。
+ * 调用方可选地传入身份所属 orgId（如从 JWT 解出）与目标资源/事件所属 orgId；
+ * 当两者都给出且不一致时视为跨租户访问并拒绝（不影响 role 授权结论）。
+ */
+export interface RbacContext {
+  /** 当前身份所属租户 orgId */
+  orgId?: string;
+  /** 目标资源/事件所属租户 orgId（与 orgId 不一致即跨租户） */
+  resourceOrgId?: string;
+}
+
+export function assertCan(role: Role, action: Action, ctx?: RbacContext): void {
   if (!can(role, action)) {
     throw new AccessDeniedError(role, action);
+  }
+  // P2-39：仅当两侧 orgId 均提供且不一致时，判定为跨租户越权
+  if (ctx?.orgId && ctx.resourceOrgId && ctx.orgId !== ctx.resourceOrgId) {
+    throw new CrossTenantError(role, action, ctx.orgId, ctx.resourceOrgId);
   }
 }
 
 export class AccessDeniedError extends Error {
   constructor(public role: Role, public action: Action) {
     super(`权限不足：角色 ${role} 无 ${action} 权限`);
+  }
+}
+
+/** P2-39：同 role 跨租户（org）访问被拒；继承 AccessDeniedError 以便统一按 403 处理 */
+export class CrossTenantError extends AccessDeniedError {
+  constructor(role: Role, action: Action, public readonly orgId: string, public readonly resourceOrgId: string) {
+    super(role, action);
+    this.message = `跨租户访问被拒：org ${orgId} 的角色 ${role} 无权访问 org ${resourceOrgId} 的 ${action}`;
   }
 }
 

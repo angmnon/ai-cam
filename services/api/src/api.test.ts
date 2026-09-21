@@ -328,6 +328,81 @@ describe("api skeleton", () => {
       expect(res.json().data.length).toBeGreaterThan(0);
     }
   });
+
+  describe("P2-52 内存分页 offset/limit", () => {
+    async function seedJobs(count: number, headers: Record<string, string>) {
+      for (let i = 0; i < count; i++) {
+        const r = await app.inject({
+          method: "POST",
+          url: "/api/v1/jobs",
+          headers,
+          payload: { input: { part_id: `p_${i}`, machine_id: "m", controller_id: "c", material_id: "mat" } },
+        });
+        expect(r.statusCode).toBe(201);
+      }
+    }
+
+    it("jobs list：offset=10&limit=5 返回第 11-15 条、total 正确", async () => {
+      const token = await login();
+      const headers = authHeaders(token);
+      await seedJobs(15, headers);
+
+      const all = await app.inject({ method: "GET", url: "/api/v1/jobs?offset=0&limit=100", headers });
+      expect(all.statusCode).toBe(200);
+      expect(all.json().meta.total).toBe(15);
+      const full = all.json().data as Array<{ id: string }>;
+
+      const page = await app.inject({ method: "GET", url: "/api/v1/jobs?offset=10&limit=5", headers });
+      expect(page.statusCode).toBe(200);
+      expect(page.json().meta).toEqual({ offset: 10, limit: 5, total: 15 });
+      const slice = page.json().data as Array<{ id: string }>;
+      expect(slice.length).toBe(5);
+      // 第 11-15 条（索引 10..14）与全量切片一致
+      expect(slice.map((j) => j.id)).toEqual(full.slice(10, 15).map((j) => j.id));
+    });
+
+    it("jobs list：offset 超出范围返回空数组，total 仍正确", async () => {
+      const token = await login();
+      const headers = authHeaders(token);
+      await seedJobs(15, headers);
+
+      const empty = await app.inject({ method: "GET", url: "/api/v1/jobs?offset=100&limit=5", headers });
+      expect(empty.statusCode).toBe(200);
+      expect(empty.json().data).toEqual([]);
+      expect(empty.json().meta).toEqual({ offset: 100, limit: 5, total: 15 });
+    });
+
+    it("parts list：offset=10&limit=5 返回第 11-15 条、total 正确；越界空数组", async () => {
+      const token = await login();
+      const headers = authHeaders(token);
+      for (let i = 0; i < 15; i++) {
+        const r = await app.inject({
+          method: "POST",
+          url: "/api/v1/parts",
+          headers,
+          payload: { filename: `part-${i}.step`, content_type: "model/step", size_bytes: 1024 },
+        });
+        expect(r.statusCode).toBe(201);
+      }
+
+      const all = await app.inject({ method: "GET", url: "/api/v1/parts?offset=0&limit=100", headers });
+      expect(all.statusCode).toBe(200);
+      expect(all.json().meta.total).toBe(15);
+      const full = all.json().data as Array<{ id: string }>;
+
+      const page = await app.inject({ method: "GET", url: "/api/v1/parts?offset=10&limit=5", headers });
+      expect(page.statusCode).toBe(200);
+      expect(page.json().meta).toEqual({ offset: 10, limit: 5, total: 15 });
+      const slice = page.json().data as Array<{ id: string }>;
+      expect(slice.length).toBe(5);
+      expect(slice.map((p) => p.id)).toEqual(full.slice(10, 15).map((p) => p.id));
+
+      const empty = await app.inject({ method: "GET", url: "/api/v1/parts?offset=100&limit=5", headers });
+      expect(empty.statusCode).toBe(200);
+      expect(empty.json().data).toEqual([]);
+      expect(empty.json().meta.total).toBe(15);
+    });
+  });
 });
 
 describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", () => {

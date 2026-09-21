@@ -25,7 +25,7 @@ const PROGRESS_BY_STATUS: Record<string, number> = {
 export interface JobStore {
   create(input: { orgId: string; userId: string; input: JobInput; idempotencyKey?: string }): Job;
   get(orgId: string, jobId: string): Job;
-  list(orgId: string, opts: { status?: JobStatus; page: number; pageSize: number }): { items: Job[]; total: number };
+  list(orgId: string, opts: { status?: JobStatus; offset: number; limit: number }): { items: Job[]; total: number };
   transitionTo(orgId: string, jobId: string, to: JobStatus): Job;
   fail(orgId: string, jobId: string, failure: { code: string; message: string; stage?: string; retryable: boolean }): Job;
 }
@@ -97,11 +97,11 @@ export function createJobStore(bus: EventBus): JobStore {
       return mustGet(orgId, jobId);
     },
 
-    list(orgId, { status, page, pageSize }) {
+    list(orgId, { status, offset, limit }) {
       const all = [...jobs.values()].filter((j) => j.organization_id === orgId && (!status || j.status === status));
       all.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-      const start = (page - 1) * pageSize;
-      return { items: all.slice(start, start + pageSize), total: all.length };
+      // P2-52：内存分页，语义对齐 SQL OFFSET ? LIMIT ?（offset 跳过、limit 截断）
+      return { items: all.slice(offset, offset + limit), total: all.length };
     },
 
     transitionTo(orgId, jobId, to) {

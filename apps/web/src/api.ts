@@ -307,6 +307,36 @@ export const api = {
   listReleases: (id: string) => request<{ data: ReleaseRecord[] }>("GET", `/api/v1/parts/${id}/releases`),
   approveRelease: (id: string, releaseId: string, note?: string) => request<{ data: ReleaseRecord }>("POST", `/api/v1/parts/${id}/releases/${releaseId}/approve`, { note }),
   releaseNow: (id: string, releaseId: string) => request<{ data: ReleaseRecord }>("POST", `/api/v1/parts/${id}/releases/${releaseId}/release`, {}),
+
+  // ---- P2-49：以下为按 services/api 真实路由补齐的调用（不伪造后端不存在的端点）----
+  // P3-9：Job 报告（工艺单/刀具清单/Setup Sheet/仿真摘要）
+  getJobReport: (id: string) => request<{ data: JobReport }>("GET", `/api/v1/parts/${id}/job/report`),
+
+  // P4-11：Release 详情 / 驳回（驳回 note 必填，与后端 ReleaseRejectBody 对齐）
+  getRelease: (id: string, releaseId: string) => request<{ data: ReleaseRecord }>("GET", `/api/v1/parts/${id}/releases/${releaseId}`),
+  rejectRelease: (id: string, releaseId: string, note: string, profile?: string) =>
+    request<{ data: ReleaseRecord }>("POST", `/api/v1/parts/${id}/releases/${releaseId}/reject`, { note, profile }),
+
+  // 独立 Jobs 工作流（/api/v1/jobs），区别于零件级一键 runJob（POST /parts/:id/job）
+  createJob: (input: JobInput, idempotencyKey?: string) =>
+    request<{ data: JobRecord }>("POST", "/api/v1/jobs", { input }, false, idempotencyKey ? { "idempotency-key": idempotencyKey } : undefined),
+  listJobs: (opts?: { offset?: number; limit?: number; status?: JobStatus }) =>
+    request<{ data: JobRecord[]; meta: PageMeta }>(
+      "GET",
+      `/api/v1/jobs?offset=${opts?.offset ?? 0}&limit=${opts?.limit ?? 20}${opts?.status ? `&status=${encodeURIComponent(opts.status)}` : ""}`,
+    ),
+  getJobById: (id: string) => request<{ data: JobRecord }>("GET", `/api/v1/jobs/${id}`),
+  transitionJob: (id: string, to: JobStatus, reason?: string) =>
+    request<{ data: JobRecord }>("POST", `/api/v1/jobs/${id}/transition`, { to, reason }),
+  failJob: (id: string, body: { code: string; message: string; stage?: string; retryable?: boolean }) =>
+    request<{ data: JobRecord }>("POST", `/api/v1/jobs/${id}/fail`, body),
+
+  // 主数据（机床/控制器/刀具/材料/切削规则）；精确字段由后端 domain-schemas 决定，前端以结构化记录透传
+  getMasterMachines: () => request<{ data: Array<Record<string, unknown>> }>("GET", "/api/v1/master/machines"),
+  getMasterControllers: () => request<{ data: Array<Record<string, unknown>> }>("GET", "/api/v1/master/controllers"),
+  getMasterTools: () => request<{ data: Array<Record<string, unknown>> }>("GET", "/api/v1/master/tools"),
+  getMasterMaterials: () => request<{ data: Array<Record<string, unknown>> }>("GET", "/api/v1/master/materials"),
+  getMasterCuttingRules: () => request<{ data: Array<Record<string, unknown>> }>("GET", "/api/v1/master/cutting-rules"),
 };
 
 /**
@@ -356,3 +386,164 @@ export interface ReleaseRecord {
 }
 
 export { BASE };
+
+// ---- P2-49：独立 Jobs 工作流（/api/v1/jobs）类型，对齐 @ai-cam/job-schema ----
+export type JobStatus =
+  | "DRAFT"
+  | "UPLOADING"
+  | "PARSING"
+  | "ANALYZING"
+  | "PLANNING"
+  | "GENERATING_TOOLPATH"
+  | "SIMULATING"
+  | "VALIDATING"
+  | "READY_FOR_REVIEW"
+  | "APPROVED"
+  | "RELEASED"
+  | "FAILED"
+  | "BLOCKED"
+  | "CANCELLED"
+  | "NEEDS_USER_INPUT"
+  | "NEEDS_ENGINEER_REVIEW";
+
+export interface JobInput {
+  part_id: string;
+  machine_id: string;
+  controller_id: string;
+  material_id: string;
+  stock_policy?: "AUTO" | "MANUAL";
+  axis_mode?: "3AXIS" | "INDEXED_4AXIS";
+  fixture_mode?: "AUTO" | "MANUAL" | "NONE";
+}
+
+export interface JobRecord {
+  id: string;
+  organization_id: string;
+  machine_id: string;
+  controller_id: string;
+  material_id: string;
+  status: JobStatus;
+  version: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  failure?: { code: string; message: string; stage?: string; retryable: boolean; occurred_at: string };
+}
+
+export interface PageMeta {
+  offset: number;
+  limit: number;
+  total: number;
+}
+
+// ---- P2-49：P3-9 Job 报告结构（对齐 services/api buildJobReport 返回）----
+export interface JobReport {
+  schema_version: string;
+  part_id: string;
+  job_id: string;
+  ir_id: string;
+  program_number: string;
+  status: "PASS" | "WARN" | "FAIL";
+  validated: boolean;
+  engine_version: string;
+  generated_at: string;
+  summary: {
+    part_id: string;
+    machine: string;
+    machine_id: string;
+    controller: string;
+    controller_id: string;
+    axis_config: string;
+    material: string;
+    material_id: string;
+    stock: { kind: string; dimensions: Record<string, number> };
+    operation_count: number;
+    tool_count: number;
+  };
+  setup_sheet: Array<{ setup_id: string; name?: string; wcs: string; origin: { x: number; y: number; z: number } }>;
+  tool_list: Array<{ tool_id: string; tool_number: number; name: string; type: string; diameter_mm: number; operations: string[] }>;
+  process_sheet: Array<{
+    op_index: number;
+    operation_id: string;
+    type: string;
+    name?: string;
+    tool_id: string;
+    tool_number: number;
+    spindle_rpm: number;
+    feed_mm_min: number;
+    stepdown_mm?: number;
+    coolant: string;
+    move_count: number;
+    feature_ids: string[];
+  }>;
+  simulation: {
+    status: "PASS" | "WARN" | "FAIL";
+    voxel_size_mm: number;
+    initial_volume_mm3: number;
+    removed_volume_mm3: number;
+    residual_volume_mm3: number;
+    removal_error_pct: number;
+    events: Array<{ kind: string; severity: string; message: string }>;
+  };
+  validation: { status: "PASS" | "WARN" | "FAIL"; layers: Array<{ layer: string; status: string; checks: number }> };
+}
+
+// ---- P2-49：SSE 事件订阅（GET /api/v1/events/stream?subject=job_xxx）----
+// 后端鉴权要求 Authorization: Bearer，而原生 EventSource 无法携带自定义请求头，
+// 故用 fetch + 流式读取解析 SSE 帧；subject 必须以 "job_" 开头（后端校验）。
+
+export function eventsStreamUrl(subject?: string): string {
+  const u = new URL(`${BASE}/api/v1/events/stream`);
+  if (subject) u.searchParams.set("subject", subject);
+  return u.toString();
+}
+
+export interface CloudEventLike {
+  type: string;
+  subject?: string;
+  specversion?: string;
+  id?: string;
+  source?: string;
+  time?: string;
+  data?: unknown;
+  [k: string]: unknown;
+}
+
+/** 订阅 SSE 事件流，onEvent 收到解析后的 CloudEvent JSON；返回取消订阅函数。 */
+export function subscribeEvents(subject: string | undefined, onEvent: (evt: CloudEventLike) => void): () => void {
+  const ctrl = new AbortController();
+  const headers = buildAuthHeaders();
+  void (async () => {
+    try {
+      const res = await fetch(eventsStreamUrl(subject), { headers, signal: ctrl.signal });
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let idx: number;
+        // SSE 事件以空行分隔
+        while ((idx = buffer.indexOf("\n\n")) >= 0) {
+          const rawEvent = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+          const dataLines = rawEvent
+            .split("\n")
+            .filter((l) => l.startsWith("data:"))
+            .map((l) => l.slice(5).replace(/^ /, ""));
+          if (dataLines.length === 0) continue;
+          try {
+            onEvent(JSON.parse(dataLines.join("\n")) as CloudEventLike);
+          } catch {
+            /* 非 JSON 帧忽略 */
+          }
+        }
+      }
+    } catch {
+      /* 主动取消或网络中断 */
+    }
+  })();
+  return () => ctrl.abort();
+}

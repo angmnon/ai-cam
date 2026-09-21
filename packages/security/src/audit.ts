@@ -44,7 +44,7 @@ export class MemoryAuditSink implements AuditSink, AuditQuerySource {
   }
 }
 
-export class JsonlAuditSink implements AuditSink {
+export class JsonlAuditSink implements AuditSink, AuditQuerySource {
   private lines: string[] = [];
   async append(ev: AuditEvent): Promise<void> {
     this.lines.push(JSON.stringify(ev));
@@ -52,6 +52,10 @@ export class JsonlAuditSink implements AuditSink {
   /** 输出当前日志（可写盘） */
   export(): string {
     return this.lines.join("\n");
+  }
+  /** P2-34：把缓冲的 JSONL 行读回为事件流，供 queryAudit 解析后过滤 */
+  async readAll(): Promise<AuditEvent[]> {
+    return this.lines.map((l) => JSON.parse(l) as AuditEvent);
   }
 }
 

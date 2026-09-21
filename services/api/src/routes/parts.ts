@@ -119,13 +119,13 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // 列表
+  // 列表（P2-52：offset/limit 内存分页，对齐 SQL OFFSET ? LIMIT ?）
   app.get("/", async (request) => {
-    const q = request.query as { page?: string; page_size?: string; status?: string };
-    const page = Math.max(1, Number(q.page ?? 1));
-    const pageSize = Math.min(100, Math.max(1, Number(q.page_size ?? 20)));
-    const { items, total } = app.parts.list(request.user!.org_id, { status: q.status as never, page, pageSize });
-    return paged(items, { page, page_size: pageSize, total });
+    const q = request.query as { offset?: string; limit?: string; status?: string };
+    const offset = Math.max(0, Number(q.offset ?? 0) || 0);
+    const limit = Math.min(100, Math.max(1, Number(q.limit ?? 20) || 20));
+    const { items, total } = app.parts.list(request.user!.org_id, { status: q.status as never, offset, limit });
+    return paged(items, { offset, limit, total });
   });
 
   // 详情（含分析摘要）

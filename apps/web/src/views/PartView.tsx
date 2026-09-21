@@ -3,10 +3,11 @@ import { useEffect, useState } from "react";
 import { api, BASE, type AiPlanResult, type CamIr, type DfmReport, type Feature, type JobSummary, type PartSummary, type ReleaseRecord } from "../api.js";
 import { Viewer } from "../viewer/Viewer.js";
 import { SimPlayer } from "./SimPlayer.js";
+import { AiPanel } from "./AiPanel.js";
+import { ExpertDfmPanel, ExpertFeaturesPanel } from "./ExpertShopFloor.js";
 import { planFixture, clampConflict } from "@ai-cam/fixture-engine";
 import { designSoftJaw, toObj, estimateVolume } from "@ai-cam/soft-jaw";
 
-const SEVERITY_COLOR: Record<string, string> = { INFO: "#38bdf8", WARNING: "#f59e0b", BLOCKER: "#ef4444" };
 const OP_COLOR: Record<string, string> = { FACE: "#38bdf8", POCKET: "#f59e0b", DRILL: "#34d399", CONTOUR: "#f472b6", CHAMFER: "#fbbf24" };
 
 export function PartView({ partId, onBack, mode }: { partId: string; onBack: () => void; mode: "expert" | "shopfloor" }) {
@@ -238,27 +239,7 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
             </table>
           </section>
 
-          {mode === "expert" && (
-            <section style={{ marginBottom: 20 }}>
-              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-                特征（{features.length}） <span style={{ color: "#64748b", fontWeight: 400 }}>识别器 {an.features.recognizer_version}</span>
-              </h3>
-            {features.length === 0 && <div style={{ fontSize: 13, color: "#64748b" }}>未识别到特征。</div>}
-            {features.map((f) => (
-              <div key={f.id} style={{ border: "1px solid #334155", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 13 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontWeight: 600 }}>{f.id}</span>
-                  <span style={{ color: "#38bdf8" }}>{f.type}</span>
-                  <span style={{ marginLeft: "auto", color: "#64748b", fontSize: 12 }}>conf {(f.confidence * 100).toFixed(0)}%</span>
-                </div>
-                <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
-                  尺寸：{Object.entries(f.dimensions ?? {}).map(([k, v]) => `${k}=${Number(v.toFixed(2))}`).join("  ") || "—"}
-                </div>
-                <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>可访问：{f.accessible_directions.join(" / ")}</div>
-              </div>
-            ))}
-          </section>
-          )}
+          {mode === "expert" && <ExpertFeaturesPanel features={features} recognizerVersion={an.features.recognizer_version} />}
 
           <section style={{ marginBottom: 20 }}>
             <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
@@ -385,89 +366,16 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
           </section>
 
           {mode === "expert" && (
-            <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
-              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-                AI 工艺规划 <span style={{ color: "#64748b", fontWeight: 400 }}>P4-9 · Preview → Compare → Apply</span>
-              </h3>
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              <input
-                value={aiGoal}
-                onChange={(e) => setAiGoal(e.target.value)}
-                style={{ flex: 1, padding: "7px 10px", fontSize: 13, background: "#0b1220", border: "1px solid #334155", color: "#e2e8f0", borderRadius: 6 }}
-                placeholder="输入加工目标，如：表面光洁度优先 / 成本优先 / 效率优先"
-              />
-              <button
-                onClick={() => void runAiPlan()}
-                disabled={aiBusy}
-                style={{ padding: "7px 14px", cursor: aiBusy ? "wait" : "pointer", fontSize: 13, background: "#7c3aed", border: "none", color: "#fff", borderRadius: 6 }}
-              >
-                {aiBusy ? "规划中…" : "AI 规划"}
-              </button>
-            </div>
-            {aiError && <div style={{ fontSize: 12, color: "#f87171", marginBottom: 8 }}>{aiError}</div>}
-            {aiPlan && (
-              <div style={{ border: "1px solid #334155", borderRadius: 8, padding: 10, fontSize: 12, marginBottom: 10 }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 600 }}>意图：{aiPlan.intent?.strategy ?? "（默认）"}</span>
-                  <span style={{ color: aiPlan.guardrail.ok ? "#86efac" : "#fca5a5", fontWeight: 600 }}>
-                    {aiPlan.guardrail.ok ? "✔ Guardrails 通过" : `✘ Guardrails（${aiPlan.guardrail.violations.length} 项）`}
-                  </span>
-                  <span style={{ color: aiPlan.job.validated ? "#86efac" : "#fca5a5" }}>{aiPlan.job.validated ? "✔ VALIDATED" : "✘ NOT VALIDATED"}</span>
-                </div>
-                {!aiPlan.guardrail.ok &&
-                  aiPlan.guardrail.violations.map((v, i) => (
-                    <div key={i} style={{ color: "#fca5a5" }}>
-                      {v.path}: {v.message}
-                    </div>
-                  ))}
-                <div style={{ color: "#94a3b8", margin: "6px 0" }}>装夹 {aiPlan.setups.length} · 工序 {aiPlan.process.order.length} · 刀具选择 {aiPlan.tool_choices.length}</div>
-                {aiPlan.tool_choices.map((tc) => (
-                  <div key={tc.operation_type + tc.tool_id} style={{ color: "#e2e8f0", marginBottom: 2 }}>
-                    <span style={{ color: "#38bdf8", fontWeight: 600 }}>{tc.operation_type}</span> → {tc.tool_id}（score {tc.score.toFixed(2)}）
-                    <span style={{ color: "#64748b" }}> · {tc.reasons[0]}</span>
-                  </div>
-                ))}
-                <div style={{ borderTop: "1px solid #1e293b", margin: "8px 0 6px", paddingTop: 6 }}>
-                  <div style={{ color: "#94a3b8", fontWeight: 600, marginBottom: 4 }}>变更预览（ChangeSet）</div>
-                  <div style={{ display: "flex", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: "#64748b", marginBottom: 2 }}>当前</div>
-                      {aiPlan.change_set.before ? (
-                        <div style={{ color: "#e2e8f0" }}>{aiPlan.change_set.before.operation_count} 工序 · {aiPlan.change_set.before.tools.length} 刀具 · {aiPlan.change_set.before.setups.length} 装夹</div>
-                      ) : (
-                        <div style={{ color: "#64748b" }}>（无 CAM 计划）</div>
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: "#64748b", marginBottom: 2 }}>AI 方案</div>
-                      <div style={{ color: "#86efac" }}>{aiPlan.change_set.after.operation_count} 工序 · {aiPlan.change_set.after.tools.length} 刀具 · {aiPlan.change_set.after.setups.length} 装夹</div>
-                    </div>
-                  </div>
-                  {aiPlan.change_set.reasons.map((r, i) => (
-                    <div key={i} style={{ color: "#64748b", marginTop: 2 }}>
-                      · {r}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  onClick={() => void applyAiPlan()}
-                  style={{ marginTop: 8, padding: "6px 14px", cursor: "pointer", fontSize: 12, background: "#16a34a", border: "none", color: "#fff", borderRadius: 6 }}
-                >
-                  Apply 生成新 CAM 计划
-                </button>
-              </div>
-            )}
-            {aiPlans.length > 0 && (
-              <div style={{ fontSize: 11, color: "#64748b", marginTop: 6 }}>
-                审计记录 {aiPlans.length} 条：
-                {aiPlans.slice(0, 3).map((pl) => (
-                  <span key={pl.id} style={{ marginRight: 10 }}>
-                    [{pl.goal.slice(0, 8)}… {pl.model_route} · v{pl.prompt_version} · {pl.tool_calls.length} calls]
-                  </span>
-                ))}
-              </div>
-            )}
-          </section>
+            <AiPanel
+              aiGoal={aiGoal}
+              setAiGoal={setAiGoal}
+              onRun={() => void runAiPlan()}
+              aiBusy={aiBusy}
+              aiError={aiError}
+              aiPlan={aiPlan}
+              onApply={() => void applyAiPlan()}
+              aiPlans={aiPlans}
+            />
           )}
 
           <section style={{ marginBottom: 20, borderTop: "1px solid #1e293b", paddingTop: 16 }}>
@@ -553,30 +461,7 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
             </section>
           )}
 
-          {mode === "expert" && (
-            <section>
-              <h3 style={{ margin: "0 0 10px", fontSize: 14 }}>
-                DFM 报告 <span style={{ color: "#64748b", fontWeight: 400 }}>规则 {dfm?.rules_version}</span>
-              </h3>
-            {dfm && (
-              <div style={{ display: "flex", gap: 8, marginBottom: 10, fontSize: 12 }}>
-                <span style={{ color: "#38bdf8" }}>INFO {dfm.summary.info}</span>
-                <span style={{ color: "#f59e0b" }}>WARNING {dfm.summary.warning}</span>
-                <span style={{ color: "#ef4444" }}>BLOCKER {dfm.summary.blocker}</span>
-              </div>
-            )}
-            {(dfm?.items ?? []).map((it) => (
-              <div key={it.id} style={{ borderLeft: `3px solid ${SEVERITY_COLOR[it.severity] ?? "#64748b"}`, background: "#1e293b", padding: "8px 10px", marginBottom: 8, fontSize: 12, borderRadius: "0 6px 6px 0" }}>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <span style={{ color: SEVERITY_COLOR[it.severity], fontWeight: 600 }}>{it.severity}</span>
-                  <span style={{ color: "#94a3b8" }}>{it.code}</span>
-                </div>
-                <div style={{ color: "#e2e8f0", marginTop: 4 }}>{it.message}</div>
-              </div>
-            ))}
-            {dfm?.items.length === 0 && <div style={{ fontSize: 13, color: "#64748b" }}>未发现问题，零件可制造。</div>}
-          </section>
-          )}
+          {mode === "expert" && <ExpertDfmPanel dfm={dfm} />}
         </aside>
       </div>
     </div>

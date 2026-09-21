@@ -43,7 +43,7 @@ export interface CreatePartInput {
 export interface PartStore {
   create(input: CreatePartInput): PartRecord;
   get(orgId: string, partId: string): PartRecord;
-  list(orgId: string, opts: { status?: PartStatus; page: number; pageSize: number }): { items: PartRecord[]; total: number };
+  list(orgId: string, opts: { status?: PartStatus; offset: number; limit: number }): { items: PartRecord[]; total: number };
   setAnalysis(orgId: string, partId: string, analysis: PartAnalysis): PartRecord;
   fail(orgId: string, partId: string, failure: { code: string; message: string; stage?: string }): PartRecord;
 }
@@ -85,11 +85,11 @@ export function createPartStore(): PartStore {
     get(orgId, partId) {
       return mustGet(orgId, partId);
     },
-    list(orgId, { status, page, pageSize }) {
+    list(orgId, { status, offset, limit }) {
       const all = [...parts.values()].filter((p) => p.organization_id === orgId && (!status || p.status === status));
       all.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-      const start = (page - 1) * pageSize;
-      return { items: all.slice(start, start + pageSize), total: all.length };
+      // P2-52：内存分页，语义对齐 SQL OFFSET ? LIMIT ?（offset 跳过、limit 截断）
+      return { items: all.slice(offset, offset + limit), total: all.length };
     },
     setAnalysis(orgId, partId, analysis) {
       const part = mustGet(orgId, partId);

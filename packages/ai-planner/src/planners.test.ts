@@ -4,7 +4,7 @@ import { seedTools } from "@ai-cam/master-data";
 import type { Feature } from "@ai-cam/domain-schemas";
 import { planSetups } from "./setup.js";
 import { planProcess, validateOrder, type OpType } from "./process.js";
-import { planTool } from "./tool.js";
+import { planTool, clampWeights, type ToolWeights } from "./tool.js";
 
 const f = (id: string, type: Feature["type"], accessible: Feature["accessible_directions"] = ["+Z"]): Feature => ({
   id,
@@ -104,5 +104,34 @@ describe("planTool（P4-7）", () => {
     const costFirst = planTool("FACE", { maxDiameter: 16 }, seedTools, { diameter_match: 0.2, tool_cost: 0.7, surface_quality: 0.1 });
     const qualityFirst = planTool("FACE", { maxDiameter: 16 }, seedTools, { diameter_match: 0.3, tool_cost: 0.1, surface_quality: 0.6 });
     expect(costFirst.tool.diameter_mm).toBeLessThanOrEqual(qualityFirst.tool.diameter_mm);
+  });
+});
+
+describe("clampWeights（P3-25）", () => {
+  const NORMAL: ToolWeights = { diameter_match: 0.5, tool_cost: 0.2, surface_quality: 0.3 };
+
+  it("权重和=1 且合法 → clamped=false，原值透传", () => {
+    const r = clampWeights(NORMAL);
+    expect(r.clamped).toBe(false);
+    expect(r.weights).toEqual(NORMAL);
+  });
+
+  it("权重和≠1 → 归一化且 clamped=true", () => {
+    const r = clampWeights({ diameter_match: 2, tool_cost: 2, surface_quality: 2 });
+    expect(r.clamped).toBe(true);
+    expect(r.weights.diameter_match + r.weights.tool_cost + r.weights.surface_quality).toBeCloseTo(1, 6);
+  });
+
+  it("权重和<=0（退化输入）→ 回退默认权重且 clamped=true", () => {
+    const r = clampWeights({ diameter_match: 0, tool_cost: 0, surface_quality: 0 });
+    expect(r.clamped).toBe(true);
+    expect(r.weights).toEqual(NORMAL);
+  });
+
+  it("planTool 把 clamp 状态透传到结果（weights_clamped）", () => {
+    const clamped = planTool("FACE", { maxDiameter: 16 }, seedTools, { diameter_match: 2, tool_cost: 2, surface_quality: 2 });
+    const clean = planTool("FACE", { maxDiameter: 16 }, seedTools, NORMAL);
+    expect(clamped.weights_clamped).toBe(true);
+    expect(clean.weights_clamped).toBe(false);
   });
 });

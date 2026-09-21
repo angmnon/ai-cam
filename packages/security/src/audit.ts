@@ -19,6 +19,10 @@ export interface AuditEvent {
   resource: string;
   outcome: "ALLOWED" | "DENIED" | "FAILED";
   detail?: string;
+  /** P3-23：可选关联作业 ID（AI 规划/CAM 生成等动作可填，便于按 job 回溯审计） */
+  job_id?: string;
+  /** P3-23：可选模型版本标识（记录本次调用所用模型，便于审计追溯） */
+  model_version?: string;
 }
 
 export interface AuditSink {
@@ -98,6 +102,10 @@ export interface AuditOptions {
   action: string;
   resource: string;
   detail?: string;
+  /** P3-23：可选，记录后透传到 AuditEvent.job_id */
+  job_id?: string;
+  /** P3-23：可选，记录后透传到 AuditEvent.model_version */
+  model_version?: string;
 }
 
 /** 记录权限操作：denied 时 outcome=DENIED；await 落盘，写失败抛错 */

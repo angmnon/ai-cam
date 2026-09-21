@@ -47,6 +47,8 @@ export interface RuleDecision {
   scope: RuleScope;
   clause_desc: string;
   effect: string;
+  /** P3-26：被影响参数的显式 key（不再从 clause_desc 正则反解） */
+  paramKey: string;
 }
 
 export interface RuleEvaluation {
@@ -105,10 +107,10 @@ export function evaluateRules(rules: EnterpriseRule[], ctx: RuleContext, base: P
     for (const clause of rule.clauses) {
       try {
         const { effect } = applyClause(params, clause, ctx);
-        applied.push({ rule_id: rule.id, rule_name: rule.name, scope: rule.scope, clause_desc: describeClause(clause), effect });
+        applied.push({ rule_id: rule.id, rule_name: rule.name, scope: rule.scope, clause_desc: describeClause(clause), effect, paramKey: clauseParamKey(clause) });
       } catch (e) {
         if (e instanceof ForbiddenToolError) {
-          overridden.push({ rule_id: rule.id, rule_name: rule.name, scope: rule.scope, clause_desc: `禁刀 ${e.forbiddenTypes.join("/")}`, effect: "禁刀（终止）" });
+          overridden.push({ rule_id: rule.id, rule_name: rule.name, scope: rule.scope, clause_desc: `禁刀 ${e.forbiddenTypes.join("/")}`, effect: "禁刀（终止）", paramKey: "forbid_tool_type" });
           blocked = true;
           break;
         }
@@ -122,16 +124,18 @@ export function evaluateRules(rules: EnterpriseRule[], ctx: RuleContext, base: P
   const seen = new Map<string, RuleDecision>();
   const overtaken: RuleDecision[] = [];
   for (const d of decisions) {
-    const key = paramKey(d);
+    const key = d.paramKey;
     if (seen.has(key)) overtaken.push(seen.get(key)!);
     seen.set(key, d);
   }
   return { params, decisions: [...seen.values()], overridden: [...overridden, ...overtaken] };
 }
 
-function paramKey(d: RuleDecision): string {
-  const m = d.clause_desc.match(/^[a-z_]+/);
-  return m ? m[0] : d.clause_desc;
+/** P3-26：从 clause 结构直接给出被影响参数的显式 key（不再从 clause_desc 反解） */
+function clauseParamKey(c: RuleClause): string {
+  if (c.kind === "coolant") return "coolant";
+  if (c.kind === "forbid_tool_type") return "forbid_tool_type";
+  return c.numeric.param;
 }
 
 function describeClause(c: RuleClause): string {

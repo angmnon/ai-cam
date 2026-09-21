@@ -12,14 +12,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@ai-cam/cam-ir": "workspace:*",
-    "@ai-cam/cam-kernel": "workspace:*",
-    "@ai-cam/domain-schemas": "workspace:*",
-    "@ai-cam/feature-engine": "workspace:*",
-    "@ai-cam/geometry-schema": "workspace:*",
-    "@ai-cam/master-data": "workspace:*"
+    "@ai-cam/cam-ir": "workspace:*"
   },
   "devDependencies": {
+    "@ai-cam/cam-kernel": "workspace:*",
+    "@ai-cam/feature-engine": "workspace:*",
+    "@ai-cam/geometry-schema": "workspace:*",
     "typescript": "^5.7.2",
     "vitest": "^3.0.0"
   }

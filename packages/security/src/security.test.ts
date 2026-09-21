@@ -191,6 +191,37 @@ describe("审计日志", () => {
     expect(all.map((e) => e.resource)).toEqual(["job_0", "job_1", "job_2", "job_3", "job_4"]);
   });
 
+  it("P3-23：带 job_id / model_version 写入后 queryAudit 可读回", async () => {
+    const sink = new MemoryAuditSink();
+    await recordAudit(
+      sink,
+      {
+        actor: "alice",
+        role: "ENGINEER",
+        action: "ai:plan",
+        resource: "job_42",
+        job_id: "job_42",
+        model_version: "mock-planner-1",
+      },
+      "ALLOWED",
+    );
+    // 不传可选字段的旧调用不应受影响
+    await recordAudit(sink, { actor: "bob", role: "VIEWER", action: "part:read", resource: "part_1" }, "ALLOWED");
+
+    const all = await queryAudit(sink);
+    expect(all).toHaveLength(2);
+
+    const withJob = all.find((e) => e.job_id === "job_42");
+    expect(withJob).toBeDefined();
+    expect(withJob?.model_version).toBe("mock-planner-1");
+    expect(withJob?.action).toBe("ai:plan");
+
+    // 旧事件未传 job_id / model_version 时字段为 undefined
+    const plain = all.find((e) => e.actor === "bob");
+    expect(plain?.job_id).toBeUndefined();
+    expect(plain?.model_version).toBeUndefined();
+  });
+
   it("append 失败时 recordAudit 抛错", async () => {
     class FailingSink implements AuditSink {
       async append(): Promise<void> {

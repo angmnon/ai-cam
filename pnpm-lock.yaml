@@ -487,9 +487,6 @@ importers:
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../domain-schemas
-      '@ai-cam/feature-engine':
-        specifier: workspace:*
-        version: link:../feature-engine
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../geometry-schema
@@ -506,6 +503,9 @@ importers:
         specifier: workspace:*
         version: link:../stock-sim
     devDependencies:
+      '@ai-cam/feature-engine':
+        specifier: workspace:*
+        version: link:../feature-engine
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -602,28 +602,25 @@ importers:
       '@ai-cam/cam-ir':
         specifier: workspace:*
         version: link:../cam-ir
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+      '@ai-cam/stock-sim':
+        specifier: workspace:*
+        version: link:../stock-sim
+    devDependencies:
       '@ai-cam/cam-kernel':
         specifier: workspace:*
         version: link:../cam-kernel
-      '@ai-cam/domain-schemas':
-        specifier: workspace:*
-        version: link:../domain-schemas
       '@ai-cam/feature-engine':
         specifier: workspace:*
         version: link:../feature-engine
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../geometry-schema
-      '@ai-cam/master-data':
-        specifier: workspace:*
-        version: link:../master-data
       '@ai-cam/post-core':
         specifier: workspace:*
         version: link:../post-core
-      '@ai-cam/stock-sim':
-        specifier: workspace:*
-        version: link:../stock-sim
-    devDependencies:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -673,22 +670,16 @@ importers:
       '@ai-cam/cam-ir':
         specifier: workspace:*
         version: link:../cam-ir
+    devDependencies:
       '@ai-cam/cam-kernel':
         specifier: workspace:*
         version: link:../cam-kernel
-      '@ai-cam/domain-schemas':
-        specifier: workspace:*
-        version: link:../domain-schemas
       '@ai-cam/feature-engine':
         specifier: workspace:*
         version: link:../feature-engine
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../geometry-schema
-      '@ai-cam/master-data':
-        specifier: workspace:*
-        version: link:../master-data
-    devDependencies:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -719,10 +710,6 @@ importers:
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
   packages/shop-floor-check:
-    dependencies:
-      '@ai-cam/cam-ir':
-        specifier: workspace:*
-        version: link:../cam-ir
     devDependencies:
       typescript:
         specifier: ^5.5.0

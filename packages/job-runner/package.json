@@ -15,7 +15,6 @@
     "@ai-cam/cam-ir": "workspace:*",
     "@ai-cam/cam-kernel": "workspace:*",
     "@ai-cam/domain-schemas": "workspace:*",
-    "@ai-cam/feature-engine": "workspace:*",
     "@ai-cam/geometry-schema": "workspace:*",
     "@ai-cam/master-data": "workspace:*",
     "@ai-cam/nc-validator": "workspace:*",
@@ -23,6 +22,7 @@
     "@ai-cam/stock-sim": "workspace:*"
   },
   "devDependencies": {
+    "@ai-cam/feature-engine": "workspace:*",
     "typescript": "^5.7.2",
     "vitest": "^3.0.0"
   }

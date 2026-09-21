@@ -45,6 +45,8 @@ export interface FixturePlan {
   locate: LocatePlan;
   candidates: FixtureCandidate[];
   recommended_id: string;
+  /** P3-28：决策 WARN 记录（如 soft_jaw 请求但被静默回退为 VISE） */
+  warnings: string[];
 }
 
 export function planLocators(bbox: BBox, marginMm = 10): LocatePlan {
@@ -160,9 +162,16 @@ export function collisionCheck(fixtures: FixtureCandidate[], toolpathBounds: BBo
 export function planFixture(bbox: BBox, opts: FixtureOptions = {}): FixturePlan {
   const locate = planLocators(bbox);
   const candidates = candidateFixtures(bbox, opts);
+  const warnings: string[] = [];
   // v1 推荐规则：无侧向特征干涉时优先软爪（保护薄壁），否则平口钳
   const preferred = opts.soft_jaw ? candidates.find((c) => c.type === "SOFT_JAW") : candidates.find((c) => c.type === "VISE");
-  return { locate, candidates, recommended_id: preferred?.id ?? candidates[0]?.id ?? "" };
+  const recommended = preferred ?? candidates[0];
+  if (opts.soft_jaw && !preferred) {
+    // P3-28：soft_jaw=true 但当前夹持轴不产 SOFT_JAW 候选（如 clamp_axis:Y 只产 VISE），
+    // 旧实现静默回退——此处显式输出 WARN 决策记录，调用方可见。
+    warnings.push(`[WARN] soft_jaw=true 但无 SOFT_JAW 候选（clamp_axis=${opts.clamp_axis ?? "X"}），已回退为 ${recommended?.id ?? "(无)"}`);
+  }
+  return { locate, candidates, recommended_id: recommended?.id ?? "", warnings };
 }
 
 /** 特征是否与夹持面冲突（特征可访问方向含夹持方向或特征贴靠夹持面） */

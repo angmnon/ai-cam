@@ -1,7 +1,7 @@
 /** 历史工艺检索测试（P5-5） */
 import { describe, expect, it } from "vitest";
 import type { Feature } from "@ai-cam/domain-schemas";
-import { buildSignature, ProcessIndex, signatureDistance } from "./retrieval.js";
+import { buildSignature, ProcessIndex, signatureDistance, bucketOf } from "./retrieval.js";
 
 const feat = (id: string, type: Feature["type"], depth: number, w: number, h = 20): Feature => ({
   id,
@@ -75,5 +75,35 @@ describe("ProcessIndex 检索", () => {
 
     // 未知/空租户检索不到任何历史
     expect(idx.search([feat("q", "POCKET", 6, 20)], "orgX", 5)).toHaveLength(0);
+  });
+});
+
+describe("对数分桶 / 哨兵桶（P3-27）", () => {
+  it("超大值之间不再共用同一哨兵桶", () => {
+    // 旧实现：≥512 全部返回同一桶号
+    expect(bucketOf(600)).not.toBe(bucketOf(2000));
+    expect(bucketOf(1024)).not.toBe(bucketOf(4096));
+    expect(bucketOf(512)).not.toBe(bucketOf(5120));
+  });
+
+  it("超大值与正常值不同桶", () => {
+    expect(bucketOf(20)).not.toBe(bucketOf(2000));
+    expect(bucketOf(100)).not.toBe(bucketOf(5000));
+  });
+
+  it("既有区间桶号保持不变（向后兼容）", () => {
+    expect(bucketOf(0.5)).toBe(0);
+    expect(bucketOf(1)).toBe(1);
+    expect(bucketOf(2)).toBe(2);
+    expect(bucketOf(4)).toBe(3);
+    expect(bucketOf(8)).toBe(4);
+    expect(bucketOf(511)).toBe(9);
+    expect(bucketOf(512)).toBe(10);
+  });
+
+  it("canonical 中不同量级超大件可区分", () => {
+    const a = buildSignature([feat("a", "POCKET", 600, 600)]);
+    const b = buildSignature([feat("b", "POCKET", 3000, 3000)]);
+    expect(a.canonical).not.toBe(b.canonical);
   });
 });

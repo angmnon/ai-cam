@@ -128,8 +128,8 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
   const loadReleases = async () => {
     try {
       setReleases((await api.listReleases(partId)).data);
-    } catch {
-      /* 未生成 Job 时忽略 */
+    } catch (err) {
+      setReleaseError(err instanceof Error ? err.message : "发布记录加载失败");
     }
   };
 
@@ -190,7 +190,9 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
   const partBBoxObj = { min: { x: bbox.min[0], y: bbox.min[1], z: bbox.min[2] }, max: { x: bbox.max[0], y: bbox.max[1], z: bbox.max[2] } };
   const fixturePlan = planFixture(partBBoxObj, { soft_jaw: true });
   const jaw = designSoftJaw({ partBBox: partBBoxObj, clampDir: "X", fixtureId: fixturePlan.recommended_id });
-  const conflicts = clampConflict(features, fixturePlan.candidates.find((c) => c.id === fixturePlan.recommended_id)!);
+  const recommendedFixture = fixturePlan.candidates.find((c) => c.id === fixturePlan.recommended_id);
+  const fixtureError = recommendedFixture ? null : `未找到推荐夹具方案（${fixturePlan.recommended_id}），请检查夹具引擎输出`;
+  const conflicts = recommendedFixture ? clampConflict(features, recommendedFixture) : [];
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "#0f172a", color: "#e2e8f0" }}>
@@ -431,6 +433,11 @@ export function PartView({ partId, onBack, mode }: { partId: string; onBack: () 
             <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 6 }}>
               定位 {fixturePlan.locate.constraint_count} 点（{fixturePlan.locate.locators.filter((l) => l.kind === "PRIMARY").length} 主基准 · {fixturePlan.locate.locators.filter((l) => l.kind === "SECONDARY").length} 导向 · {fixturePlan.locate.locators.filter((l) => l.kind === "TERTIARY").length} 止动）· 推荐 {fixturePlan.recommended_id}
             </div>
+            {fixtureError && (
+              <div style={{ fontSize: 12, color: "#f87171", marginBottom: 6, padding: "6px 8px", border: "1px solid #7f1d1d", borderRadius: 6, background: "#450a0a" }}>
+                错误：{fixtureError}
+              </div>
+            )}
             <div style={{ fontSize: 12, color: "#e2e8f0", marginBottom: 6 }}>
               软爪 {jaw.id}：槽宽 {jaw.params.slot_width_mm}mm · 槽深 {jaw.params.slot_depth_mm}mm · 爪体 {jaw.params.length_mm}×{jaw.params.width_mm}×{jaw.params.height_mm}mm · 体积≈{Math.round(estimateVolume(jaw)).toLocaleString()} mm³ · 材料 {jaw.params.material}
             </div>

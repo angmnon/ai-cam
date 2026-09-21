@@ -52,6 +52,25 @@ describe("候选装夹", () => {
     expect(p.recommended_id).toBe("fx_softjaw_x");
     expect(p.locate.constraint_count).toBe(6);
   });
+
+  it("P3-28：clamp_axis=Y 且 soft_jaw=true 回退 VISE 时记录 WARN 决策", () => {
+    const p = planFixture(box, { clamp_axis: "Y", soft_jaw: true });
+    // Y 轴只产 VISE，软爪请求被静默回退
+    expect(p.recommended_id).toBe("fx_vise_y");
+    expect(p.warnings.some((w) => w.includes("WARN") && w.includes("soft_jaw"))).toBe(true);
+  });
+
+  it("P3-28：X 轴 soft_jaw 正常推荐时无 WARN", () => {
+    const p = planFixture(box, { soft_jaw: true });
+    expect(p.recommended_id).toBe("fx_softjaw_x");
+    expect(p.warnings).toHaveLength(0);
+  });
+
+  it("P3-28：未请求 soft_jaw 时不产生回退 WARN", () => {
+    const p = planFixture(box, { clamp_axis: "Y" });
+    expect(p.recommended_id).toBe("fx_vise_y");
+    expect(p.warnings).toHaveLength(0);
+  });
 });
 
 describe("碰撞检查", () => {

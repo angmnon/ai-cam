@@ -55,6 +55,10 @@ function tokenize(line: string): string[] {
   return body
     .replace(/\([^)]*\)/g, " ")
     .replace(/;.*$/, "")
+    // P3-21：合并"地址字母 + 空格 + 带符号数值"（如 "Z -0.5" → "Z-0.5"）。
+    // 否则按空白切分时 "-0.5" 会成为独立 token，Z 字只取到裸字母、Number("")=NaN，
+    // 最低切削 Z / 模态 Z 全部解析失败。
+    .replace(/([a-z])\s+(-?\d)/gi, "$1$2")
     .split(/[\s,]/)
     .map((t) => t.trim().toUpperCase())
     .filter(Boolean);

@@ -16,14 +16,28 @@ export interface ToolPlanResult {
   rank_reason: string[];
   score: number;
   candidates: Array<{ tool: Tool; score: number; reasons: string[] }>;
+  /** P3-25：输入权重是否发生了归一化/回退（调用方据此知晓 clamp 发生） */
+  weights_clamped: boolean;
 }
 
 const DEFAULT_WEIGHTS: ToolWeights = { diameter_match: 0.5, tool_cost: 0.2, surface_quality: 0.3 };
+/** P3-25：权重和下限——sum <= 此阈值视为退化输入，回退默认权重 */
+const MIN_WEIGHT_SUM = 0;
+/** P3-25：浮点容差，用于判定权重和是否已归一化为 1 */
+const WEIGHTS_SUM_EPS = 1e-9;
 
-function clampWeights(w: ToolWeights): ToolWeights {
+export interface ClampedWeights {
+  weights: ToolWeights;
+  /** 输入被归一化（sum≠1）或回退为默认（sum≤0）时为 true */
+  clamped: boolean;
+}
+
+export function clampWeights(w: ToolWeights): ClampedWeights {
   const sum = w.diameter_match + w.tool_cost + w.surface_quality;
-  if (sum <= 0) return DEFAULT_WEIGHTS;
-  return { diameter_match: w.diameter_match / sum, tool_cost: w.tool_cost / sum, surface_quality: w.surface_quality / sum };
+  if (sum <= MIN_WEIGHT_SUM) return { weights: DEFAULT_WEIGHTS, clamped: true };
+  const weights = { diameter_match: w.diameter_match / sum, tool_cost: w.tool_cost / sum, surface_quality: w.surface_quality / sum };
+  const clamped = Math.abs(sum - 1) > WEIGHTS_SUM_EPS;
+  return { weights, clamped };
 }
 
 /** 候选：库存>0，且类型/直径满足工序约束 */
@@ -37,14 +51,14 @@ export function toolCandidates(opType: Operation["type"], constraint: { maxDiame
 }
 
 export function planTool(opType: Operation["type"], constraint: { maxDiameter?: number; preferDrillOf?: number }, tools: Tool[], weights: ToolWeights = DEFAULT_WEIGHTS): ToolPlanResult {
-  const w = clampWeights(weights);
+  const { weights: w, clamped: weights_clamped } = clampWeights(weights);
   const candidates = toolCandidates(opType, constraint, tools);
   if (candidates.length === 0) {
     // 兜底：任意库存平刀/钻头（保持可解释）
     const fallback = tools.filter((t) => t.stock_qty > 0 && (opType === "DRILL" ? t.type === "DRILL" : t.type === "FLAT_END_MILL"));
     if (fallback.length === 0) throw new Error(`no tool for ${opType}`);
     const t = fallback.sort((a, b) => a.diameter_mm - b.diameter_mm)[0];
-    return { tool: t, rank: 1, rank_reason: ["无满足约束候选，最小直径兜底"], score: 0, candidates: [] };
+    return { tool: t, rank: 1, rank_reason: ["无满足约束候选，最小直径兜底"], score: 0, candidates: [], weights_clamped };
   }
 
   const target = constraint.preferDrillOf ?? constraint.maxDiameter ?? 8;
@@ -72,5 +86,6 @@ export function planTool(opType: Operation["type"], constraint: { maxDiameter?: 
     rank_reason: best.reasons,
     score: best.score,
     candidates: scored.slice(0, 5),
+    weights_clamped,
   };
 }

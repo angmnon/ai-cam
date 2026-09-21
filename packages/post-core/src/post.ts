@@ -76,11 +76,21 @@ export function makeProfile(dialect: ControllerProfile["dialect"]): ControllerPr
   }
 }
 
-/** 由 IR 确定性派生程序号（4 位） */
+/**
+ * 由 IR 确定性派生程序号（4 位数字）。
+ * P3-19：原 `h*31` 多项式 + `1000 + (h%9000)` 会落到 O9000-O9999，与 FANUC
+ * 自定义宏保留槽位碰撞；改为 FNV-1a 风格 base36 乘子（36）32 位哈希，映射到
+ * 1000-8999（8000 个用户可用槽位），9000+ 保留给机床宏程序，不在派生范围。
+ * 冲突检测：派生对 (ir_id, part_id) 确定可复现；跨零件哈希落到同一 4 位号属
+ * 生日概率事件，本函数不维护运行时注册表，由上游 job 维度去重。
+ */
 export function deriveProgramNumber(cam: CamIR, prefix: string): string {
-  let h = 0;
-  for (const ch of cam.ir_id + cam.part_id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return `${prefix}${1000 + (h % 9000)}`;
+  let h = 0x811c9dc5;
+  for (const ch of cam.ir_id + cam.part_id) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 36) >>> 0;
+  }
+  return `${prefix}${1000 + (h % 8000)}`;
 }
 
 export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {

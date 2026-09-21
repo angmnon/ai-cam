@@ -16,8 +16,12 @@ cmake --build build/geometry-core -j
 
 ```bash
 docker build -f infra/docker/geometry-worker/Dockerfile -t ai-cam/geometry-worker .
-# 挂载样例目录运行
-docker run --rm -v "C:\path\to\steps:/data" ai-cam/geometry-worker /data/part.step
+# 挂载本地 STEP 目录到容器内 /data；容器内始终使用 /data/... 路径
+docker run --rm -v "$(pwd)/steps:/data" ai-cam/geometry-worker /data/part.step
+# Windows PowerShell 挂载等价写法：
+#   docker run --rm -v "${PWD}\steps:/data" ai-cam/geometry-worker /data/part.step
+# Windows CMD 等价写法：
+#   docker run --rm -v %cd%\steps:/data ai-cam/geometry-worker /data/part.step
 ```
 
 ## 输出示例

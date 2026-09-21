@@ -90,6 +90,21 @@ export function createWorkerAnalyzer(binaryPath: string, timeoutMs = 60_000): Pa
   };
 }
 
+/**
+ * P3-29：worker stderr 绝对路径打码。
+ * 将 Windows `C:\...\file` / `C:/.../file` 与 Unix `/.../file` 统一替换为 basename（仅文件名），
+ * 避免把服务器内部目录结构（如 C:\Users\<user>\...）泄露给调用方；匹配不到文件名时退化为 <redacted path>。
+ */
+export function sanitizeWorkerStderr(stderr: string): string {
+  const winRe = /[A-Za-z]:[\\/](?:[^\\/\s"'`]+[\\/])*[^\\/\s"'`]*/g;
+  const unixRe = /\/(?:[^\/\s"'`]+\/)*[^\/\s"'`]*/g;
+  const toBasename = (m: string): string => {
+    const base = m.split(/[\\/]/).pop() ?? "";
+    return base.length > 0 ? base : "<redacted path>";
+  };
+  return stderr.replace(winRe, toBasename).replace(unixRe, toBasename);
+}
+
 function runWorker(binary: string, args: string[], timeoutMs: number): Promise<string> {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(binary, args, { stdio: ["ignore", "pipe", "pipe"] });
@@ -104,7 +119,7 @@ function runWorker(binary: string, args: string[], timeoutMs: number): Promise<s
     child.on("close", (code) => {
       clearTimeout(timer);
       if (code === 0) resolvePromise(out);
-      else reject(new ApiError({ code: ErrorCodes.CAD_PARSE_FAILED, message: `geometry_worker exited ${code}: ${err.slice(0, 500)}`, stage: "geometry", retryable: true }));
+      else reject(new ApiError({ code: ErrorCodes.CAD_PARSE_FAILED, message: `geometry_worker exited ${code}: ${sanitizeWorkerStderr(err).slice(0, 500)}`, stage: "geometry", retryable: true }));
     });
     child.on("error", (e) => {
       clearTimeout(timer);

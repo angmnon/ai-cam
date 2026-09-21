@@ -10,6 +10,7 @@ import { LocalDiskAdapter } from "./storage/local-adapter.js";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { attachSseStream } from "./routes/events.js";
+import { sanitizeWorkerStderr } from "./parts/analyzer.js";
 
 const FIXTURES_DIR = resolve(process.cwd(), "../../tests/golden/parts");
 const fixturesAvailable = existsSync(FIXTURES_DIR) && readdirSync(FIXTURES_DIR).filter((f) => f.endsWith(".json")).length >= 8;
@@ -798,5 +799,30 @@ describe.skipIf(!fixturesAvailable)("api parts pipeline（fixture 模式）", ()
       expect(res2.json().data.change_set.before).not.toBeNull();
       expect(res2.json().data.change_set.before.cam_revision_id).toBe(d.revision_id);
     });
+  });
+});
+
+describe("P3-29 worker stderr 绝对路径打码", () => {
+  it("Windows 绝对路径 C:\\Users\\...\\secret.step 仅暴露文件名", () => {
+    const raw = 'ERROR: failed to open C:\\Users\\secret\\proj\\secret.step: cannot read header';
+    const out = sanitizeWorkerStderr(raw);
+    expect(out).toContain("secret.step");
+    expect(out).not.toContain("C:\\Users");
+    expect(out).not.toContain("secret\\proj");
+  });
+
+  it("Unix 绝对路径 /tmp/geom-xxx/part.obj 仅暴露文件名", () => {
+    const raw = "FATAL: /tmp/geom-abc123/part.obj: No such file or directory";
+    const out = sanitizeWorkerStderr(raw);
+    expect(out).toContain("part.obj");
+    expect(out).not.toContain("/tmp/geom-abc123");
+  });
+
+  it("打码后 slice(0,500) 仍不泄露盘符/目录前缀", () => {
+    const raw = "ERROR: cannot parse C:\\Users\\Administrator\\AppData\\Local\\Temp\\geom-xyz\\secret.step at line 42";
+    const out = sanitizeWorkerStderr(raw).slice(0, 500);
+    expect(out).toContain("secret.step");
+    expect(out).not.toMatch(/C:\\Users/);
+    expect(out).not.toContain("AppData");
   });
 });

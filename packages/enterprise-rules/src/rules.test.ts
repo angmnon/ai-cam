@@ -105,3 +105,25 @@ describe("适用范围", () => {
     expect(r.params.stepdown_mm).toBe(2);
   });
 });
+
+describe("paramKey 显式化（P3-26）", () => {
+  it("每条决策携带显式 paramKey，可按参数直接分组（不依赖 clause_desc 反解）", () => {
+    const r = evaluateRules(rules, ctx, { spindle_speed_rpm: 6000 });
+    const speed = r.decisions.filter((d) => d.paramKey === "spindle_speed_rpm");
+    expect(speed.length).toBeGreaterThanOrEqual(1);
+    // coolant 决策也有显式 key
+    expect(r.decisions.some((d) => d.paramKey === "coolant")).toBe(true);
+    // stepdown 企业规则
+    expect(r.decisions.some((d) => d.paramKey === "stepdown_mm")).toBe(true);
+  });
+
+  it("同参数多规则命中时按显式 paramKey 折叠，后赢者胜出、早期者入 overridden", () => {
+    const r = evaluateRules(rules, ctx, { spindle_speed_rpm: 6000 });
+    expect(r.params.spindle_speed_rpm).toBe(7500);
+    // AI 与 TOOL 都动 spindle_speed_rpm：AI 被折叠进 overridden
+    expect(r.overridden.some((d) => d.paramKey === "spindle_speed_rpm" && d.scope === "AI")).toBe(true);
+    // 胜出者唯一
+    const winners = r.decisions.filter((d) => d.paramKey === "spindle_speed_rpm");
+    expect(winners).toHaveLength(1);
+  });
+});

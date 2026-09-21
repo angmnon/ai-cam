@@ -17,9 +17,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@ai-cam/cam-ir": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"

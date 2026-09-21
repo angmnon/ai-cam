@@ -41,11 +41,15 @@ export interface RetrievalHit {
   reasons: string[];
 }
 
-const BUCKETS = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512];
-const bucketOf = (v: number): number => {
+/**
+ * 对数分桶（P3-27）：[0,1)=0, [1,2)=1, [2,4)=2, [4,8)=3 … 无限向上扩展。
+ * 旧实现把 ≥512 的值全部压进同一个哨兵桶，导致超大件与超大件同桶；
+ * 现在按 log2 持续分桶，超大值之间彼此区分，且既有区间的桶号保持不变。
+ */
+export const bucketOf = (v: number): number => {
   const abs = Math.max(0, v);
-  for (let i = 0; i < BUCKETS.length; i++) if (abs < BUCKETS[i]) return i;
-  return BUCKETS.length;
+  if (abs < 1) return 0;
+  return Math.floor(Math.log2(abs)) + 1;
 };
 
 function featureSignatureItems(features: Feature[]): SignatureItem[] {

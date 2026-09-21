@@ -32,7 +32,7 @@ const records = picked.map((spec, i) => {
   return {
     schema_version: "1.0.0",
     record_id: `beta_20260920_${String(i + 1).padStart(4, "0")}`,
-    captured_at: "2026-09-20T00:00:00+07:00",
+    captured_at: new Date().toISOString(),
     tenant_id: "seed_system_generated",
     part: { file: spec.part.file, bbox_mm: b, volume_mm3: spec.part.volume_mm3 },
     ai_proposal: {

@@ -52,6 +52,8 @@ export interface AppConfig {
   auth: { bootstrap: BootstrapAuthConfig };
   /** AI 规划：是否配置了真实 LLM 凭据（未配置则全程 MockProvider） */
   ai: { llmLive: boolean };
+  /** P1-08：审计持久化落点 memory|file|pg（默认 memory 保测试；生产建议 pg） */
+  auditSink: "memory" | "file" | "pg";
   otlpEndpoint?: string;
 }
 
@@ -176,5 +178,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ai: {
       llmLive: Boolean(env.OPENAI_API_KEY || env.ANTHROPIC_API_KEY || env.DEEPSEEK_API_KEY || env.LLM_API_KEY),
     },
+    // ---- P1-08：审计 sink 落点（默认 memory 保测试；生产建议 pg）----
+    auditSink: (env.AUDIT_SINK as "memory" | "file" | "pg" | undefined) ?? "memory",
   };
 }

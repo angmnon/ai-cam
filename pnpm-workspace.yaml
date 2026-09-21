@@ -9,3 +9,9 @@ packages:
 
 allowBuilds:
   esbuild: true
+
+# P1-01：传递依赖 @fastify/static（经 @fastify/swagger-ui 引入）存在高危路径穿越/授权绕过
+# GHSA-83w8-p2f5-377r / GHSA-8pvw-jcv7-9cmj，patch 版 >=10.1.2 修复。
+# 覆盖为同一包的安全 patch 版本，不引入新的运行依赖。
+overrides:
+  "@fastify/static": ">=10.1.2"

@@ -1,6 +1,6 @@
 /**
  * P0-01：jobs 域 PostgreSQL 实现（表：cam_jobs，迁移 0001）。
- * - 所有查询强制带 organization_id 过滤。
+ * P1-07：经 withOrgScope 绑定 app.org_id，RLS 强制多租户隔离。
  * - 状态机跳转复用 @ai-cam/job-schema 的 transition()；进度/失败事件仍经 EventBus 发布。
  */
 import { randomUUID } from "node:crypto";
@@ -10,6 +10,7 @@ import { EventTypes } from "@ai-cam/event-schema";
 import { type Job, type JobStatus, jobInputHash, transition } from "@ai-cam/job-schema";
 import type { EventBus } from "../../bus/event-bus.js";
 import type { JobStore } from "../../jobs/job-store.js";
+import { withOrgScope } from "../org-scope.js";
 
 const PROGRESS_BY_STATUS: Record<string, number> = {
   DRAFT: 5,
@@ -63,72 +64,82 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
   return {
     async create({ orgId, userId, input, idempotencyKey }): Promise<Job> {
       const inputHash = jobInputHash(input);
-      if (idempotencyKey) {
-        const dup = await pool.query<JobRow>(
-          `SELECT * FROM cam_jobs WHERE organization_id = $1 AND input_hash = $2`,
-          [orgId, inputHash],
-        );
-        if (dup.rows[0]) {
-          throw new ApiError({
-            code: ErrorCodes.JOB_IDEMPOTENCY_CONFLICT,
-            message: `Job already exists for this input (job=${dup.rows[0].id}). Provide Idempotency-Key or use existing job.`,
-            stage: "jobs",
-            retryable: false,
-          });
+      return withOrgScope(pool, orgId, async (client) => {
+        if (idempotencyKey) {
+          const dup = await client.query<JobRow>(
+            `SELECT * FROM cam_jobs WHERE organization_id = $1 AND input_hash = $2`,
+            [orgId, inputHash],
+          );
+          if (dup.rows[0]) {
+            throw new ApiError({
+              code: ErrorCodes.JOB_IDEMPOTENCY_CONFLICT,
+              message: `Job already exists for this input (job=${dup.rows[0].id}). Provide Idempotency-Key or use existing job.`,
+              stage: "jobs",
+              retryable: false,
+            });
+          }
         }
-      }
-      const id = `job_${randomUUID().replaceAll("-", "")}`;
-      const { rows } = await pool.query<JobRow>(
-        `INSERT INTO cam_jobs (id, organization_id, machine_id, controller_id, material_id, status, version, input_hash, created_by)
-         VALUES ($1,$2,$3,$4,$5,'DRAFT',0,$6,$7)
-         RETURNING *`,
-        [id, orgId, input.machine_id, input.controller_id, input.material_id, inputHash, userId],
-      );
-      const job = rowToJob(rows[0]);
-      bus.publishFor(EVENT_SOURCE, EventTypes.JOB_CREATED, job.id, { job_id: job.id });
-      return job;
+        const id = `job_${randomUUID().replaceAll("-", "")}`;
+        const { rows } = await client.query<JobRow>(
+          `INSERT INTO cam_jobs (id, organization_id, machine_id, controller_id, material_id, status, version, input_hash, created_by)
+           VALUES ($1,$2,$3,$4,$5,'DRAFT',0,$6,$7)
+           RETURNING *`,
+          [id, orgId, input.machine_id, input.controller_id, input.material_id, inputHash, userId],
+        );
+        const job = rowToJob(rows[0]);
+        return job;
+      }).then((job) => {
+        bus.publishFor(EVENT_SOURCE, EventTypes.JOB_CREATED, job.id, { job_id: job.id });
+        return job;
+      });
     },
 
     async get(orgId: string, jobId: string): Promise<Job> {
-      const { rows } = await pool.query<JobRow>(`SELECT * FROM cam_jobs WHERE id = $1 AND organization_id = $2`, [jobId, orgId]);
-      if (!rows[0]) {
-        throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: `Job not found: ${jobId}`, stage: "jobs" });
-      }
-      return rowToJob(rows[0]);
+      return withOrgScope(pool, orgId, async (client) => {
+        const { rows } = await client.query<JobRow>(`SELECT * FROM cam_jobs WHERE id = $1 AND organization_id = $2`, [jobId, orgId]);
+        if (!rows[0]) {
+          throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: `Job not found: ${jobId}`, stage: "jobs" });
+        }
+        return rowToJob(rows[0]);
+      });
     },
 
     async list(orgId: string, opts: { status?: JobStatus; offset: number; limit: number }) {
-      const where: string[] = ["organization_id = $1"];
-      const params: unknown[] = [orgId];
-      if (opts.status) {
-        params.push(opts.status);
-        where.push(`status = $${params.length}`);
-      }
-      params.push(opts.offset, opts.limit);
-      const offsetIdx = params.length - 1;
-      const limitIdx = params.length - 2;
-      const { rows } = await pool.query<JobRow>(
-        `SELECT * FROM cam_jobs
-         WHERE ${where.join(" AND ")}
-         ORDER BY created_at DESC
-         OFFSET $${limitIdx} LIMIT $${offsetIdx}`,
-        params,
-      );
-      const countParams = [orgId, ...(opts.status ? [opts.status] : [])];
-      const countWhere = ["organization_id = $1", ...(opts.status ? [`status = $2`] : [])];
-      const cnt = await pool.query<{ n: string }>(`SELECT count(*)::int AS n FROM cam_jobs WHERE ${countWhere.join(" AND ")}`, countParams);
-      return { items: rows.map(rowToJob), total: Number(cnt.rows[0]?.n ?? 0) };
+      return withOrgScope(pool, orgId, async (client) => {
+        const where: string[] = ["organization_id = $1"];
+        const params: unknown[] = [orgId];
+        if (opts.status) {
+          params.push(opts.status);
+          where.push(`status = $${params.length}`);
+        }
+        params.push(opts.offset, opts.limit);
+        const offsetIdx = params.length - 1;
+        const limitIdx = params.length - 2;
+        const { rows } = await client.query<JobRow>(
+          `SELECT * FROM cam_jobs
+           WHERE ${where.join(" AND ")}
+           ORDER BY created_at DESC
+           OFFSET $${limitIdx} LIMIT $${offsetIdx}`,
+          params,
+        );
+        const countParams = [orgId, ...(opts.status ? [opts.status] : [])];
+        const countWhere = ["organization_id = $1", ...(opts.status ? [`status = $2`] : [])];
+        const cnt = await client.query<{ n: string }>(`SELECT count(*)::int AS n FROM cam_jobs WHERE ${countWhere.join(" AND ")}`, countParams);
+        return { items: rows.map(rowToJob), total: Number(cnt.rows[0]?.n ?? 0) };
+      });
     },
 
     async transitionTo(orgId: string, jobId: string, to: JobStatus): Promise<Job> {
       const job = await this.get(orgId, jobId);
       transition(job.status, to); // 非法跳转抛 StateTransitionError → 由路由转 ApiError
-      const { rows } = await pool.query<JobRow>(
-        `UPDATE cam_jobs SET status = $1, version = version + 1, updated_at = now()
-         WHERE id = $2 AND organization_id = $3 RETURNING *`,
-        [to, jobId, orgId],
-      );
-      const updated = rowToJob(rows[0]);
+      const updated = await withOrgScope(pool, orgId, async (client) => {
+        const { rows } = await client.query<JobRow>(
+          `UPDATE cam_jobs SET status = $1, version = version + 1, updated_at = now()
+           WHERE id = $2 AND organization_id = $3 RETURNING *`,
+          [to, jobId, orgId],
+        );
+        return rowToJob(rows[0]);
+      });
       bus.publishFor(EVENT_SOURCE, EventTypes.JOB_PROGRESS, updated.id, {
         status: updated.status,
         progress: PROGRESS_BY_STATUS[updated.status] ?? 0,
@@ -144,12 +155,14 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
     async fail(orgId: string, jobId: string, failure: { code: string; message: string; stage?: string; retryable: boolean }): Promise<Job> {
       const job = await this.get(orgId, jobId);
       transition(job.status, "FAILED");
-      const { rows } = await pool.query<JobRow>(
-        `UPDATE cam_jobs SET status = 'FAILED', version = version + 1, updated_at = now(), failure = $1
-         WHERE id = $2 AND organization_id = $3 RETURNING *`,
-        [JSON.stringify({ ...failure, occurred_at: new Date().toISOString() }), jobId, orgId],
-      );
-      const updated = rowToJob(rows[0]);
+      const updated = await withOrgScope(pool, orgId, async (client) => {
+        const { rows } = await client.query<JobRow>(
+          `UPDATE cam_jobs SET status = 'FAILED', version = version + 1, updated_at = now(), failure = $1
+           WHERE id = $2 AND organization_id = $3 RETURNING *`,
+          [JSON.stringify({ ...failure, occurred_at: new Date().toISOString() }), jobId, orgId],
+        );
+        return rowToJob(rows[0]);
+      });
       bus.publishFor(EVENT_SOURCE, EventTypes.JOB_FAILED, updated.id, {
         error: { code: failure.code, message: failure.message, stage: failure.stage, retryable: failure.retryable },
         occurred_at: updated.updated_at,

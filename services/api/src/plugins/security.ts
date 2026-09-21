@@ -20,8 +20,9 @@ declare module "fastify" {
   }
 }
 
-const securityPlugin: FastifyPluginAsync = async (app) => {
-  const sink = new MemoryAuditSink();
+const securityPlugin: FastifyPluginAsync<{ auditSink?: AuditSink }> = async (app, opts = {}) => {
+  // P1-08：sink 可由 app 工厂按 config.auditSink 注入（memory|file|pg）；缺省内存（保测试）
+  const sink = opts.auditSink ?? new MemoryAuditSink();
   app.decorate("auditSink", sink);
 
   app.decorate("authorize", (action: Action) => {

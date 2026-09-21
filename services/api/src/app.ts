@@ -5,6 +5,7 @@ import helmet from "@fastify/helmet";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { randomUUID } from "node:crypto";
+import { join } from "node:path";
 import type { AppConfig } from "./config.js";
 import { loadConfig } from "./config.js";
 import { InMemoryEventBus, EventBus } from "./bus/event-bus.js";
@@ -32,6 +33,8 @@ import { createPgJobStore } from "./db/pg/pg-job-store.js";
 import { createPgCamStore } from "./db/pg/pg-cam-store.js";
 import { createPgJobRunStore } from "./db/pg/pg-job-run-store.js";
 import { createPgReleaseStore } from "./db/pg/pg-release-store.js";
+import { PgAuditSink } from "./db/pg/pg-audit-sink.js";
+import { MemoryAuditSink, FileAuditSink, type AuditSink } from "@ai-cam/security";
 import healthRoutes from "./routes/health.js";
 import authRoutes from "./routes/auth.js";
 import eventRoutes from "./routes/events.js";
@@ -112,9 +115,6 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
 
   await app.register(requestContext);
   await app.register(authPlugin(config.jwt));
-  // P0-4：RBAC 授权 preHandler 工厂 + 内存审计 sink（依赖 authPlugin 设置 request.user）
-  await app.register(securityPlugin);
-  await app.register(errorHandlerPlugin);
 
   // 依赖注入
   const bus = deps.bus ?? new InMemoryEventBus();
@@ -124,7 +124,7 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
       ? new R2Adapter(config.storage.r2)
       : new LocalDiskAdapter(config.storage.dataDir));
 
-  // P0-01：数据源选择。
+  // P0-01：数据源选择（提前到插件注册前，以便按 config.auditSink 选审计 sink）。
   // - 显式注入 store（测试注入路径）→ 用注入；
   // - 配置 DATABASE_URL → 生产走 PostgreSQL（建池 + 跑迁移 + 播种 bootstrap 管理员 + PG stores + PgAuthBackend）；
   // - 否则降级为进程内内存 store（仅开发/测试），启动打 WARN。
@@ -162,6 +162,23 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
     }
     authBackend = new BootstrapAuthBackend(config.auth.bootstrap);
   }
+
+  // P1-08：按 config.auditSink（memory|file|pg）选审计 sink；缺省 memory 保测试。
+  // - pg：仅在 PG 模式（pgPool 存在）生效，否则回退 memory；
+  // - file：JSONL 落到 dataDir/audit.log；
+  // - memory：进程内（默认）。
+  let auditSink: AuditSink;
+  if (config.auditSink === "pg" && pgPool) {
+    auditSink = new PgAuditSink(pgPool);
+  } else if (config.auditSink === "file") {
+    auditSink = new FileAuditSink(join(config.storage.dataDir, "audit.log"));
+  } else {
+    auditSink = new MemoryAuditSink();
+  }
+  // P0-4：RBAC 授权 preHandler + 审计 sink（依赖 authPlugin 设置 request.user）
+  await app.register(securityPlugin, { auditSink });
+  await app.register(errorHandlerPlugin);
+
   const aiPlans = createAiPlanStore(); // ai_plans 落库可后置，保持内存实现
   const partsAnalyzer =
     deps.partsAnalyzer ??

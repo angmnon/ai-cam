@@ -11,6 +11,8 @@ import { runJob, buildJobReport } from "@ai-cam/job-runner";
 import { runCamAgent } from "@ai-cam/ai-planner";
 import { ModelGateway } from "@ai-cam/model-gateway";
 import { createMockProvider } from "@ai-cam/model-gateway";
+// P0-4：RBAC 授权 + Prompt 注入扫描 + 审计
+import { checkPromptInjection, recordAudit } from "@ai-cam/security";
 
 const CreatePartBody = z.object({
   filename: z.string().min(1).max(255).regex(/\.(step|stp)$/i, "仅支持 .step/.stp"),
@@ -164,7 +166,8 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // 一键 Job：plan → sim → post → validate → Validated NC（P3-8）
-  app.post("/:id/job", async (request, reply) => {
+  // P0-4：需 job:run 权限
+  app.post("/:id/job", { preHandler: app.authorize("job:run") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
     const part = app.parts.get(orgId, id);
@@ -266,17 +269,31 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     return ok(report);
   });
 
-  // AI 规划（P4-9）：Preview → 审计 → Apply
-  app.post("/:id/ai-plan", async (request, reply) => {
+  // AI 规划（P4-9）：Preview → 审计 → 审计 → Apply
+  // P0-4：需 ai:plan 权限；调 ModelGateway 前先对 goal 做 Prompt 注入扫描。
+  app.post("/:id/ai-plan", { preHandler: app.authorize("ai:plan") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
     const part = app.parts.get(orgId, id);
     if (part.status !== "ANALYZED" || !part.analysis) throw new ApiError({ code: ErrorCodes.PART_STATE_INVALID, message: "Part has not been analyzed yet.", stage: "parts", retryable: false });
     const body = (request.body ?? {}) as { goal?: string; dialect?: "FANUC" | "SYNTEC" | "MITSUBISHI" | "ISO_GENERIC" };
+    const goal = body.goal ?? "粗加工优先，兼顾表面质量";
+    // Prompt 注入防护：非 LOW 命中直接拒绝，不落 ModelGateway
+    const inject = checkPromptInjection(goal);
+    if (inject.flagged) {
+      recordAudit(app.auditSink, { actor: request.user!.sub, role: request.user!.roles[0] ?? "", action: "ai:plan", resource: id, detail: "prompt injection blocked" }, "DENIED");
+      throw new ApiError({
+        code: ErrorCodes.SYSTEM_VALIDATION,
+        message: "Prompt blocked by injection guardrail.",
+        stage: "ai-plan",
+        status: 400,
+        details: { guardrail: true, findings: inject.findings },
+      });
+    }
     const gateway = new ModelGateway({}).register(createMockProvider());
     const run = await runCamAgent(part.analysis.part, part.analysis.features.features, {
       gateway,
-      goal: body.goal ?? "粗加工优先，兼顾表面质量",
+      goal,
       dialect: body.dialect,
     });
     const before = app.cams.latest(orgId, id);
@@ -293,7 +310,7 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     const plan = app.aiPlans.create({
       organization_id: orgId,
       part_id: id,
-      goal: body.goal ?? "粗加工优先，兼顾表面质量",
+      goal,
       intent: run.intent as Record<string, unknown>,
       guardrail: run.guardrail,
       model_route: run.model_route,
@@ -321,7 +338,8 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     return ok(app.aiPlans.list(request.user!.org_id, id));
   });
 
-  app.post("/:id/ai-plans/:planId/apply", async (request, reply) => {
+  // P0-4：应用 AI 规划需 ai:apply 权限
+  app.post("/:id/ai-plans/:planId/apply", { preHandler: app.authorize("ai:apply") }, async (request, reply) => {
     const { id, planId } = request.params as { id: string; planId: string };
     const orgId = request.user!.org_id;
     const plan = app.aiPlans.get(orgId, id, planId);
@@ -345,7 +363,8 @@ const partRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // Release 工作流（P4-11）
-  app.post("/:id/release", async (request, reply) => {
+  // P0-4：创建发布请求需 release:request 权限
+  app.post("/:id/release", { preHandler: app.authorize("release:request") }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const orgId = request.user!.org_id;
     const part = app.parts.get(orgId, id);
@@ -369,19 +388,22 @@ const partRoutes: FastifyPluginAsync = async (app) => {
     return ok(app.releases.get(orgId, id, releaseId));
   });
 
-  app.post("/:id/releases/:releaseId/approve", async (request) => {
+  // P0-4：审批需 release:approve 权限（RBAC 职责分离）
+  app.post("/:id/releases/:releaseId/approve", { preHandler: app.authorize("release:approve") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
     const body = (request.body ?? {}) as { note?: string };
     return ok(app.releases.approve({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
   });
 
-  app.post("/:id/releases/:releaseId/release", async (request) => {
+  // P0-4：正式放行需 release:release 权限
+  app.post("/:id/releases/:releaseId/release", { preHandler: app.authorize("release:release") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
     const body = (request.body ?? {}) as { note?: string };
     return ok(app.releases.release({ orgId: request.user!.org_id, partId: id, releaseId, approverId: request.user!.sub, note: body.note }));
   });
 
-  app.post("/:id/releases/:releaseId/reject", async (request) => {
+  // P0-4：驳回属发布治理决策；矩阵无 release:reject，复用最接近的 release:approve 动作。
+  app.post("/:id/releases/:releaseId/reject", { preHandler: app.authorize("release:approve") }, async (request) => {
     const { id, releaseId } = request.params as { id: string; releaseId: string };
     const body = (request.body ?? {}) as { note?: string };
     if (!body.note) throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "note is required for reject.", stage: "releases", retryable: false });

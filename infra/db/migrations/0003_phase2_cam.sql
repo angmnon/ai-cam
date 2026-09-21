@@ -4,7 +4,7 @@
 -- CAM 修订版（一次工艺规划 = 一个 revision；每次 POST toolpath 生成新 revision）
 CREATE TABLE IF NOT EXISTS cam_revisions (
   id           TEXT PRIMARY KEY,
-  organization_id TEXT NOT NULL REFERENCES orgs(id),
+  organization_id TEXT NOT NULL REFERENCES organizations(id),
   part_id      TEXT NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
   revision_no  INT NOT NULL,
   status       TEXT NOT NULL DEFAULT 'READY'

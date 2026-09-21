@@ -70,16 +70,19 @@ const fileRoutes: FastifyPluginAsync = async (app) => {
   );
 
   // 本地适配器上传端点（原始二进制；R2 模式不走此端点）
+  // P0-2：不再读取 x-file-key 作为落盘路径；按 session_id 取回服务端 key，并校验会话属于当前 org。
   app.post("/upload", async (request, reply) => {
-    const fileId = request.headers["x-file-id"];
-    const key = request.headers["x-file-key"];
+    const sessionId = request.headers["x-session-id"];
     const contentType = request.headers["content-type"] ?? "application/octet-stream";
-    if (typeof fileId !== "string" || typeof key !== "string") {
-      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Missing x-file-id / x-file-key headers.", stage: "files" });
+    if (typeof sessionId !== "string") {
+      throw new ApiError({ code: ErrorCodes.SYSTEM_VALIDATION, message: "Missing x-session-id header.", stage: "files" });
     }
+    // 服务端按 session_id 取回 key（内部已校验 org 归属 + 一次性 + 过期）
+    const { key } = await app.storage.consumeUploadSession(sessionId, request.user!.org_id);
     const payload = (request.body as Buffer) ?? Buffer.alloc(0);
-    const meta = await app.storage.put(key, payload, String(contentType));
-    request.log.info({ file_id: fileId, key, size: meta.size_bytes }, "file uploaded");
+    // put 内部再次强制 orgId 前缀 + 路径穿越校验
+    const meta = await app.storage.put(key, payload, String(contentType), request.user!.org_id);
+    request.log.info({ session_id: sessionId, key, size: meta.size_bytes }, "file uploaded");
     return reply.status(201).send(ok(meta));
   });
 };

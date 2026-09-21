@@ -7,8 +7,9 @@
  */
 import type { NormalizedPartModel } from "@ai-cam/geometry-schema";
 import type { Feature } from "@ai-cam/domain-schemas";
-import { ModelGateway, buildPlannerPrompt, type PlannerContext } from "@ai-cam/model-gateway";
+import { ModelGateway, buildPlannerPrompt, PROMPT_VERSION, type PlannerContext } from "@ai-cam/model-gateway";
 import { seedMachines, seedMaterials, seedTools } from "@ai-cam/master-data";
+import { checkPromptInjection, type InjectionFinding } from "@ai-cam/security";
 import { planPart } from "@ai-cam/cam-kernel";
 import { runJob } from "@ai-cam/job-runner";
 import { validatePlannerOutput, validatePlannerRefs, type PlannerOutput } from "./guardrails.js";
@@ -23,9 +24,22 @@ export interface AgentToolCall {
   ok: boolean;
 }
 
+export interface AgentGuardrail {
+  ok: boolean;
+  violations: Array<{ path: string; message: string }>;
+  /** 命中安全阻断（如 prompt injection）时为 true；此时未调用 LLM */
+  blocked?: boolean;
+  /** 阻断原因摘要（命中的 findings 汇总） */
+  reason?: string;
+  /** 错误码（遵循 AI_* 既有错误码约定） */
+  code?: string;
+  /** 命中的注入检测 findings */
+  findings?: InjectionFinding[];
+}
+
 export interface AgentRun {
   intent: PlannerOutput | null;
-  guardrail: { ok: boolean; violations: Array<{ path: string; message: string }> };
+  guardrail: AgentGuardrail;
   setups: ReturnType<typeof planSetups>;
   process: ReturnType<typeof planProcess>;
   tool_choices: Array<{ operation_type: string; tool_id: string; score: number; reasons: string[] }>;
@@ -83,41 +97,58 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
   record("analyze", { part_id: part.file }, () => tools.analyze(part));
   record("get_features", { part_id: part.file }, () => tools.get_features(part, features));
 
-  // 1) Planner Prompt → LLM 结构化输出
-  const ctx: PlannerContext = {
-    part: { id: part.file.replace(/\.[^.]+$/, ""), volume_mm3: part.volume_mm3, bbox: { min: [...part.bbox_mm.min] as [number, number, number], max: [...part.bbox_mm.max] as [number, number, number] } },
-    features: features.map((f) => ({ id: f.id, type: f.type, dimensions: f.dimensions ?? {}, accessible: f.accessible_directions })),
-    machine: (() => {
-      const m = seedMachines.find((x) => x.id === (options.machineId ?? "mch_vmc850")) ?? seedMachines[0];
-      return { id: m.id, name: m.name, axis: m.kinematics.axis_config ?? "3AXIS", max_rpm: m.kinematics.max_spindle_rpm, max_feed: m.kinematics.max_feed_mm_min };
-    })(),
-    tools: seedTools.filter((t) => t.stock_qty > 0).map((t) => ({ id: t.id, type: t.type, diameter_mm: t.diameter_mm, qty: t.stock_qty })),
-    material: (() => {
-      const m = seedMaterials.find((x) => x.id === (options.materialId ?? "mat_al_6061")) ?? seedMaterials[0];
-      return { id: m.id, name: m.name, grade: m.grade ?? "" };
-    })(),
-    goal: options.goal,
-  };
-  const prompt = buildPlannerPrompt(ctx);
+  // 1) Prompt 注入防护（P0-05）：goal 拼进 prompt / 调 LLM 之前先做注入检测
+  const injection = checkPromptInjection(options.goal);
 
   let intent: PlannerOutput | null = null;
-  let guardrail: AgentRun["guardrail"];
+  let guardrail: AgentGuardrail;
   let modelRoute = "";
-  try {
-    const res = await options.gateway.complete({ messages: prompt.messages, task: "planner" });
-    modelRoute = res.route.provider_id;
-    const parsed = JSON.parse(res.content) as unknown;
-    const schema = validatePlannerOutput(parsed);
-    if (!schema.ok) {
-      guardrail = { ok: false, violations: schema.violations };
-      intent = null;
-    } else {
-      const refs = validatePlannerRefs(schema.value!, { featureCount: features.length, hasDrills: features.some((f) => f.type === "HOLE_THROUGH" || f.type === "HOLE_BLIND") });
-      guardrail = { ok: refs.ok, violations: refs.violations };
-      intent = refs.ok ? refs.value : null;
+  let promptVersion = PROMPT_VERSION;
+
+  if (injection.flagged) {
+    // 命中注入：不构建 prompt、不调用 LLM，直接以结构化安全阻断结果返回（不抛裸 Error）
+    guardrail = {
+      ok: false,
+      violations: [{ path: "goal", message: "prompt_injection_blocked" }],
+      blocked: true,
+      reason: injection.findings.map((f) => `[${f.severity}] ${f.pattern}: ${f.snippet}`).join(" | "),
+      code: "AI_PROMPT_INJECTION_BLOCKED",
+      findings: injection.findings,
+    };
+  } else {
+    // 1a) Planner Prompt → LLM 结构化输出
+    const ctx: PlannerContext = {
+      part: { id: part.file.replace(/\.[^.]+$/, ""), volume_mm3: part.volume_mm3, bbox: { min: [...part.bbox_mm.min] as [number, number, number], max: [...part.bbox_mm.max] as [number, number, number] } },
+      features: features.map((f) => ({ id: f.id, type: f.type, dimensions: f.dimensions ?? {}, accessible: f.accessible_directions })),
+      machine: (() => {
+        const m = seedMachines.find((x) => x.id === (options.machineId ?? "mch_vmc850")) ?? seedMachines[0];
+        return { id: m.id, name: m.name, axis: m.kinematics.axis_config ?? "3AXIS", max_rpm: m.kinematics.max_spindle_rpm, max_feed: m.kinematics.max_feed_mm_min };
+      })(),
+      tools: seedTools.filter((t) => t.stock_qty > 0).map((t) => ({ id: t.id, type: t.type, diameter_mm: t.diameter_mm, qty: t.stock_qty })),
+      material: (() => {
+        const m = seedMaterials.find((x) => x.id === (options.materialId ?? "mat_al_6061")) ?? seedMaterials[0];
+        return { id: m.id, name: m.name, grade: m.grade ?? "" };
+      })(),
+      goal: options.goal,
+    };
+    const prompt = buildPlannerPrompt(ctx);
+    promptVersion = prompt.version;
+    try {
+      const res = await options.gateway.complete({ messages: prompt.messages, task: "planner" });
+      modelRoute = res.route.provider_id;
+      const parsed = JSON.parse(res.content) as unknown;
+      const schema = validatePlannerOutput(parsed);
+      if (!schema.ok) {
+        guardrail = { ok: false, violations: schema.violations };
+        intent = null;
+      } else {
+        const refs = validatePlannerRefs(schema.value!, { featureCount: features.length, hasDrills: features.some((f) => f.type === "HOLE_THROUGH" || f.type === "HOLE_BLIND") });
+        guardrail = { ok: refs.ok, violations: refs.violations };
+        intent = refs.ok ? refs.value : null;
+      }
+    } catch (err) {
+      guardrail = { ok: false, violations: [{ path: "model", message: `模型调用失败: ${String((err as Error).message)}` }] };
     }
-  } catch (err) {
-    guardrail = { ok: false, violations: [{ path: "model", message: `模型调用失败: ${String((err as Error).message)}` }] };
   }
 
   // 2) 程序化规划器（意图通过才采用；失败用默认偏好）
@@ -164,7 +195,7 @@ export async function runCamAgent(part: NormalizedPartModel, features: Feature[]
     job,
     tool_calls: toolCalls,
     model_route: modelRoute,
-    prompt_version: prompt.version,
+    prompt_version: promptVersion,
   };
 }
 

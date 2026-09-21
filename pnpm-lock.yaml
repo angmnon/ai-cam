@@ -138,6 +138,9 @@ importers:
       '@ai-cam/post-core':
         specifier: workspace:*
         version: link:../post-core
+      '@ai-cam/security':
+        specifier: workspace:*
+        version: link:../security
       '@ai-cam/stock-sim':
         specifier: workspace:*
         version: link:../stock-sim
@@ -796,6 +799,9 @@ importers:
       '@ai-cam/post-core':
         specifier: workspace:*
         version: link:../../packages/post-core
+      '@ai-cam/security':
+        specifier: workspace:*
+        version: link:../../packages/security
       '@ai-cam/stock-sim':
         specifier: workspace:*
         version: link:../../packages/stock-sim

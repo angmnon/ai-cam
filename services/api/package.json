@@ -28,6 +28,7 @@
     "@ai-cam/model-gateway": "workspace:*",
     "@ai-cam/nc-validator": "workspace:*",
     "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/security": "workspace:*",
     "@ai-cam/stock-sim": "workspace:*",
     "@fastify/cors": "^11.0.0",
     "@fastify/helmet": "^13.0.0",

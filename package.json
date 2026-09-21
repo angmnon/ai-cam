@@ -15,7 +15,8 @@
     "test": "turbo run test",
     "test:unit": "turbo run test --filter=./packages/* --filter=./services/*",
     "format": "prettier --write .",
-    "audit": "pnpm audit --prod"
+    "audit": "pnpm audit --prod",
+    "check:migrations": "node scripts/check-migrations.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

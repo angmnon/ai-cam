@@ -30,6 +30,7 @@
     "@ai-cam/nc-validator": "workspace:*",
     "@ai-cam/parameter-engine": "workspace:*",
     "@ai-cam/post-core": "workspace:*",
+    "@ai-cam/security": "workspace:*",
     "@ai-cam/stock-sim": "workspace:*",
     "zod": "^3.25.0"
   },

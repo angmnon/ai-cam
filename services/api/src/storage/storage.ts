@@ -1,6 +1,11 @@
 /**
  * 对象存储抽象（13_文件与对象存储规范）。
  * Key 规则：/{org_id}/{resource_type}/{resource_id}/{version}/{file}
+ *
+ * P0-2 安全约束：
+ *  - 对象 key 由服务端在 createUploadSession 时生成并落内存会话表；
+ *  - /upload 端点凭 session_id 取回 key，不再接受客户端 x-file-key；
+ *  - put(key,...,orgId) 必须校验 key 以 `${orgId}/` 开头且不逃逸 dataDir。
  */
 export type ResourceType =
   | "CAD_SOURCE"
@@ -16,6 +21,10 @@ export type ResourceType =
 
 export interface UploadSession {
   file_id: string;
+  /** 服务端会话 id；/upload 凭此取回服务端 key（替代旧的客户端 x-file-key） */
+  session_id: string;
+  /** 服务端生成的对象 key（orgId 前缀），客户端不可修改 */
+  key: string;
   upload_url: string;
   method: "PUT" | "POST";
   headers: Record<string, string>;
@@ -51,8 +60,10 @@ export interface StorageAdapter {
     contentType: string,
     sizeBytes: number,
   ): Promise<UploadSession>;
-  /** 保存已上传内容并计算 SHA-256（本地适配器由上传端点调用） */
-  put(key: string, data: Buffer, contentType: string): Promise<FileMeta>;
+  /** 按 session_id 取回服务端 key，并校验属于当前 org（一次性，取回即作废） */
+  consumeUploadSession(sessionId: string, orgId: string): Promise<{ key: string }>;
+  /** 保存已上传内容并计算 SHA-256；orgId 用于校验 key 租户前缀与路径安全 */
+  put(key: string, data: Buffer, contentType: string, orgId: string): Promise<FileMeta>;
   get(key: string): Promise<{ data: Buffer; contentType: string }>;
   head(key: string): Promise<{ size_bytes: number } | null>;
 }

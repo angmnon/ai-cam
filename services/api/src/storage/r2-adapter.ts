@@ -40,7 +40,16 @@ export class R2Adapter implements StorageAdapter {
     });
   }
 
-  async put(_key: string, _data: Buffer, _contentType: string): Promise<FileMeta> {
+  /** R2 模式下由前端直传预签名 URL，本地会话表不参与；接入时按 R2 预签名流程实现 */
+  async consumeUploadSession(_sessionId: string, _orgId: string): Promise<{ key: string }> {
+    throw new ApiError({
+      code: ErrorCodes.SYSTEM_UPSTREAM_UNAVAILABLE,
+      message: "R2 consumeUploadSession not implemented yet.",
+      stage: "files",
+    });
+  }
+
+  async put(_key: string, _data: Buffer, _contentType: string, _orgId: string): Promise<FileMeta> {
     throw new ApiError({
       code: ErrorCodes.SYSTEM_UPSTREAM_UNAVAILABLE,
       message: "R2 put not implemented yet.",

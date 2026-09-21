@@ -4,7 +4,7 @@
 -- Release：零件的可追溯发布记录（每零件一版本链，version_no 递增）
 CREATE TABLE IF NOT EXISTS releases (
   id              TEXT PRIMARY KEY,
-  organization_id TEXT NOT NULL REFERENCES orgs(id),
+  organization_id TEXT NOT NULL REFERENCES organizations(id),
   part_id         TEXT NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
   cam_revision_id TEXT NOT NULL REFERENCES cam_revisions(id),
   job_run_id      TEXT NOT NULL REFERENCES job_runs(id),

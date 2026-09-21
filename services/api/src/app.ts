@@ -19,6 +19,7 @@ import { R2Adapter } from "./storage/r2-adapter.js";
 import { LocalDiskAdapter } from "./storage/local-adapter.js";
 import { StorageAdapter } from "./storage/storage.js";
 import { authPlugin } from "./plugins/auth.js";
+import securityPlugin from "./plugins/security.js";
 import errorHandlerPlugin from "./plugins/error-handler.js";
 import requestContext from "./plugins/request-context.js";
 import healthRoutes from "./routes/health.js";
@@ -40,6 +41,8 @@ declare module "fastify" {
     jobRuns: JobRunStore;
     releases: ReleaseStore;
     aiPlans: AiPlanStore;
+    /** Phase 0 bootstrap 登录凭据（服务端解算 org_id/role） */
+    bootstrap: AppConfig["auth"]["bootstrap"];
   }
 }
 
@@ -85,6 +88,8 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
 
   await app.register(requestContext);
   await app.register(authPlugin(config.jwt));
+  // P0-4：RBAC 授权 preHandler 工厂 + 内存审计 sink（依赖 authPlugin 设置 request.user）
+  await app.register(securityPlugin);
   await app.register(errorHandlerPlugin);
 
   // 依赖注入
@@ -111,6 +116,14 @@ export async function buildApp(deps: AppDeps = {}): Promise<FastifyInstance> {
   app.decorate("jobRuns", jobRuns);
   app.decorate("releases", releases);
   app.decorate("aiPlans", aiPlans);
+  // P0-1：登录路由读取的服务端 bootstrap 凭据
+  app.decorate("bootstrap", config.auth.bootstrap);
+  // 未配置正式凭据时启动告警（仅开发态默认 demo/demo）
+  if (config.auth.bootstrap.usingDefaults) {
+    app.log.warn(
+      `使用默认开发态 bootstrap 凭据（${config.auth.bootstrap.email} / demo，org=${config.auth.bootstrap.orgId}）。生产请配置 CAM_BOOTSTRAP_PASSWORD 或 CAM_BOOTSTRAP_PASSWORD_HASH。`,
+    );
+  }
 
   // 路由
   await app.register(healthRoutes);

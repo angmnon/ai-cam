@@ -4,7 +4,7 @@
 -- 零件（CAD 上传 → 解析 → 特征/DFM）
 CREATE TABLE IF NOT EXISTS parts (
   id              TEXT PRIMARY KEY,
-  organization_id TEXT NOT NULL REFERENCES orgs(id),
+  organization_id TEXT NOT NULL REFERENCES organizations(id),
   filename        TEXT NOT NULL,
   content_type    TEXT NOT NULL DEFAULT 'model/step',
   size_bytes      BIGINT NOT NULL,
@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS idx_part_features_type ON part_features(feature_type)
 CREATE TABLE IF NOT EXISTS master_entities (
   resource        TEXT NOT NULL, -- machine / controller / tool / material / cutting_rule
   id              TEXT NOT NULL,
-  organization_id TEXT NOT NULL REFERENCES orgs(id),
+  organization_id TEXT NOT NULL REFERENCES organizations(id),
   data            JSONB NOT NULL,
   version         INT NOT NULL DEFAULT 0,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),

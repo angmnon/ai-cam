@@ -110,10 +110,10 @@ async function finishAnalysis(input: {
   const meshKey = storageKey(orgId, "VIEW_MESH", partId, "v0", "part.obj");
   if (input.objPath) {
     const obj = await readFile(input.objPath);
-    await storage.put(meshKey, obj, "model/obj");
+    await storage.put(meshKey, obj, "model/obj", orgId);
   }
   const parsedKey = storageKey(orgId, "CAD_PARSED", partId, "v0", "part.json");
-  await storage.put(parsedKey, Buffer.from(JSON.stringify(part)), "application/json");
+  await storage.put(parsedKey, Buffer.from(JSON.stringify(part)), "application/json", orgId);
 
   const features = buildFeatureGraph(part, partId);
   const dfm = analyzeDfm(part, features);

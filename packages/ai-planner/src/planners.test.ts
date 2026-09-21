@@ -70,6 +70,18 @@ describe("planProcess（P4-6）", () => {
     expect(r.ok).toBe(false);
     expect(r.errors[0]).toContain("FACE");
   });
+
+  it("偏好冲突回退后 validation 反映最新 order（P2-36）", () => {
+    // DRILL_LAST 与 CHAMFER mustFollow DRILL 冲突：DRILL 被移到 CHAMFER 之后
+    const feats = [f("F1", "OUTER_PROFILE"), f("F2", "HOLE_BLIND"), f("F3", "CHAMFER")];
+    const p = planProcess(feats, { preference: "DRILL_LAST" as const });
+    // 回退后 order 为规则默认顺序：CHAMFER 在最后
+    expect(p.order[p.order.length - 1]).toBe("CHAMFER");
+    expect(p.order[p.order.length - 2]).toBe("DRILL");
+    // P2-36：validation 必须与回退后的 order 自洽（旧 bug 此处为 false）
+    expect(p.validation.ok).toBe(true);
+    expect(p.reasons.some((r) => r.includes("回退"))).toBe(true);
+  });
 });
 
 describe("planTool（P4-7）", () => {

@@ -58,4 +58,23 @@ describe("buildJobReport（box）", () => {
     expect(report.validation.status).toBe("PASS");
     expect(report.validation.layers.map((l) => l.layer)).toEqual(["PARSER", "SEMANTIC", "MACHINE", "SIMULATION"]);
   });
+
+  it("P2-31：process_sheet.move_count 与 camIR.toolpaths 真实 moves.length 一致", () => {
+    const job = runJob({ part, partName: "box", features });
+    const report = buildJobReport({ cam: job.cam, simulation: job.simulation, nc: job.nc, validation: job.validation });
+
+    const tpByOp = new Map((job.cam.toolpaths ?? []).map((tp) => [tp.operation_id, tp]));
+    expect(report.process_sheet.length).toBe(job.cam.operations.length);
+    for (const row of report.process_sheet) {
+      const tp = tpByOp.get(row.operation_id);
+      // 用真实 moves.length，而非 kernel 填充的 move_count 字段
+      expect(row.move_count).toBe(tp?.moves.length ?? 0);
+      expect(tp).toBeDefined();
+      expect(row.move_count).toBe(tp!.moves.length);
+    }
+    // 汇总 move_count 之和等于全工具路径 moves 总和
+    const reportTotal = report.process_sheet.reduce((a, r) => a + r.move_count, 0);
+    const realTotal = (job.cam.toolpaths ?? []).reduce((a, tp) => a + tp.moves.length, 0);
+    expect(reportTotal).toBe(realTotal);
+  });
 });

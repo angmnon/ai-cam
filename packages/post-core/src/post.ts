@@ -100,6 +100,8 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
   let moveCount = 0;
   let toolChanges = 0;
   let lastToolId: string | null = null;
+  // P2-20 / P2-21：WARN 计数器（不抛错，暴露到 metadata）
+  const warnings = { unsupportedMoveTypes: 0, coolantFallbacks: 0 };
 
   for (const op of cam.operations) {
     const tp = toolpaths.get(op.id);
@@ -133,7 +135,13 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
 
     // 冷却
     const coolant = op.parameters.coolant;
-    const code = profile.coolantCodes[coolant] ?? "M08";
+    // P2-21：未映射冷却 → 仍 fallback M08（保持 golden 不炸），但 WARN 计数 + 注释
+    const mappedCoolant = profile.coolantCodes[coolant];
+    if (mappedCoolant == null) {
+      warnings.coolantFallbacks++;
+      w.comment(`WARN COOLANT FALLBACK ${coolant} -> M08 (op ${op.id})`);
+    }
+    const code = mappedCoolant ?? "M08";
     if (state.coolant !== coolant) {
       w.emit(code);
       state.coolant = coolant;
@@ -142,10 +150,10 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
     // 刀路（P1-07：DRILL 且方言支持钻孔循环 → G83/G73 模态循环，否则逐行）
     const moves = tp.moves;
     if (op.type === "DRILL" && profile.drillingCycles) {
-      moveCount += emitDrillingCycle(moves, state, profile, w, op);
+      moveCount += emitDrillingCycle(moves, state, profile, w, op, warnings);
     } else {
       for (let mi = 0; mi < moves.length; mi++) {
-        emitMove(moves[mi], state, profile, w, op);
+        emitMove(moves[mi], state, profile, w, op, warnings);
         moveCount++;
       }
     }
@@ -159,8 +167,11 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
     state.coolant = "OFF";
   }
   if (profile.homeAtEnd) {
+    // P2-22：按方言族回零。Z 轴增量回参考点 → 切绝对 → X/Y 回参考点。
+    // FANUC/SYNTEC/ISO 用 G28（第一参考点），MITSUBISHI 用 G30（第二参考点，profile.homeCode）。
     w.emit(`G91 ${profile.homeCode} Z0.`);
     w.emit("G90");
+    w.emit(`${profile.homeCode} X0 Y0`);
   }
   w.emit("M30");
   w.raw("%");
@@ -182,11 +193,16 @@ export function postProcess(cam: CamIR, profile: ControllerProfile): NcProgram {
       move_count: moveCount,
       generated_by: "post-core",
       generator_version: profile.post_version,
+      unsupported_move_count: warnings.unsupportedMoveTypes,
+      coolant_fallback_count: warnings.coolantFallbacks,
+      tool_library_version: profile.toolLibraryVersion ?? "unknown",
+      material_version: profile.materialVersion ?? "unknown",
+      machine_firmware: profile.machineFirmware ?? "unknown",
     },
   };
 }
 
-function emitMove(m: ToolpathMove, state: ModalState, profile: ControllerProfile, w: NcWriter, op: { id: string }): string {
+function emitMove(m: ToolpathMove, state: ModalState, profile: ControllerProfile, w: NcWriter, op: { id: string }, warnings: { unsupportedMoveTypes: number }): string {
   const dec = profile.decimals;
   // P1-06：rapidWord（FANUC/SYNTEC=G0，MITSUBISHI/ISO=G00）与 feed 兜底 defaultFeedMmMin
   const rapidG = profile.rapidWord ?? "G00";
@@ -233,9 +249,12 @@ function emitMove(m: ToolpathMove, state: ModalState, profile: ControllerProfile
       if (f) state.lastF = feed;
       return g;
     }
-    default:
-      w.comment(`UNSUPPORTED MOVE TYPE ${m.type} (op ${op.id})`);
+    default: {
+      // P2-20：未知 move type 不抛错，WARN 计数 + 注释，保持 golden 不炸
+      warnings.unsupportedMoveTypes++;
+      w.comment(`WARN UNSUPPORTED MOVE TYPE ${m.type} (op ${op.id})`);
       return "UNSUPPORTED";
+    }
   }
 }
 
@@ -283,6 +302,7 @@ function emitDrillingCycle(
   profile: ControllerProfile,
   w: NcWriter,
   op: Operation,
+  warnings: { unsupportedMoveTypes: number },
 ): number {
   const dec = profile.decimals;
   const cycle = profile.drillCycle ?? "G83";
@@ -307,7 +327,7 @@ function emitDrillingCycle(
     // 兜底：无 PLUNGE → 退回逐行，不丢几何
     let n = 0;
     for (const m of moves) {
-      emitMove(m, state, profile, w, op);
+      emitMove(m, state, profile, w, op, warnings);
       n++;
     }
     return n;

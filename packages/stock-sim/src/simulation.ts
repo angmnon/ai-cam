@@ -316,25 +316,27 @@ function allowedBottom(op: Operation, tp: ToolpathIR, cam: CamIR): { bottom: num
   return { bottom: null, modeled: false };
 }
 
-/** FACE 顶面残料：刀路扫过区域的剩余最高材料与切削面之差 */
+/** FACE 顶面残料：刀路扫过区域的剩余最高材料与期望顶面 zTop 之差 */
 function maxResidualOver(grid: VoxelGrid, tp: ToolpathIR): number {
+  const expect = topCutZ(tp);
   let worst = 0;
   for (const m of tp.moves) {
     if (m.type === "RAPID") continue;
     const h = grid.topHeightAt(m.x, m.y);
-    if (Number.isFinite(h)) {
-      // 期望顶面 = safeZ 之下第一层实际切削深度；v1 用刀路 z 最大切削面
-      const expect = topCutZ(tp);
-      worst = Math.max(worst, h - expect);
-    }
+    if (Number.isFinite(h)) worst = Math.max(worst, h - expect);
   }
   return worst;
 }
 
+/**
+ * P2-17 FACE 期望顶面 zTop：该 op 首个实际切削层的 z（首个非 RAPID/RETRACT 切削 move）。
+ * 旧实现取全 op 最深 minZ 当期望顶面；多层 FACE（首层切到 z1、更深层切到 z2<z1）会把
+ * 仅被首层覆盖的区域按最深层 z2 比较，h≈z1 → 误报 z1-z2 残料。改为按首个切削平面 zTop
+ * 比较：更深下探层使 h≤zTop，差值为负被钳为 0；首层区域 h≈zTop → 残料≈0，不误报。
+ */
 function topCutZ(tp: ToolpathIR): number {
-  let minZ = Infinity;
-  for (const m of tp.moves) if (m.type !== "RAPID" && m.z < minZ) minZ = m.z;
-  return Number.isFinite(minZ) ? minZ : 0;
+  for (const m of tp.moves) if (m.type !== "RAPID" && m.type !== "RETRACT") return m.z;
+  return 0;
 }
 
 /** POCKET 底面残料：刀路最低切削面处的剩余材料 */

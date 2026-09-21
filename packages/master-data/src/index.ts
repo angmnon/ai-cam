@@ -29,14 +29,16 @@ export function validateSeeds(): void {
   for (const r of seedCuttingRules) CuttingRule.parse(r);
 }
 
-export function getMasterData(organizationId: string): MasterDataBundle {
-  const filter = (id: string) => id === organizationId;
+export function getMasterData(organizationId?: string): MasterDataBundle {
+  // organizationId 可选：传入则按租户过滤；不传则返回全量（向后兼容无该字段的控制器）。
+  // 控制器与切削规则不带 organization_id 字段，始终全量返回。
+  const keep = (id: string) => organizationId === undefined || id === organizationId;
   return {
     version: MASTER_DATA_VERSION,
-    machines: seedMachines.filter((m) => filter(m.organization_id)),
+    machines: seedMachines.filter((m) => keep(m.organization_id)),
     controllers: seedControllers,
-    tools: seedTools.filter((t) => filter(t.organization_id)),
-    materials: seedMaterials.filter((m) => filter(m.organization_id)),
+    tools: seedTools.filter((t) => keep(t.organization_id)),
+    materials: seedMaterials.filter((m) => keep(m.organization_id)),
     cutting_rules: seedCuttingRules,
   };
 }

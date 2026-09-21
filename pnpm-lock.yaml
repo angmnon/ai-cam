@@ -231,6 +231,9 @@ importers:
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../domain-schemas
+      '@ai-cam/error-codes':
+        specifier: workspace:*
+        version: link:../error-codes
       '@ai-cam/feature-engine':
         specifier: workspace:*
         version: link:../feature-engine
@@ -400,6 +403,9 @@ importers:
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../domain-schemas
+      '@ai-cam/error-codes':
+        specifier: workspace:*
+        version: link:../error-codes
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../geometry-schema
@@ -441,6 +447,9 @@ importers:
 
   packages/geometry-schema:
     dependencies:
+      '@ai-cam/error-codes':
+        specifier: workspace:*
+        version: link:../error-codes
       zod:
         specifier: ^3.25.0
         version: 3.25.76
@@ -505,6 +514,10 @@ importers:
         version: 3.2.7(@types/node@22.20.4)(yaml@2.9.1)
 
   packages/job-schema:
+    dependencies:
+      zod:
+        specifier: ^3.25.0
+        version: 3.25.76
     devDependencies:
       '@eslint/js':
         specifier: ^9.17.0
@@ -626,6 +639,9 @@ importers:
       '@ai-cam/domain-schemas':
         specifier: workspace:*
         version: link:../domain-schemas
+      '@ai-cam/error-codes':
+        specifier: workspace:*
+        version: link:../error-codes
       '@ai-cam/master-data':
         specifier: workspace:*
         version: link:../master-data

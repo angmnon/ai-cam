@@ -33,4 +33,28 @@ describe("master-data seeds", () => {
     const matIds = new Set(bundle.materials.map((m) => m.id));
     for (const r of bundle.cutting_rules) expect(matIds.has(r.material_id)).toBe(true);
   });
+
+  it("getMasterData 不传 orgId 返回全量（向后兼容）", () => {
+    const bundle = getMasterData();
+    expect(bundle.machines.length).toBe(seedMachines.length);
+    expect(bundle.tools.length).toBe(seedTools.length);
+    expect(bundle.materials.length).toBe(seedMaterials.length);
+  });
+
+  it("getMasterData 传 orgId 只返回该 org 的数据", () => {
+    // 种子数据全部归属 org_demo；传其它 org 应得到空的租户维度集合，
+    // 而不带 organization_id 的控制器/切削规则仍全量返回。
+    const bundle = getMasterData("org_unknown");
+    expect(bundle.machines.length).toBe(0);
+    expect(bundle.tools.length).toBe(0);
+    expect(bundle.materials.length).toBe(0);
+    expect(bundle.controllers.length).toBe(seedControllers.length);
+    expect(bundle.cutting_rules.length).toBe(seedCuttingRules.length);
+
+    // 传 org_demo：仅含该 org 的机器/刀具/材料，且无越权数据
+    const demo = getMasterData("org_demo");
+    expect(demo.machines.every((m) => m.organization_id === "org_demo")).toBe(true);
+    expect(demo.tools.every((t) => t.organization_id === "org_demo")).toBe(true);
+    expect(demo.materials.every((m) => m.organization_id === "org_demo")).toBe(true);
+  });
 });

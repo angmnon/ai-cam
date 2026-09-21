@@ -2,6 +2,7 @@
  * geometry_worker 输出的规范化零件模型契约（单位 mm）。
  * 与 cpp/geometry-core/src/main.cpp 的输出严格对应。
  */
+import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import { z } from "zod";
 
 export const Vec3Arr = z.tuple([z.number(), z.number(), z.number()]);
@@ -61,9 +62,25 @@ export const NormalizedPartModel = z.object({
 export type NormalizedPartModel = z.infer<typeof NormalizedPartModel>;
 
 export function parseWorkerOutput(raw: string): NormalizedPartModel {
-  const json = JSON.parse(raw) as unknown;
+  let json: unknown;
+  try {
+    json = JSON.parse(raw) as unknown;
+  } catch (e) {
+    throw new ApiError({
+      code: ErrorCodes.CAD_PARSE_FAILED,
+      message: "geometry worker output is not valid JSON",
+      stage: "geometry",
+      details: { cause: e instanceof Error ? e.message : String(e) },
+    });
+  }
   if (typeof json === "object" && json !== null && (json as { status?: string }).status === "error") {
-    throw new Error(`geometry worker error: ${(json as { message?: string }).message ?? raw}`);
+    const message = (json as { message?: string }).message ?? raw;
+    const healingFailed = /heal/i.test(message);
+    throw new ApiError({
+      code: healingFailed ? ErrorCodes.CAD_HEALING_FAILED : ErrorCodes.CAD_PARSE_FAILED,
+      message: `geometry worker error: ${message}`,
+      stage: "geometry",
+    });
   }
   return NormalizedPartModel.parse(json);
 }

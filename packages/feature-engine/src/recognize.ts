@@ -5,6 +5,7 @@
  * 识别顺序：孔（竖直圆柱）→ 凹面（口袋/槽底）→ 凸台 → 台阶 → 外轮廓。
  * 每个特征带 confidence、source_face_ids、可访问方向与尺寸，供 MFG Graph 与 DFM 消费。
  */
+import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import type { BBoxArr, FaceInfo, NormalizedPartModel } from "@ai-cam/geometry-schema";
 
 import { TOL, approx, boxSize, openSides, xyArea, type Box3 } from "./vec.js";
@@ -70,6 +71,15 @@ function isPolygonal(face: FaceInfo): boolean {
 }
 
 export function recognize(part: NormalizedPartModel, options: RecognizeOptions = {}): FeatureCandidate[] {
+  // 识别失败路径：模型为空/无面，无法构造任何特征 → 抛 typed 错误（PART_ANALYSIS_FAILED）
+  if (!part || !Array.isArray(part.faces) || part.faces.length === 0) {
+    throw new ApiError({
+      code: ErrorCodes.PART_ANALYSIS_FAILED,
+      message: "feature recognition failed: part model has no faces",
+      stage: "feature-recognition",
+      details: { face_count: part && Array.isArray(part.faces) ? part.faces.length : 0 },
+    });
+  }
   const minArea = options.minArea ?? DEFAULT_OPTIONS.minArea;
   const tol = options.tol ?? DEFAULT_OPTIONS.tol;
 

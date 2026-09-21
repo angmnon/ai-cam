@@ -37,6 +37,13 @@ export interface ControllerProfile {
   defaultFeedMmMin?: number;
   drillCycle?: "G81" | "G83" | "G73";
   peckIncrementMm?: number;
+  // ---- P2-32 版本固化（可选用；由上下文/校准注入，缺省 post 输出 "unknown"） ----
+  /** 刀具库版本号 */
+  toolLibraryVersion?: string;
+  /** 材料牌号/版本号 */
+  materialVersion?: string;
+  /** 机床控制器固件版本 */
+  machineFirmware?: string;
 }
 
 // ---------- Modal State ----------
@@ -115,6 +122,16 @@ export interface NcProgram {
     move_count: number;
     generated_by: string;
     generator_version: string;
+    /** P2-20：未知 move type 命中次数（WARN，不抛错） */
+    unsupported_move_count: number;
+    /** P2-21：冷却代码未映射、静默 fallback M08 的次数（WARN） */
+    coolant_fallback_count: number;
+    /** P2-32：刀具库版本（无则 "unknown"） */
+    tool_library_version: string;
+    /** P2-32：材料版本（无则 "unknown"） */
+    material_version: string;
+    /** P2-32：机床固件版本（无则 "unknown"） */
+    machine_firmware: string;
   };
 }
 

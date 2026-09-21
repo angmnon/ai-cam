@@ -5,6 +5,7 @@ import { simulate } from "./simulation.js";
 import { planPart } from "@ai-cam/cam-kernel";
 import { buildFeatureGraph } from "@ai-cam/feature-engine";
 import { parseWorkerOutput } from "@ai-cam/geometry-schema";
+import type { CamIR } from "@ai-cam/cam-ir";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -98,5 +99,83 @@ describe("simulate（box 样本）", () => {
     const gouge = rep.events.filter((e) => e.kind === "GOUGE");
     expect(gouge.length).toBeGreaterThan(0);
     expect(rep.status).toBe("FAIL");
+  });
+});
+
+describe("P2-17 多层 FACE 顶面残料误判", () => {
+  /**
+   * 构造单一 FACE op：毛坯 z∈[0,10]。
+   * 第一层（z1=8）全行面铣覆盖整个 XY；第二层（z2=4<z1）仅下探局部子区。
+   * 残料检查应按首个切削层 zTop=z1=8 比较：
+   *  - 仅第一层覆盖的区域 h≈8 → 残料≈0；
+   *  - 第二层下探区域 h≈4 < z1 → 差值为负被钳为 0。
+   * 旧实现用全 op 最深 minZ=z2=4 当期望顶面，会把仅第一层区域判成 h-z2=4mm 残料（误报）。
+   */
+  function buildMultiLayerFaceCam(z1: number, z2: number): CamIR {
+    const moves: Array<{ type: CamIR["toolpaths"][number]["moves"][number]["type"]; x: number; y: number; z: number; feed_mm_min?: number }> = [];
+    const rapid = (x: number, y: number) => moves.push({ type: "RAPID", x, y, z: 12 });
+    const plunge = (x: number, y: number, z: number) => moves.push({ type: "PLUNGE", x, y, z, feed_mm_min: 200 });
+    const linear = (x: number, y: number, z: number) => moves.push({ type: "LINEAR", x, y, z, feed_mm_min: 500 });
+    const retract = (x: number, y: number) => moves.push({ type: "RETRACT", x, y, z: 12 });
+
+    // 第一层 z1：三行满幅面铣，覆盖全 XY
+    for (const y of [15, 30, 45]) {
+      rapid(5, y);
+      plunge(5, y, z1);
+      linear(55, y, z1);
+      retract(55, y);
+    }
+    // 第二层 z2<z1：仅局部子区（x∈[20,40], y=30）下探
+    rapid(20, 30);
+    plunge(20, 30, z2);
+    linear(40, 30, z2);
+
+    return {
+      schema_version: "1.0.0",
+      ir_id: "ir_p2_17",
+      job_id: "job_p2_17",
+      part_id: "part_p2_17",
+      units: { length: "mm", angle: "deg", speed: "rpm", feed: "mm/min" },
+      machine: { machine_id: "mch_vmc850", controller_id: "siemens_828d", axis_config: "3AXIS", travel: { x: 200, y: 200, z: 200 } },
+      material: { material_id: "mat_al6061" },
+      stock: { id: "stk_p2_17", kind: "BOX", dimensions: { x: 60, y: 60, z: 10 }, origin: { x: 0, y: 0, z: 0 } },
+      setups: [{ id: "su1", wcs: "G54", origin: { x: 0, y: 0, z: 0 } }],
+      tools: [{ tool_id: "tool_em_10" }],
+      operations: [
+        {
+          id: "op_face1",
+          op_index: 1,
+          name: "FACE 多层",
+          type: "FACE",
+          setup_id: "su1",
+          feature_ids: ["feat_face1"],
+          tool: { tool_id: "tool_em_10" },
+          parameters: { spindle_speed_rpm: 3000, feed_mm_min: 500, coolant: "FLOOD", source: "ENGINE" },
+          safe_z_mm: 12,
+        },
+      ],
+      toolpaths: [
+        { operation_id: "op_face1", toolpath_id: "tp_face1", engine_version: "test", move_count: moves.length, moves: moves as CamIR["toolpaths"][number]["moves"] },
+      ],
+    };
+  }
+
+  it("P2-17 多层 FACE：两层均残料≈0，不误报残料", () => {
+    const z1 = 8;
+    const z2 = 4;
+    const cam = buildMultiLayerFaceCam(z1, z2);
+    const rep = simulate({ cam, partVolumeMm3: 0, voxel: { voxelSize: 2 } });
+
+    const face = rep.key_surfaces.find((k) => k.surface.includes("顶面"));
+    expect(face).toBeDefined();
+    // 期望顶面 = 首个切削层 z1=8：仅第一层区域 h≈8 → 残料≈0；下探层 h≈4 → 负差值钳 0。
+    // 旧实现按最深 z2=4 比较会得 h-z2=4mm 残料（>1 voxel）→ 此处断言旧 bug 不复现。
+    expect(face!.residual_mm).toBeGreaterThanOrEqual(0);
+    expect(face!.residual_mm).toBeLessThanOrEqual(rep.voxel_size_mm);
+    expect(face!.verdict).toBe("PASS");
+
+    // 不得产生残料误报事件（深度下探触发的 gouge 属 P1-04 另一检测轴，不在本用例范围）
+    const residualEvents = rep.events.filter((e) => e.kind === "RESIDUAL_WARN" || e.kind === "RESIDUAL_FAIL");
+    expect(residualEvents).toEqual([]);
   });
 });

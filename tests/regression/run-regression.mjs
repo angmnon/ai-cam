@@ -18,6 +18,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const GOLDEN = join(__dirname, "../golden-v2/golden-300.json");
 const OUT = join(__dirname, "regression-report.json");
 const FULL_SAMPLE = 20; // 每级完整管线样本数
+const SAMPLE_SEED = 0x6a17c0de; // 固定 seed，保证抽样可复现
+
+/** mulberry32：轻量可复现 PRNG（固定 seed → 固定抽样结果） */
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 if (!existsSync(GOLDEN)) throw new Error(`golden-300 缺失，先运行 node tests/golden-gen/generate.mjs: ${GOLDEN}`);
 const doc = JSON.parse(readFileSync(GOLDEN, "utf8"));
@@ -99,7 +112,14 @@ function main() {
   }
   const fullIds = new Set();
   for (const level of Object.keys(byLevel)) {
-    byLevel[level].slice(0, FULL_SAMPLE).forEach((s) => fullIds.add(s.id));
+    // 固定 seed 的真随机抽样：Fisher-Yates 洗牌后取前 FULL_SAMPLE（每级数量不变，结果可复现）
+    const rng = mulberry32(SAMPLE_SEED);
+    const pool = [...byLevel[level]];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    pool.slice(0, FULL_SAMPLE).forEach((s) => fullIds.add(s.id));
   }
   for (const spec of doc.specs) {
     const t = performance.now();

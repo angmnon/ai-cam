@@ -88,6 +88,23 @@ describe("parameter-engine", () => {
     ).toThrowError(ParameterConstraintError);
   });
 
+  it("reject 路径抛出的错误携带 typed code = CAM_PARAMETER_OUT_OF_RANGE", () => {
+    expect.assertions(3);
+    try {
+      computeCuttingParameters({
+        tool: em6,
+        material: al6061,
+        opType: "POCKET",
+        userOverrides: { spindle_speed_rpm: 25000 },
+        rulePolicy: "reject",
+      });
+    } catch (e) {
+      expect(e).toBeInstanceOf(ParameterConstraintError);
+      expect((e as { code?: string }).code).toBe("CAM_PARAMETER_OUT_OF_RANGE");
+      expect((e as ParameterConstraintError).decisions.some((d) => d.action === "REJECTED")).toBe(true);
+    }
+  });
+
   it("机床极限过低：clamp 到上限并标记保守加工（不 reject）", () => {
     // 机床 max_rpm=500（远低于铝 6061 平刀规则下限 ~10610rpm）
     const r = computeCuttingParameters({

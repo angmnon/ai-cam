@@ -1,6 +1,6 @@
 {
  "benchmark": "golden-300 全量回归",
- "date": "2026-09-21T02:41:26.003Z",
+ "date": "2026-09-21T03:06:29.533Z",
  "total": 300,
  "pass": 300,
  "fail": 0,
@@ -12,13 +12,13 @@
   "complex": "100/100"
  },
  "perf": {
-  "fast_p50_ms": 0.3,
+  "fast_p50_ms": 0.2,
   "fast_p95_ms": 0.6,
-  "fast_p99_ms": 1.2,
-  "full_p50_ms": 419.5,
-  "full_p95_ms": 779.4,
-  "full_p99_ms": 970.1,
-  "wall_sec": 23.3
+  "fast_p99_ms": 1.3,
+  "full_p50_ms": 271.3,
+  "full_p95_ms": 500.8,
+  "full_p99_ms": 737.8,
+  "wall_sec": 16.2
  },
  "failures": [],
  "rows": [
@@ -26,31 +26,31 @@
    "id": "gv2_simple_001",
    "name": "simple_1_slot",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 164,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 180,
-   "ms": 166.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 10.2
   },
   {
    "id": "gv2_simple_002",
    "name": "simple_2_hole_through",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 40,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 59,
-   "ms": 83.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 1.2
   },
   {
    "id": "gv2_simple_003",
@@ -65,52 +65,52 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 338,
-   "ms": 142.2
+   "ms": 142.6
   },
   {
    "id": "gv2_simple_004",
    "name": "simple_4_boss",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 56,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 72,
-   "ms": 67.2
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 1.3
   },
   {
    "id": "gv2_simple_005",
    "name": "simple_5_hole_through",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 46,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 65,
-   "ms": 124.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_006",
    "name": "simple_6_hole_through",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 38,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 57,
-   "ms": 130.9
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_007",
@@ -125,97 +125,97 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 65,
-   "ms": 79.2
+   "ms": 66.9
   },
   {
    "id": "gv2_simple_008",
    "name": "simple_8_pocket",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 328,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 346,
-   "ms": 104.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.7
   },
   {
    "id": "gv2_simple_009",
    "name": "simple_9_hole_blind",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 46,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 65,
-   "ms": 71.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_010",
    "name": "simple_10_slot",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 226,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 244,
-   "ms": 79
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_011",
    "name": "simple_11_slot",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 133,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 152,
-   "ms": 118.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_012",
    "name": "simple_12_hole_through",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 48,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 67,
-   "ms": 93.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_013",
    "name": "simple_13_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 198,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 220,
-   "ms": 115.6
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_014",
@@ -230,67 +230,67 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 67,
-   "ms": 154
+   "ms": 99.8
   },
   {
    "id": "gv2_simple_015",
    "name": "simple_15_boss",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 64,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 80,
-   "ms": 185.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_016",
    "name": "simple_16_boss",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 56,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 72,
-   "ms": 140.9
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_017",
    "name": "simple_17_hole_blind",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 46,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 65,
-   "ms": 108.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_018",
    "name": "simple_18_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 131,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 151,
-   "ms": 119.5
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_019",
@@ -305,7 +305,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 64,
-   "ms": 166.7
+   "ms": 132.6
   },
   {
    "id": "gv2_simple_020",
@@ -320,7 +320,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 159,
-   "ms": 80.6
+   "ms": 77
   },
   {
    "id": "gv2_simple_021",
@@ -335,7 +335,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.5
   },
   {
    "id": "gv2_simple_022",
@@ -350,22 +350,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.9
   },
   {
    "id": "gv2_simple_023",
    "name": "simple_23_hole_through",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 56,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 75,
+   "ms": 153.2
   },
   {
    "id": "gv2_simple_024",
@@ -380,7 +380,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_025",
@@ -395,22 +395,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_026",
    "name": "simple_26_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 170,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 189,
+   "ms": 93.2
   },
   {
    "id": "gv2_simple_027",
@@ -425,7 +425,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_028",
@@ -470,7 +470,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_031",
@@ -485,7 +485,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_032",
@@ -500,7 +500,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_033",
@@ -530,7 +530,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_035",
@@ -545,22 +545,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_036",
    "name": "simple_36_hole_through",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 38,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 57,
+   "ms": 101.5
   },
   {
    "id": "gv2_simple_037",
@@ -575,22 +575,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_038",
    "name": "simple_38_pocket",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 133,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 152,
+   "ms": 69.5
   },
   {
    "id": "gv2_simple_039",
@@ -605,7 +605,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_040",
@@ -620,7 +620,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_041",
@@ -650,7 +650,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 1.3
   },
   {
    "id": "gv2_simple_043",
@@ -680,7 +680,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_045",
@@ -695,37 +695,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_046",
    "name": "simple_46_hole_through",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 52,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 71,
+   "ms": 81.2
   },
   {
    "id": "gv2_simple_047",
    "name": "simple_47_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 178,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 199,
+   "ms": 128.7
   },
   {
    "id": "gv2_simple_048",
@@ -755,7 +755,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.7
   },
   {
    "id": "gv2_simple_050",
@@ -770,7 +770,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_051",
@@ -785,22 +785,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_052",
    "name": "simple_52_hole_blind",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 46,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 65,
+   "ms": 43.1
   },
   {
    "id": "gv2_simple_053",
@@ -821,16 +821,16 @@
    "id": "gv2_simple_054",
    "name": "simple_54_step",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 56,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 72,
+   "ms": 42.6
   },
   {
    "id": "gv2_simple_055",
@@ -860,7 +860,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_057",
@@ -875,7 +875,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_058",
@@ -911,16 +911,16 @@
    "id": "gv2_simple_060",
    "name": "simple_60_boss",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 64,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 82,
+   "ms": 52.9
   },
   {
    "id": "gv2_simple_061",
@@ -935,22 +935,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 0.4
   },
   {
    "id": "gv2_simple_062",
    "name": "simple_62_step",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 48,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 66,
+   "ms": 62.2
   },
   {
    "id": "gv2_simple_063",
@@ -980,7 +980,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_065",
@@ -1076,16 +1076,16 @@
    "id": "gv2_simple_071",
    "name": "simple_71_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 146,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 1.7
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 168,
+   "ms": 75.7
   },
   {
    "id": "gv2_simple_072",
@@ -1121,31 +1121,31 @@
    "id": "gv2_simple_074",
    "name": "simple_74_hole_blind",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 38,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 57,
+   "ms": 86.9
   },
   {
    "id": "gv2_simple_075",
    "name": "simple_75_slot",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 192,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 211,
+   "ms": 101.6
   },
   {
    "id": "gv2_simple_076",
@@ -1160,7 +1160,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_077",
@@ -1175,7 +1175,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_078",
@@ -1190,7 +1190,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_079",
@@ -1205,7 +1205,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_080",
@@ -1235,7 +1235,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_082",
@@ -1286,31 +1286,31 @@
    "id": "gv2_simple_085",
    "name": "simple_85_open_pocket",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 2,
    "moves": 133,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 152,
+   "ms": 95
   },
   {
    "id": "gv2_simple_086",
    "name": "simple_86_hole_blind_slot",
    "difficulty": "simple",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 3,
    "moves": 170,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.1
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 192,
+   "ms": 84.9
   },
   {
    "id": "gv2_simple_087",
@@ -1325,7 +1325,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.1
+   "ms": 0.2
   },
   {
    "id": "gv2_simple_088",
@@ -1385,7 +1385,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_092",
@@ -1400,7 +1400,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_simple_093",
@@ -1445,7 +1445,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_simple_096",
@@ -1526,31 +1526,31 @@
    "id": "gv2_medium_001",
    "name": "medium_1_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 253,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 275,
-   "ms": 552.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_002",
    "name": "medium_2_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 272,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 294,
-   "ms": 420.6
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_003",
@@ -1565,52 +1565,52 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 266,
-   "ms": 336
+   "ms": 217
   },
   {
    "id": "gv2_medium_004",
    "name": "medium_4_open_pocket_hole_through_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 227,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 249,
-   "ms": 435.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_005",
    "name": "medium_5_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 274,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 296,
-   "ms": 779.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_006",
    "name": "medium_6_boss_boss_hole_through",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 122,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 142,
-   "ms": 469.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_007",
@@ -1625,97 +1625,97 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 228,
-   "ms": 605.9
+   "ms": 410.4
   },
   {
    "id": "gv2_medium_008",
    "name": "medium_8_open_pocket_hole_through_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 305,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 327,
-   "ms": 663
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_009",
    "name": "medium_9_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 227,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 246,
-   "ms": 241.5
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_010",
    "name": "medium_10_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 474,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 498,
-   "ms": 537.1
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_011",
    "name": "medium_11_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 210,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 228,
-   "ms": 456.5
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_012",
    "name": "medium_12_slot_slot_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 430,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 452,
-   "ms": 781
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_013",
    "name": "medium_13_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 190,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 211,
-   "ms": 220.5
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_014",
@@ -1730,67 +1730,67 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 300,
-   "ms": 429.5
+   "ms": 233.7
   },
   {
    "id": "gv2_medium_015",
    "name": "medium_15_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 264,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 286,
-   "ms": 380.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_016",
    "name": "medium_16_open_pocket_hole_through_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 245,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 267,
-   "ms": 496.9
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_017",
    "name": "medium_17_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 245,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 267,
-   "ms": 804.9
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_018",
    "name": "medium_18_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 201,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 226,
-   "ms": 598.7
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_019",
@@ -1805,7 +1805,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 292,
-   "ms": 970.1
+   "ms": 472
   },
   {
    "id": "gv2_medium_020",
@@ -1820,7 +1820,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 114,
-   "ms": 489.7
+   "ms": 315.4
   },
   {
    "id": "gv2_medium_021",
@@ -1835,7 +1835,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_022",
@@ -1850,22 +1850,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_023",
    "name": "medium_23_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 297,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 319,
+   "ms": 440
   },
   {
    "id": "gv2_medium_024",
@@ -1880,7 +1880,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_025",
@@ -1895,22 +1895,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_026",
    "name": "medium_26_open_pocket_hole_through_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 522,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.5
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 544,
+   "ms": 329
   },
   {
    "id": "gv2_medium_027",
@@ -1925,7 +1925,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1.2
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_028",
@@ -1940,7 +1940,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_029",
@@ -1955,7 +1955,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.9
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_030",
@@ -1970,7 +1970,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.6
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_031",
@@ -2000,7 +2000,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_033",
@@ -2015,7 +2015,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_034",
@@ -2030,7 +2030,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_035",
@@ -2051,16 +2051,16 @@
    "id": "gv2_medium_036",
    "name": "medium_36_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 206,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 229,
+   "ms": 212.9
   },
   {
    "id": "gv2_medium_037",
@@ -2075,22 +2075,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_038",
    "name": "medium_38_boss_boss_hole_through",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 96,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 118,
+   "ms": 200.6
   },
   {
    "id": "gv2_medium_039",
@@ -2105,7 +2105,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_040",
@@ -2120,7 +2120,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_041",
@@ -2135,7 +2135,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_042",
@@ -2150,7 +2150,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_043",
@@ -2165,7 +2165,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_044",
@@ -2180,7 +2180,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_045",
@@ -2195,37 +2195,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_046",
    "name": "medium_46_boss_boss_hole_through",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 106,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 130,
+   "ms": 296.5
   },
   {
    "id": "gv2_medium_047",
    "name": "medium_47_open_pocket_hole_through_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 246,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 268,
+   "ms": 299
   },
   {
    "id": "gv2_medium_048",
@@ -2240,7 +2240,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_049",
@@ -2285,22 +2285,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_052",
    "name": "medium_52_slot_slot_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 324,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 348,
+   "ms": 204.2
   },
   {
    "id": "gv2_medium_053",
@@ -2321,16 +2321,16 @@
    "id": "gv2_medium_054",
    "name": "medium_54_slot_slot_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 363,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 388,
+   "ms": 271.3
   },
   {
    "id": "gv2_medium_055",
@@ -2345,7 +2345,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.7
   },
   {
    "id": "gv2_medium_056",
@@ -2375,7 +2375,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_058",
@@ -2405,22 +2405,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.5
   },
   {
    "id": "gv2_medium_060",
    "name": "medium_60_boss_boss_hole_through",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 96,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 118,
+   "ms": 375.1
   },
   {
    "id": "gv2_medium_061",
@@ -2441,16 +2441,16 @@
    "id": "gv2_medium_062",
    "name": "medium_62_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 307,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 327,
+   "ms": 329.3
   },
   {
    "id": "gv2_medium_063",
@@ -2465,7 +2465,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.5
   },
   {
    "id": "gv2_medium_064",
@@ -2480,7 +2480,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_065",
@@ -2495,7 +2495,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_066",
@@ -2525,7 +2525,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.5
   },
   {
    "id": "gv2_medium_068",
@@ -2540,7 +2540,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.6
   },
   {
    "id": "gv2_medium_069",
@@ -2555,7 +2555,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_070",
@@ -2570,22 +2570,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_071",
    "name": "medium_71_hole_through_slot_step",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 206,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 227,
+   "ms": 364.2
   },
   {
    "id": "gv2_medium_072",
@@ -2615,37 +2615,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_074",
    "name": "medium_74_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 311,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 331,
+   "ms": 737.8
   },
   {
    "id": "gv2_medium_075",
    "name": "medium_75_slot_slot_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 306,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.6
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 328,
+   "ms": 204.5
   },
   {
    "id": "gv2_medium_076",
@@ -2660,7 +2660,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_077",
@@ -2675,7 +2675,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_078",
@@ -2705,7 +2705,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_080",
@@ -2720,7 +2720,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_081",
@@ -2735,7 +2735,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_082",
@@ -2750,7 +2750,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_083",
@@ -2765,7 +2765,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_084",
@@ -2780,37 +2780,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.5
   },
   {
    "id": "gv2_medium_085",
    "name": "medium_85_pocket_boss_hole_blind",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 274,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 299,
+   "ms": 544.3
   },
   {
    "id": "gv2_medium_086",
    "name": "medium_86_boss_boss_hole_through",
    "difficulty": "medium",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 4,
    "moves": 104,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 126,
+   "ms": 320.3
   },
   {
    "id": "gv2_medium_087",
@@ -2825,7 +2825,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_088",
@@ -2840,7 +2840,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_089",
@@ -2855,7 +2855,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.1
   },
   {
    "id": "gv2_medium_090",
@@ -2870,7 +2870,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_091",
@@ -2885,7 +2885,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_092",
@@ -2930,7 +2930,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_095",
@@ -2945,7 +2945,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_medium_096",
@@ -2960,7 +2960,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_097",
@@ -2975,7 +2975,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_medium_098",
@@ -3005,7 +3005,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.4
   },
   {
    "id": "gv2_medium_100",
@@ -3020,37 +3020,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.6
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_001",
    "name": "complex_1_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 396,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 418,
-   "ms": 630.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_002",
    "name": "complex_2_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 337,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 361,
-   "ms": 492.7
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_003",
@@ -3065,52 +3065,52 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 359,
-   "ms": 694.1
+   "ms": 500.8
   },
   {
    "id": "gv2_complex_004",
    "name": "complex_4_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 342,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 364,
-   "ms": 627.2
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_005",
    "name": "complex_5_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 421,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 449,
-   "ms": 564.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_006",
    "name": "complex_6_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 558,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 584,
-   "ms": 541.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_007",
@@ -3125,97 +3125,97 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 364,
-   "ms": 432.5
+   "ms": 286.6
   },
   {
    "id": "gv2_complex_008",
    "name": "complex_8_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 335,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 360,
-   "ms": 590.1
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.5
   },
   {
    "id": "gv2_complex_009",
    "name": "complex_9_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 369,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 394,
-   "ms": 394.7
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_010",
    "name": "complex_10_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 420,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 444,
-   "ms": 323.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_011",
    "name": "complex_11_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 548,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 576,
-   "ms": 419.5
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_012",
    "name": "complex_12_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 386,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 408,
-   "ms": 661.9
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_013",
    "name": "complex_13_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 365,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 388,
-   "ms": 464.6
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_014",
@@ -3230,67 +3230,67 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 464,
-   "ms": 350
+   "ms": 377.5
   },
   {
    "id": "gv2_complex_015",
    "name": "complex_15_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 441,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 469,
-   "ms": 409.4
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_016",
    "name": "complex_16_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 416,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 438,
-   "ms": 586.1
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_017",
    "name": "complex_17_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 335,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 359,
-   "ms": 626.3
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_018",
    "name": "complex_18_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": true,
+   "full_pipeline": false,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 328,
-   "sim": "PASS",
-   "nc_validator": "PASS",
-   "nc_lines": 357,
-   "ms": 513.8
+   "sim": "-",
+   "nc_validator": "-",
+   "nc_lines": 0,
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_019",
@@ -3305,7 +3305,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 482,
-   "ms": 500.3
+   "ms": 376.9
   },
   {
    "id": "gv2_complex_020",
@@ -3320,7 +3320,7 @@
    "sim": "PASS",
    "nc_validator": "PASS",
    "nc_lines": 368,
-   "ms": 416.4
+   "ms": 293.6
   },
   {
    "id": "gv2_complex_021",
@@ -3335,7 +3335,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.7
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_022",
@@ -3350,22 +3350,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_023",
    "name": "complex_23_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 338,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 363,
+   "ms": 580.9
   },
   {
    "id": "gv2_complex_024",
@@ -3395,22 +3395,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_026",
    "name": "complex_26_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 481,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 510,
+   "ms": 370.1
   },
   {
    "id": "gv2_complex_027",
@@ -3425,7 +3425,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.5
   },
   {
    "id": "gv2_complex_028",
@@ -3440,7 +3440,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_029",
@@ -3455,7 +3455,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_030",
@@ -3470,7 +3470,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_031",
@@ -3485,7 +3485,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_032",
@@ -3500,7 +3500,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_033",
@@ -3515,7 +3515,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_034",
@@ -3530,7 +3530,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_035",
@@ -3545,22 +3545,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_036",
    "name": "complex_36_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 438,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 463,
+   "ms": 397.6
   },
   {
    "id": "gv2_complex_037",
@@ -3575,22 +3575,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_038",
    "name": "complex_38_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 490,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 512,
+   "ms": 380.8
   },
   {
    "id": "gv2_complex_039",
@@ -3620,7 +3620,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_041",
@@ -3635,7 +3635,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_042",
@@ -3650,7 +3650,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_043",
@@ -3695,37 +3695,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_046",
    "name": "complex_46_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 355,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 384,
+   "ms": 219.5
   },
   {
    "id": "gv2_complex_047",
    "name": "complex_47_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 448,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 2.6
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 473,
+   "ms": 475.9
   },
   {
    "id": "gv2_complex_048",
@@ -3740,7 +3740,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_049",
@@ -3755,7 +3755,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_050",
@@ -3770,7 +3770,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_051",
@@ -3785,22 +3785,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.8
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_052",
    "name": "complex_52_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 454,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 476,
+   "ms": 380
   },
   {
    "id": "gv2_complex_053",
@@ -3815,22 +3815,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.5
   },
   {
    "id": "gv2_complex_054",
    "name": "complex_54_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 506,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 532,
+   "ms": 485.3
   },
   {
    "id": "gv2_complex_055",
@@ -3845,7 +3845,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.5
   },
   {
    "id": "gv2_complex_056",
@@ -3860,7 +3860,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_057",
@@ -3875,7 +3875,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.4
   },
   {
    "id": "gv2_complex_058",
@@ -3911,16 +3911,16 @@
    "id": "gv2_complex_060",
    "name": "complex_60_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 367,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 395,
+   "ms": 427.6
   },
   {
    "id": "gv2_complex_061",
@@ -3935,22 +3935,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_062",
    "name": "complex_62_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 462,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 484,
+   "ms": 421.2
   },
   {
    "id": "gv2_complex_063",
@@ -3980,7 +3980,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.2
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_065",
@@ -3995,7 +3995,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_066",
@@ -4010,7 +4010,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_067",
@@ -4025,7 +4025,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_068",
@@ -4070,22 +4070,22 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 1
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_071",
    "name": "complex_71_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 338,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 363,
+   "ms": 408
   },
   {
    "id": "gv2_complex_072",
@@ -4100,7 +4100,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.3
   },
   {
    "id": "gv2_complex_073",
@@ -4115,37 +4115,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_074",
    "name": "complex_74_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 338,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 360,
+   "ms": 215.5
   },
   {
    "id": "gv2_complex_075",
    "name": "complex_75_hole_through_hole_blind_pocket_boss_slot_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 7,
    "moves": 435,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.4
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 464,
+   "ms": 365.4
   },
   {
    "id": "gv2_complex_076",
@@ -4160,7 +4160,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_077",
@@ -4190,7 +4190,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_079",
@@ -4205,7 +4205,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_080",
@@ -4220,7 +4220,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_081",
@@ -4235,7 +4235,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_082",
@@ -4250,7 +4250,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_083",
@@ -4265,7 +4265,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_084",
@@ -4280,37 +4280,37 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_085",
    "name": "complex_85_pocket_hole_through_slot_step_boss",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 6,
    "moves": 363,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.3
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 387,
+   "ms": 447
   },
   {
    "id": "gv2_complex_086",
    "name": "complex_86_counterbore_hole_blind_slot_open_pocket_step",
    "difficulty": "complex",
-   "full_pipeline": false,
+   "full_pipeline": true,
    "pass": true,
    "problems": [],
    "dfm_blockers": 0,
    "ops": 5,
    "moves": 276,
-   "sim": "-",
-   "nc_validator": "-",
-   "nc_lines": 0,
-   "ms": 0.2
+   "sim": "PASS",
+   "nc_validator": "PASS",
+   "nc_lines": 302,
+   "ms": 172.3
   },
   {
    "id": "gv2_complex_087",
@@ -4340,7 +4340,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.8
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_089",
@@ -4355,7 +4355,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_090",
@@ -4370,7 +4370,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_091",
@@ -4385,7 +4385,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_092",
@@ -4400,7 +4400,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.5
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_093",
@@ -4415,7 +4415,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_094",
@@ -4430,7 +4430,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_095",
@@ -4445,7 +4445,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.1
   },
   {
    "id": "gv2_complex_096",
@@ -4460,7 +4460,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.4
+   "ms": 0.2
   },
   {
    "id": "gv2_complex_097",
@@ -4475,7 +4475,7 @@
    "sim": "-",
    "nc_validator": "-",
    "nc_lines": 0,
-   "ms": 0.3
+   "ms": 0.8
   },
   {
    "id": "gv2_complex_098",

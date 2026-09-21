@@ -103,10 +103,13 @@ export function planProcess(features: Feature[], options: ProcessPlanOptions = {
     reasons.push("偏好 DRILL_LAST：钻孔移到末段");
   }
 
-  const validation = validateOrder(order);
+  let validation = validateOrder(order);
   if (!validation.ok) {
     // 偏好与规则冲突 → 拒绝并回退规则顺序（violation 保留给上层）
     order = [...types].sort((a, b) => rank(a) - rank(b));
+    // P2-36：回退后必须重跑 validation，保证返回的 validation.ok 与最新 order 自洽
+    validation = validateOrder(order);
+    reasons.push("偏好与依赖规则冲突：已回退到规则默认顺序");
   }
 
   if (options.withOuterFinish && !order.includes("CONTOUR")) {

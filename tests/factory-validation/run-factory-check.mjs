@@ -25,7 +25,9 @@ function main() {
   for (const file of files) {
     const raw = readFileSync(join(GOLDEN_PARTS, file), "utf8");
     const part = parseWorkerOutput(raw);
-    const graph = buildFeatureGraph(part, "box");
+    // part_id 从零件文件名真实解析（去掉 .json 后缀），不再硬编码 "box"
+    const partId = file.replace(/\.json$/, "");
+    const graph = buildFeatureGraph(part, partId);
     const dfm = analyzeDfm(part, graph);
     const plan = planPart(part, graph.features, {});
     const profile = calibrateProfile(makeProfile("FANUC"), defaultCalibration("FANUC"));

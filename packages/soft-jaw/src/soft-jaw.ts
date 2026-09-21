@@ -76,14 +76,18 @@ export function toObj(jaw: SoftJawModel): string {
   const slotW = p.slot_width_mm;
   const slotD = p.slot_depth_mm;
   // 坐标系：X 为夹持深度方向，Y 沿零件长，Z 向上；槽从 X=w 面向内开
+  // 参数语义：槽深 slotD 沿 X 向（槽底平面 X = w - slotD）；槽宽 slotW 沿 Y 向（沿爪长居中布置）
+  const slotXBottom = w - slotD;
+  const slotY0 = (l - slotW) / 2;
+  const slotY1 = slotY0 + slotW;
   const vertices: [number, number, number][] = [
     // 爪体后壁（X=0）
     [0, 0, 0], [0, l, 0], [0, l, h], [0, 0, h],
-    // 前壁外侧（X=w，未开槽部分，Y<slot 起点 / Y>slot 终点）
-    [w, 0, 0], [w, slotD, 0], [w, slotD, h], [w, 0, h],
-    [w, l - slotW, 0], [w, l, 0], [w, l, h], [w, l - slotW, h],
-    // 槽底（X=slotD）
-    [slotD, slotD, 0], [slotD, l - slotW, 0], [slotD, l - slotW, h], [slotD, slotD, h],
+    // 前壁外侧（X=w，未开槽部分：Y∈[0,slotY0] 与 Y∈[slotY1,l]）
+    [w, 0, 0], [w, slotY0, 0], [w, slotY0, h], [w, 0, h],
+    [w, slotY1, 0], [w, l, 0], [w, l, h], [w, slotY1, h],
+    // 槽底（X=slotXBottom，Y∈[slotY0,slotY1]）
+    [slotXBottom, slotY0, 0], [slotXBottom, slotY1, 0], [slotXBottom, slotY1, h], [slotXBottom, slotY0, h],
   ];
   const v = vertices.map(([x, y, z]) => `v ${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`).join("\n");
   const faces = [

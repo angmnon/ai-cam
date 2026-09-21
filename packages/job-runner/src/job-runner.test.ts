@@ -25,6 +25,24 @@ vi.mock("@ai-cam/stock-sim", async (importOriginal) => {
   };
 });
 
+/**
+ * P2-29 POST 阶段校验：默认走真实 postProcess；用例内通过 post.override
+ * 把真实 NC 文本改写为空字符串/空行，验证 POST=FAIL 且 VALIDATE 短路。
+ */
+const post = vi.hoisted(() => ({
+  override: null as null | ((real: any) => any),
+}));
+vi.mock("@ai-cam/post-core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@ai-cam/post-core")>();
+  return {
+    ...actual,
+    postProcess: (...args: unknown[]) => {
+      const real = actual.postProcess(...(args as never));
+      return post.override ? post.override(real) : real;
+    },
+  };
+});
+
 describe("runJob（box）", () => {
   const raw = readFileSync(join(process.cwd(), "../../tests/golden/parts/box.json"), "utf8");
   const part = parseWorkerOutput(raw);
@@ -32,6 +50,7 @@ describe("runJob（box）", () => {
 
   afterEach(() => {
     sim.override = null;
+    post.override = null;
   });
 
   it("一键生成 Validated NC", () => {
@@ -85,5 +104,28 @@ describe("runJob（box）", () => {
     const validate = job.pipeline.find((p) => p.stage === "VALIDATE")!;
     expect(post.status).toBe("SKIPPED");
     expect(validate.status).toBe("SKIPPED");
+  });
+
+  it("P2-29：POST 输出空文本时 POST=FAIL，VALIDATE 短路 SKIPPED", () => {
+    // mock post 输出空字符串：text 为空、无任何行
+    post.override = (real) => ({ ...real, text: "", lines: [] });
+    const job = runJob({ part, partName: "box", features });
+    expect(job.pipeline.map((p) => p.stage)).toEqual(["PLAN", "SIMULATE", "POST", "VALIDATE"]);
+    const postStage = job.pipeline.find((p) => p.stage === "POST")!;
+    const validateStage = job.pipeline.find((p) => p.stage === "VALIDATE")!;
+    expect(postStage.status).toBe("FAIL");
+    expect(validateStage.status).toBe("SKIPPED");
+    expect(job.validated).toBe(false);
+    expect(job.reason).toMatch(/POST 阶段失败/);
+    expect(job.validation).toBeNull();
+    expect(job.nc!.text).toBe("");
+  });
+
+  it("P2-29：POST 仅含空白行时仍判 POST=FAIL（至少 1 行非空）", () => {
+    post.override = (real) => ({ ...real, text: "   \n\t\n", lines: ["   ", "\t"] });
+    const job = runJob({ part, partName: "box", features });
+    const postStage = job.pipeline.find((p) => p.stage === "POST")!;
+    expect(postStage.status).toBe("FAIL");
+    expect(job.validated).toBe(false);
   });
 });

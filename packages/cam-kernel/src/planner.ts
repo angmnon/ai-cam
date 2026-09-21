@@ -13,6 +13,8 @@
  */
 import type { Tool, Machine, Material, CuttingRule } from "@ai-cam/domain-schemas";
 import type { CamIR, CuttingParameters, Operation, ToolpathIR, ToolpathMove } from "@ai-cam/cam-ir";
+import { validateCamIR } from "@ai-cam/cam-ir";
+import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import type { Feature } from "@ai-cam/domain-schemas";
 import type { NormalizedPartModel } from "@ai-cam/geometry-schema";
 import { seedCuttingRules, seedMachines, seedMaterials, seedTools } from "@ai-cam/master-data";
@@ -67,7 +69,12 @@ export function selectTool(
     if (best) return { tool: best, reasons: [`钻头 ${best.diameter_mm}mm 最接近孔径 ${constraint.preferDrillOf}mm`] };
     const anyDrill = drills.sort((a, b) => a.diameter_mm - b.diameter_mm)[0];
     if (anyDrill) return { tool: anyDrill, reasons: [`无近径钻头，取最小钻头 ${anyDrill.diameter_mm}mm 兜底`] };
-    throw new Error("no DRILL tool in tool set");
+    throw new ApiError({
+      code: ErrorCodes.CAM_TOOL_REACH_FAILED,
+      message: "no DRILL tool in tool set",
+      stage: "cam-kernel.selectTool",
+      details: { opType, preferDrillOf: constraint.preferDrillOf },
+    });
   }
   const maxDia = constraint.maxDiameter ?? 8;
   const pool = candidates.filter((t) => t.type === "FLAT_END_MILL" && t.diameter_mm <= maxDia + 1e-9);
@@ -75,7 +82,12 @@ export function selectTool(
   if (pool.length === 0) {
     const any = [...candidates].filter((t) => t.type === "FLAT_END_MILL").sort((a, b) => a.diameter_mm - b.diameter_mm);
     if (any.length > 0) return { tool: any[0], reasons: ["无满足约束刀具，取最小平刀兜底"] };
-    throw new Error(`no FLAT_END_MILL tool (maxDia ${maxDia})`);
+    throw new ApiError({
+      code: ErrorCodes.CAM_TOOL_REACH_FAILED,
+      message: `no FLAT_END_MILL tool (maxDia ${maxDia})`,
+      stage: "cam-kernel.selectTool",
+      details: { opType, maxDiameter: maxDia },
+    });
   }
   return { tool: pool[0], reasons: [`直径 ${pool[0].diameter_mm}mm ≤ 约束 ${maxDia}mm`] };
 }
@@ -295,6 +307,18 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
     toolpaths,
     metadata: { generated_by: "cam-kernel", generator_version: CAM_KERNEL_VERSION, created_at: new Date().toISOString(), preferences: { engine: "deterministic", param_engine: PARAMETER_ENGINE_VERSION } },
   };
+
+  // 产出端校验（P2-09）：装配完成的 CamIR 必须通过 cam-ir 校验，否则视为内核产物非法。
+  const validation = validateCamIR(cam);
+  if (!validation.ok) {
+    const first = validation.issues.find((i) => i.severity === "ERROR");
+    throw new ApiError({
+      code: ErrorCodes.CAM_IR_INVALID,
+      message: first ? `CamIR 校验失败: ${first.message}` : "CamIR 校验失败",
+      stage: "cam-kernel.planPart",
+      details: { issues: validation.issues, hash: validation.hash },
+    });
+  }
 
   return { cam, toolpaths, parameterDecisions };
 }

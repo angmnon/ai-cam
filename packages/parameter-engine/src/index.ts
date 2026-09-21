@@ -7,6 +7,7 @@
  *       若 clamp 后低于规则下限则 reject（不可加工）。
  * 每个决策留痕（decisions[]），满足"排序/参数可解释、不突破硬约束"验收。
  */
+import { ErrorCodes, type ErrorCode } from "@ai-cam/error-codes";
 import { seedCuttingRules } from "@ai-cam/master-data";
 import type { CuttingParameters, OperationType } from "@ai-cam/cam-ir";
 import type { CuttingRule, Machine, Material, Tool } from "@ai-cam/domain-schemas";
@@ -187,6 +188,7 @@ export function mapCoolant(c: string | undefined): CuttingParameters["coolant"] 
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
 export class ParameterConstraintError extends Error {
+  readonly code: ErrorCode = ErrorCodes.CAM_PARAMETER_OUT_OF_RANGE;
   decisions: ConstraintDecision[];
   constructor(decisions: ConstraintDecision[]) {
     super(`参数约束不可满足：${decisions.filter((d) => d.action === "REJECTED").map((d) => `${d.parameter}=${d.requested.toFixed(1)}`).join(", ")}`);

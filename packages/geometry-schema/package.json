@@ -19,6 +19,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@ai-cam/error-codes": "workspace:*",
     "zod": "^3.25.0"
   },
   "devDependencies": {

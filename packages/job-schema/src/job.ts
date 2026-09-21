@@ -2,6 +2,7 @@
  * CAM Job 领域模型。
  * 状态集合对齐 PRD §47 与架构文档 §7；状态机见 state-machine.ts。
  */
+import { z } from "zod";
 
 export const JobStatuses = [
   "DRAFT",
@@ -25,53 +26,71 @@ export const JobStatuses = [
 
 export type JobStatus = (typeof JobStatuses)[number];
 
-export interface JobInput {
-  part_id: string;
-  machine_id: string;
-  controller_id: string;
-  material_id: string;
-  stock_policy?: "AUTO" | "MANUAL";
-  tool_policy?: {
-    mode?: "SPEED" | "BALANCED" | "TOOL_LIFE" | "SURFACE_QUALITY" | "MIN_TOOL_COUNT";
-    prefer_existing?: boolean;
-    max_tool_count?: number;
-  };
-  quality?: {
-    surface_priority?: "LOW" | "MEDIUM" | "HIGH";
-    dimension_tolerance?: "STANDARD" | "TIGHT";
-  };
-  axis_mode?: "3AXIS" | "INDEXED_4AXIS";
-  fixture_mode?: "AUTO" | "MANUAL" | "NONE";
-}
+// ---------- P2-02: zod schemas（唯一事实来源，job-runner 入口调用 parse 校验） ----------
+export const StockPolicySchema = z.enum(["AUTO", "MANUAL"]);
+export const ToolPolicyModeSchema = z.enum(["SPEED", "BALANCED", "TOOL_LIFE", "SURFACE_QUALITY", "MIN_TOOL_COUNT"]);
+export const SurfacePrioritySchema = z.enum(["LOW", "MEDIUM", "HIGH"]);
+export const DimensionToleranceSchema = z.enum(["STANDARD", "TIGHT"]);
+export const AxisModeSchema = z.enum(["3AXIS", "INDEXED_4AXIS"]);
+export const FixtureModeSchema = z.enum(["AUTO", "MANUAL", "NONE"]);
 
-export interface Job {
-  id: string;
-  organization_id: string;
-  project_id?: string;
-  part_revision_id?: string;
-  machine_id: string;
-  controller_id: string;
-  material_id: string;
-  status: JobStatus;
-  /** 乐观锁版本号（02_后端详细设计 §10） */
-  version: number;
-  planner_version?: string;
-  cam_engine_version?: string;
-  sim_version?: string;
-  post_version?: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  /** 幂等键：job_id + input_hash */
-  input_hash?: string;
-  failure?: {
-    code: string;
-    message: string;
-    stage?: string;
-    retryable: boolean;
-    occurred_at: string;
-  };
-}
+export const JobInputSchema = z.object({
+  part_id: z.string().min(1),
+  machine_id: z.string().min(1),
+  controller_id: z.string().min(1),
+  material_id: z.string().min(1),
+  stock_policy: StockPolicySchema.optional(),
+  tool_policy: z
+    .object({
+      mode: ToolPolicyModeSchema.optional(),
+      prefer_existing: z.boolean().optional(),
+      max_tool_count: z.number().int().positive().optional(),
+    })
+    .optional(),
+  quality: z
+    .object({
+      surface_priority: SurfacePrioritySchema.optional(),
+      dimension_tolerance: DimensionToleranceSchema.optional(),
+    })
+    .optional(),
+  axis_mode: AxisModeSchema.optional(),
+  fixture_mode: FixtureModeSchema.optional(),
+});
+export type JobInput = z.infer<typeof JobInputSchema>;
+
+/** Job 持久化记录（JobRecord）关键字段 zod schema */
+export const JobRecordSchema = z.object({
+  id: z.string().min(1),
+  organization_id: z.string().min(1),
+  project_id: z.string().optional(),
+  part_revision_id: z.string().optional(),
+  machine_id: z.string().min(1),
+  controller_id: z.string().min(1),
+  material_id: z.string().min(1),
+  status: z.enum(JobStatuses),
+  version: z.number().int().nonnegative(),
+  planner_version: z.string().optional(),
+  cam_engine_version: z.string().optional(),
+  sim_version: z.string().optional(),
+  post_version: z.string().optional(),
+  created_by: z.string().min(1),
+  created_at: z.string(),
+  updated_at: z.string(),
+  input_hash: z.string().optional(),
+  failure: z
+    .object({
+      code: z.string(),
+      message: z.string(),
+      stage: z.string().optional(),
+      retryable: z.boolean(),
+      occurred_at: z.string(),
+    })
+    .optional(),
+});
+export type JobRecord = z.infer<typeof JobRecordSchema>;
+
+/** @deprecated 兼容旧名；新代码请使用 JobRecord / JobRecordSchema */
+export type Job = JobRecord;
 
 /** Job 输入指纹，用于幂等与结果可复现 */
 export function jobInputHash(input: JobInput): string {

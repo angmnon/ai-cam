@@ -36,19 +36,28 @@ function assertDialectFeatures(dialect: ControllerProfile["dialect"], text: stri
   switch (dialect) {
     case "FANUC":
       expect(text).toMatch(/G43 H\d+/);
+      // P2-22：Z 回零 + X/Y 回零（G28 第一参考点）
       expect(text).toContain("G91 G28 Z0.");
+      expect(text).toContain("G28 X0 Y0");
       break;
     case "SYNTEC":
       expect(text).not.toMatch(/G43 H\d+/);
       expect(text).toContain("G91 G28 Z0.");
+      expect(text).toContain("G28 X0 Y0");
       break;
     case "MITSUBISHI":
       expect(text).toMatch(/G43 H\d+/);
+      // P2-22：三菱用 G30 第二参考点（Z + X/Y）
       expect(text).toContain("G91 G30 Z0.");
+      expect(text).toContain("G30 X0 Y0");
       expect(text).not.toContain("G91 G28 Z0.");
+      expect(text).not.toContain("G28 X0 Y0");
       break;
     case "ISO_GENERIC":
       expect(text).not.toMatch(/G43 H\d+/);
+      // P2-22：ISO 通用同样 G28 回零族
+      expect(text).toContain("G91 G28 Z0.");
+      expect(text).toContain("G28 X0 Y0");
       break;
   }
 }

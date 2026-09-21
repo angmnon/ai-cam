@@ -15,6 +15,7 @@ function baseIR(): CamIR {
       controller_id: "c_fanuc",
       axis_config: "3AXIS",
       max_spindle_rpm: 12000,
+      max_feed: 5000,
     },
     material: { material_id: "mat_6061", grade: "T6" },
     stock: { id: "stock_1", kind: "BOX", dimensions: { x: 100, y: 80, z: 40 } },
@@ -165,5 +166,98 @@ describe("cam-ir", () => {
     expect(cs.confidence).toBe(0.82);
     expect(cs.changes[0].id.startsWith("chg_")).toBe(true);
     expect(canonicalJson({ a: 1, b: 2 })).toBe(canonicalJson({ b: 2, a: 1 }));
+  });
+
+  // ---- P2-03 硬边界 ----
+  it("P2-03 feed 为负被拒绝（schema .positive）", () => {
+    const ir = baseIR();
+    ir.operations[0].parameters.feed_mm_min = -100;
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.severity === "ERROR")).toBe(true);
+  });
+
+  it("P2-03 feed 超过机床 max_feed 被拒绝（PARAM_FEED）", () => {
+    const ir = baseIR();
+    ir.operations[0].parameters.feed_mm_min = 99999;
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "PARAM_FEED")).toBe(true);
+  });
+
+  it("P2-03 safe_z 低于毛坯顶面被拒绝（PARAM_SAFE_Z）", () => {
+    const ir = baseIR();
+    // stock z = 40；safe_z = 20 在 stock 顶面之下
+    ir.operations[0].safe_z_mm = 20;
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "PARAM_SAFE_Z")).toBe(true);
+  });
+
+  it("P2-03 safe_z 为负被拒绝（PARAM_SAFE_Z）", () => {
+    const ir = baseIR();
+    ir.operations[0].safe_z_mm = -5;
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "PARAM_SAFE_Z")).toBe(true);
+  });
+
+  // ---- P2-04 引用 + 交叉校验 ----
+  it("P2-04 toolpath 引用悬空 operation_id 被拒绝（REF_OP）", () => {
+    const ir = baseIR();
+    ir.toolpaths = [
+      {
+        operation_id: "op_does_not_exist",
+        toolpath_id: "tp1",
+        moves: [{ type: "RAPID", x: 0, y: 0, z: 50 }],
+        engine_version: "test",
+        move_count: 1,
+      },
+    ];
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "REF_OP")).toBe(true);
+  });
+
+  it("P2-04 move_count 与 moves.length 不一致被拒绝（COUNT_MISMATCH）", () => {
+    const ir = baseIR();
+    ir.toolpaths = [
+      {
+        operation_id: "op1",
+        toolpath_id: "tp1",
+        moves: [
+          { type: "RAPID", x: 0, y: 0, z: 50 },
+          { type: "LINEAR", x: 10, y: 10, z: 5 },
+        ],
+        engine_version: "test",
+        move_count: 99,
+      },
+    ];
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "COUNT_MISMATCH")).toBe(true);
+  });
+
+  // ---- P2-05 轴枚举对齐 ----
+  it("P2-05 可构造 4AXIS IR 且 hash 稳定", () => {
+    const ir = baseIR();
+    ir.machine.axis_config = "4AXIS";
+    expect(CamIR.safeParse(ir).success).toBe(true);
+    const h1 = camIrHash(ir);
+    const ir2 = baseIR();
+    ir2.machine.axis_config = "4AXIS";
+    expect(camIrHash(ir2)).toBe(h1);
+    // 4AXIS 与 3AXIS 的 hash 必须不同
+    expect(h1).not.toBe(camIrHash(baseIR()));
+    // canonicalJson 保留 axis_config
+    expect(canonicalJson(ir)).toContain('"axis_config":"4AXIS"');
+  });
+
+  it("P2-05 可构造 5AXIS IR", () => {
+    const ir = baseIR();
+    ir.machine.axis_config = "5AXIS";
+    expect(CamIR.safeParse(ir).success).toBe(true);
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(true);
   });
 });

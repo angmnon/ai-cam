@@ -21,6 +21,7 @@
   "dependencies": {
     "@ai-cam/dfm": "workspace:*",
     "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/error-codes": "workspace:*",
     "@ai-cam/geometry-schema": "workspace:*"
   },
   "devDependencies": {

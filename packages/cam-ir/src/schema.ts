@@ -52,7 +52,8 @@ export const MachineProfile = z.object({
   machine_name: z.string().optional(),
   controller_id: z.string(),
   controller_name: z.string().optional(),
-  axis_config: z.enum(["3AXIS", "INDEXED_4AXIS"]),
+  // P2-05: 与 domain-schemas MachineAxisConfig 对齐，接受 3/4/5 轴三值
+  axis_config: z.enum(["3AXIS", "4AXIS", "5AXIS"]),
   travel: z
     .object({ x: z.number(), y: z.number(), z: z.number() })
     .optional(),

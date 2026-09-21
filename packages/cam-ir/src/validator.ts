@@ -44,6 +44,7 @@ export function validateCamIR(input: unknown): CamIRValidationResult {
   const ir: CamIRType = parsed.data;
   const setupIds = new Set(ir.setups.map((s) => s.id));
   const toolIds = new Set(ir.tools.map((t) => t.tool_id));
+  const operationIds = new Set(ir.operations.map((o) => o.id));
 
   // 引用校验：operation.setup_id / tool_id
   for (const op of ir.operations) {
@@ -76,6 +77,75 @@ export function validateCamIR(input: unknown): CamIRValidationResult {
           `spindle ${op.parameters.spindle_speed_rpm} exceeds machine max ${maxRpm}`,
         ),
       );
+    }
+  }
+
+  // P2-03 硬边界：进给率不超过机床 max_feed（feed>0 由 schema .positive() 保证）
+  for (const op of ir.operations) {
+    const maxFeed = ir.machine.max_feed;
+    if (maxFeed !== undefined && op.parameters.feed_mm_min > maxFeed) {
+      issues.push(
+        refIssue(
+          "ERROR",
+          "PARAM_FEED",
+          `operations.${op.id}.parameters.feed_mm_min`,
+          `feed_mm_min ${op.parameters.feed_mm_min} exceeds machine max_feed ${maxFeed}`,
+        ),
+      );
+    }
+  }
+
+  // P2-03 硬边界：safe_z_mm 必须高于毛坯顶面（BOX 毛坯 z 维度）
+  const stockTopZ = ir.stock.dimensions?.z;
+  if (stockTopZ !== undefined) {
+    for (const op of ir.operations) {
+      if (op.safe_z_mm === undefined) continue;
+      if (op.safe_z_mm < 0) {
+        issues.push(
+          refIssue(
+            "ERROR",
+            "PARAM_SAFE_Z",
+            `operations.${op.id}.safe_z_mm`,
+            `safe_z_mm ${op.safe_z_mm} must be >= 0`,
+          ),
+        );
+      } else if (op.safe_z_mm <= stockTopZ) {
+        issues.push(
+          refIssue(
+            "ERROR",
+            "PARAM_SAFE_Z",
+            `operations.${op.id}.safe_z_mm`,
+            `safe_z_mm ${op.safe_z_mm} must be above stock top z=${stockTopZ}`,
+          ),
+        );
+      }
+    }
+  }
+
+  // P2-04 引用校验：toolpaths[].operation_id 必须存在
+  if (Array.isArray(ir.toolpaths)) {
+    for (const tp of ir.toolpaths) {
+      if (!operationIds.has(tp.operation_id)) {
+        issues.push(
+          refIssue(
+            "ERROR",
+            "REF_OP",
+            `toolpaths.${tp.toolpath_id}.operation_id`,
+            `operation_id "${tp.operation_id}" not found in operations`,
+          ),
+        );
+      }
+      // P2-04 交叉校验：move_count 必须与实际 moves.length 一致
+      if (tp.move_count !== tp.moves.length) {
+        issues.push(
+          refIssue(
+            "ERROR",
+            "COUNT_MISMATCH",
+            `toolpaths.${tp.toolpath_id}.move_count`,
+            `move_count ${tp.move_count} != moves.length ${tp.moves.length}`,
+          ),
+        );
+      }
     }
   }
 

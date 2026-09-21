@@ -122,7 +122,7 @@ export function buildJobReport(input: { cam: CamIR; simulation: SimulationReport
         feed_mm_min: op.parameters.feed_mm_min,
         stepdown_mm: op.parameters.stepdown_mm,
         coolant: op.parameters.coolant,
-        move_count: tp?.move_count ?? 0,
+        move_count: tp?.moves.length ?? 0,
         feature_ids: op.feature_ids,
       };
     }),

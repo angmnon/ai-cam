@@ -60,21 +60,45 @@ export class ModelGateway {
     throw new Error(`no provider for task "${task}" (${[...this.providers.keys()].join(", ") || "none registered"})`);
   }
 
+  /** 单次调用：带超时竞争，成功/失败均清理 timer（P2-35） */
+  private async callWithTimeout(provider: ModelProvider, req: CompletionRequest): Promise<CompletionResult> {
+    const timeoutMs = this.timeoutMs;
+    if (timeoutMs <= 0) return provider.complete(req);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeoutPromise = new Promise<never>((_, rej) => {
+        timer = setTimeout(() => rej(new Error(`gateway timeout after ${timeoutMs}ms`)), timeoutMs);
+      });
+      return await Promise.race([provider.complete(req), timeoutPromise]);
+    } finally {
+      // P2-35：成功路径也必须 clearTimeout，避免悬挂 timer / 未处理拒绝
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+
   async complete(req: CompletionRequest): Promise<CompletionResult & { route: RouteDecision }> {
     const decision = this.decide(req.task);
-    const provider = this.providers.get(decision.provider_id)!;
-    const timeoutMs = this.timeoutMs;
-    let attempt = 0;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      attempt += 1;
+    // P2-35：真回退链 —— 按注册顺序轮换 provider，从决策 provider 开始
+    const ordered = this.listProviders();
+    if (ordered.length === 0) throw new Error(`no provider for task "${req.task}"`);
+    const startIdx = Math.max(0, ordered.findIndex((p) => p.spec.id === decision.provider_id));
+    const chain = ordered.slice(startIdx).concat(ordered.slice(0, startIdx));
+
+    let lastErr: unknown;
+    for (let i = 0; i < chain.length; i++) {
+      const provider = chain[i];
       try {
-        const timer = timeoutMs > 0 ? new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`gateway timeout after ${timeoutMs}ms`)), timeoutMs)) : null;
-        const result = timer ? await Promise.race([provider.complete(req), timer]) : await provider.complete(req);
-        return { ...result, route: decision };
+        const result = await this.callWithTimeout(provider, req);
+        const route: RouteDecision =
+          i === 0
+            ? decision
+            : { ...decision, provider_id: provider.spec.id, reason: `${decision.reason} → fallback provider ${provider.spec.id}` };
+        return { ...result, route };
       } catch (err) {
-        if (attempt > this.maxRetries) throw err;
+        // P2-35：不抛错，换到注册顺序的下一 provider；全部失败后才抛
+        lastErr = err;
       }
     }
+    throw lastErr;
   }
 }

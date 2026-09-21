@@ -120,4 +120,43 @@ describe("analyzeDfm", () => {
     ]);
     expect(analyzeDfm(part, graph).items.find((i) => i.code === "DFM-0101")?.severity).toBe("INFO");
   });
+
+  it("尖角型腔（corner_radius_mm=0）→ WARNING DFM-0105", () => {
+    const part = partWithFaces();
+    const graph = graphWith([
+      feature({
+        type: "POCKET",
+        bbox: bbox([30, 20, 10], [50, 40, 20]),
+        dimensions: { length_mm: 20, width_mm: 20, depth_mm: 10, corner_radius_mm: 0 },
+      }),
+    ]);
+    const report = analyzeDfm(part, graph);
+    const item = report.items.find((i) => i.code === "DFM-0105");
+    expect(item?.severity).toBe("WARNING");
+    expect(item?.details?.corner_radius_mm).toBe(0);
+  });
+
+  it("圆角型腔（corner_radius_mm=3）→ 不报 DFM-0105（反例）", () => {
+    const part = partWithFaces();
+    const graph = graphWith([
+      feature({
+        type: "POCKET",
+        bbox: bbox([30, 20, 10], [50, 40, 20]),
+        dimensions: { length_mm: 20, width_mm: 20, depth_mm: 10, corner_radius_mm: 3 },
+      }),
+    ]);
+    expect(analyzeDfm(part, graph).items.some((i) => i.code === "DFM-0105")).toBe(false);
+  });
+
+  it("v1 几何无法解析（无圆角半径尺寸）→ 返回 null，报告不包含 DFM-0105", () => {
+    const part = partWithFaces();
+    const graph = graphWith([
+      feature({
+        type: "POCKET",
+        bbox: bbox([30, 20, 10], [50, 40, 20]),
+        dimensions: { length_mm: 20, width_mm: 20, depth_mm: 10 },
+      }),
+    ]);
+    expect(analyzeDfm(part, graph).items.some((i) => i.code === "DFM-0105")).toBe(false);
+  });
 });

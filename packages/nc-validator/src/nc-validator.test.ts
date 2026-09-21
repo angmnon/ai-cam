@@ -41,6 +41,39 @@ describe("parser", () => {
     expect(nc.points[0]).toMatchObject({ x: 0, y: 0, z: 5, g: "G00" });
     expect(nc.points[1]).toMatchObject({ x: 30, y: 10, z: -10, g: "G01" });
   });
+
+  it("P2-24 G81 钻孔循环：循环行/模态孔位/G80 取消均不产点，断言点数与完整点序列", () => {
+    const nc = parseNc(
+      "N10 G21 G17 G90 G94\n" +
+        "N20 G00 X0. Y0. Z5.\n" + // 运动点 1
+        "N30 G81 Z-5. R2. F100\n" + // 循环调用行：不产点
+        "N40 X10. Y0.\n" + // 模态孔位：不产点
+        "N50 X20. Y10.\n" + // 模态孔位：不产点
+        "N60 G80\n" + // 取消循环：不产点
+        "N70 G01 X30. Y20. F200\n" + // 运动点 2（Z 延续自循环内 -5）
+        "N80 M30\n",
+    );
+    expect(nc.errors).toEqual([]); // G81/G80 不被当作未知 G
+    expect(nc.points.length).toBe(2);
+    expect(nc.points[0]).toEqual({ x: 0, y: 0, z: 5, g: "G00", lineNo: 2 });
+    expect(nc.points[1]).toEqual({ x: 30, y: 20, z: -5, g: "G01", lineNo: 7 });
+  });
+
+  it("P2-24 G73 啄钻循环：循环行/模态孔位/G80 取消均不产点，断言点数与完整点序列", () => {
+    const nc = parseNc(
+      "N10 G21 G17 G90 G94\n" +
+        "N20 G00 X0. Y0. Z5.\n" + // 运动点 1
+        "N30 G73 Z-20. R2. Q3. F100\n" + // G73 啄钻循环调用行：不产点
+        "N40 X5. Y5.\n" + // 模态孔位：不产点
+        "N50 G80\n" + // 取消循环：不产点
+        "N60 G01 X10. Y10. F200\n" + // 运动点 2（Z 延续自循环内 -20）
+        "N70 M30\n",
+    );
+    expect(nc.errors).toEqual([]); // G73/G80 不被当作未知 G
+    expect(nc.points.length).toBe(2);
+    expect(nc.points[0]).toEqual({ x: 0, y: 0, z: 5, g: "G00", lineNo: 2 });
+    expect(nc.points[1]).toEqual({ x: 10, y: 10, z: -20, g: "G01", lineNo: 6 });
+  });
 });
 
 describe("validateNc（box 全流程）", () => {
@@ -103,5 +136,29 @@ describe("validateNc（box 全流程）", () => {
     for (let i = 0; i < ncPts.length; i++) {
       expect(Math.hypot(ncPts[i].x - irPts[i].x, ncPts[i].y - irPts[i].y, ncPts[i].z - irPts[i].z)).toBeLessThan(1e-2);
     }
+  });
+
+  it("P2-25 ① 代码行含 M03 S<rpm> → 主轴校验通过（无 SPINDLE_MISMATCH）", () => {
+    const rep = validateNc({ cam, ncText: nc.text, programNumber: nc.program_number, simulation: sim });
+    const l2 = rep.layers.find((l) => l.layer === "SEMANTIC")!;
+    expect(l2.checks.some((c) => c.code === "SPINDLE_MISMATCH")).toBe(false);
+  });
+
+  it("P2-25 ② 无 M03/M04（改为 M05）→ SPINDLE_MISMATCH 报错", () => {
+    const bad = nc.text.replace(/M03 S\d+/g, "M05"); // 两处主轴行都去掉 M03/M04
+    expect(bad).not.toBe(nc.text);
+    const rep = validateNc({ cam, ncText: bad, programNumber: nc.program_number, simulation: sim });
+    const l2 = rep.layers.find((l) => l.layer === "SEMANTIC")!;
+    expect(l2.checks.filter((c) => c.code === "SPINDLE_MISMATCH").length).toBeGreaterThan(0);
+  });
+
+  it("P2-25 ③ M03 S<rpm> 写在行内括号注释里 → 不计命中，SPINDLE_MISMATCH 报错", () => {
+    // 把主轴行改为注释形式：N30 M03 S5968  →  N30 (M03 S5968)
+    const bad = nc.text.replace(/M03 S\d+/g, (m) => `(${m})`);
+    expect(bad).not.toBe(nc.text);
+    const rep = validateNc({ cam, ncText: bad, programNumber: nc.program_number, simulation: sim });
+    const l2 = rep.layers.find((l) => l.layer === "SEMANTIC")!;
+    // 注释里的 M03/S 不应被识别 → 每个 op 都报 SPINDLE_MISMATCH
+    expect(l2.checks.filter((c) => c.code === "SPINDLE_MISMATCH").length).toBeGreaterThan(0);
   });
 });

@@ -97,11 +97,25 @@ export function validateNc(input: {
   if (!/M30/.test(text)) l2.push({ code: "NO_M30", severity: "ERROR", message: "缺少程序结束 M30", layer: "SEMANTIC" });
   // IR 一致性：每 op 主轴
   const toolpaths = new Map<string, ToolpathIR>((cam.toolpaths ?? []).map((tp) => [tp.operation_id, tp]));
+  // P2-25：主轴校验改为基于解析行的 G/M 字匹配——遍历解析后的行，
+  // 跳过括号/分号整行注释并剥离行内括号/分号注释；区分 M03 正转 / M04 反转。
+  // 不再用全文本正则扫描（注释里的 M03/S 不再误命中）。
+  const spindleCmds: Array<{ dir: "M03" | "M04"; s: number | null; lineNo: number }> = [];
+  for (const line of parsed.lines) {
+    if (/^\s*[;(%]/.test(line.raw)) continue; // 整行注释（括号/分号）或 % 行
+    const codeOnly = line.raw.replace(/\([^)]*\)/g, "").replace(/;.*$/, ""); // 剥离行内注释
+    const sMatch = /S([+-]?(?:\d+\.?\d*|\.\d+))/.exec(codeOnly);
+    const s = sMatch ? Number(sMatch[1]) : null;
+    for (const m of codeOnly.match(/M\d{2}/g) ?? []) {
+      if (m === "M03" || m === "M04") spindleCmds.push({ dir: m as "M03" | "M04", s, lineNo: line.lineNo });
+    }
+  }
   for (const op of cam.operations) {
     if (!toolpaths.has(op.id)) continue;
     const s = Math.round(op.parameters.spindle_speed_rpm);
-    if (!new RegExp(`M03 S${s}`).test(text)) l2.push({ code: "SPINDLE_MISMATCH", severity: "ERROR", message: `op ${op.id} 主轴 ${s}rpm 未出现在 NC`, layer: "SEMANTIC" });
-    // 运动点一致：NC 重建点序列 vs IR moves 目标点
+    // IR 主轴转速恒为正 → 期望正转 M03；M04 为反转，方向不符不计数
+    const found = spindleCmds.some((c) => c.dir === "M03" && c.s === s);
+    if (!found) l2.push({ code: "SPINDLE_MISMATCH", severity: "ERROR", message: `op ${op.id} 正转主轴 M03 S${s}rpm 未在 NC 代码行中找到（M04 为反转，注释行不计）`, layer: "SEMANTIC" });
   }
   // NC 运动点 vs IR 点序列（确定性生成应完全一致）；P1-09 同时比对 G 代码类型
   const ncPts = parsed.points.map((p) => ({ x: p.x, y: p.y, z: p.z, g: p.g }));

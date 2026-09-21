@@ -70,6 +70,23 @@ export function runJob(input: RunJobInput): JobResult {
   // 3. post（post-core）
   const profile = makeProfile(input.dialect ?? "FANUC");
   const nc = postProcess(cam, profile);
+
+  // P2-29：POST 阶段真实校验 —— NC 文本非空且至少含 1 行非空，否则 POST=FAIL 并短路 VALIDATE。
+  const postNonEmptyLines = nc.lines.filter((l) => l.trim().length > 0);
+  const postOk = nc.text.trim().length > 0 && postNonEmptyLines.length > 0;
+  if (!postOk) {
+    pipeline.push({ stage: "POST", status: "FAIL", detail: `post 输出为空（text 长度=${nc.text.length} / ${nc.lines.length} 行 / 非空 ${postNonEmptyLines.length} 行）` });
+    pipeline.push({ stage: "VALIDATE", status: "SKIPPED", detail: "POST 输出为空，VALIDATE 阶段被阻断" });
+    return {
+      cam,
+      simulation,
+      nc,
+      validation: null,
+      pipeline,
+      validated: false,
+      reason: `POST 阶段失败：NC 文本为空（post 输出 ${nc.lines.length} 行 / 非空 ${postNonEmptyLines.length} 行）`,
+    };
+  }
   pipeline.push({ stage: "POST", status: "PASS", detail: `${nc.program_number} / ${nc.lines.length} 行 / ${nc.metadata.tool_changes} 次换刀` });
 
   // 4. validate（nc-validator 四层）

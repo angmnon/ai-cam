@@ -35,4 +35,33 @@ describe("参数化软爪", () => {
     const expected = 90 * 35 * 50 - 15 * 50 * 50;
     expect(estimateVolume(jaw)).toBeCloseTo(expected, 6);
   });
+
+  it("槽口坐标：槽深沿 X、槽宽沿 Y（Y 起始不得误用 slotD）", () => {
+    const jaw = designSoftJaw({ partBBox: box, clampDir: "X", clampDepthMm: 15, wallThicknessMm: 20 });
+    const { width_mm: w, length_mm: l, height_mm: h, slot_width_mm: slotW, slot_depth_mm: slotD } = jaw.params;
+    const verts = toObj(jaw)
+      .split("\n")
+      .filter((ln) => ln.startsWith("v "))
+      .map((ln) => ln.slice(2).trim().split(/\s+/).map(Number));
+    expect(verts.length).toBe(16);
+    // 外廓包络：X∈[0,w]，Y∈[0,l]，Z∈[0,h]
+    const xs = verts.map((v) => v[0]);
+    expect(Math.min(...xs)).toBeCloseTo(0, 6);
+    expect(Math.max(...xs)).toBeCloseTo(w, 6);
+    // 槽深沿 X：槽底平面在 X = w - slotD（从前壁 X=w 向内切 slotD）
+    const slotXBottom = w - slotD;
+    expect(w - slotXBottom).toBeCloseTo(slotD, 6);
+    // 槽底平面顶点恰位于 X = slotXBottom
+    const bottom = verts.filter((v) => Math.abs(v[0] - slotXBottom) < 1e-6);
+    expect(bottom.length).toBe(4);
+    // 槽宽沿 Y：槽口 Y 区间宽度恰为 slotW，且居中
+    const yEdges = bottom.map((v) => v[1]);
+    const yLo = Math.min(...yEdges);
+    const yHi = Math.max(...yEdges);
+    expect(yHi - yLo).toBeCloseTo(slotW, 6);
+    expect(yLo).toBeCloseTo((l - slotW) / 2, 6);
+    expect(yHi).toBeCloseTo((l + slotW) / 2, 6);
+    // 回归旧 bug：slotD 不得作为槽口 Y 起始坐标
+    expect(yLo).not.toBeCloseTo(slotD, 6);
+  });
 });

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ModelGateway } from "./gateway.js";
 import { createMockProvider, MOCK_PROVIDER_SPEC } from "./mock.js";
 import { buildPlannerPrompt, buildExplainPrompt, PROMPT_VERSION } from "./prompt.js";
-import { estimateTokens } from "./provider.js";
+import { estimateTokens, type CompletionRequest, type CompletionResult, type ModelProvider, type ModelSpec } from "./provider.js";
 
 describe("ModelGateway（P4-1）", () => {
   const gw = new ModelGateway({}).register(createMockProvider());
@@ -76,5 +76,66 @@ describe("Prompt 模板（P4-2）", () => {
 describe("estimateTokens", () => {
   it("中英文混排确定性估算", () => {
     expect(estimateTokens("hello world 你好")).toBe(4);
+  });
+});
+
+describe("ModelGateway 回退链（P2-35）", () => {
+  const specOf = (id: string): ModelSpec => ({
+    id,
+    vendor: "mock",
+    model: id,
+    tasks: ["planner"],
+    cost_weight: 0,
+    latency_ms: 1,
+  });
+  const okResult = (id: string): CompletionResult => ({
+    content: `{"from":"${id}"}`,
+    model_id: id,
+    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    latency_ms: 1,
+  });
+  /** 注入式假 provider：complete 行为可定制，并记录被调次数 */
+  const fakeProvider = (id: string, behavior: () => Promise<CompletionResult>) => {
+    const state = { calls: 0 };
+    const provider: ModelProvider = {
+      spec: specOf(id),
+      async complete(_req: CompletionRequest): Promise<CompletionResult> {
+        state.calls += 1;
+        return behavior();
+      },
+    };
+    return { provider, state };
+  };
+
+  it("provider1 失败 → 自动换 provider2 成功，断言 provider2 被调", async () => {
+    const p1 = fakeProvider("p1", () => Promise.reject(new Error("p1 down")));
+    const p2 = fakeProvider("p2", () => Promise.resolve(okResult("p2")));
+    const gw = new ModelGateway({ routes: { planner: "p1" } }).register(p1.provider).register(p2.provider);
+
+    const res = await gw.complete({ messages: [{ role: "user", content: "x" }], task: "planner" });
+    expect(JSON.parse(res.content).from).toBe("p2");
+    expect(p2.state.calls).toBe(1);
+    expect(res.route.provider_id).toBe("p2");
+    expect(res.route.reason).toContain("fallback");
+  });
+
+  it("provider1 超时（pending）→ 换 provider2 成功", async () => {
+    // 永不 resolve 的 promise，由 gateway 超时 timer 触发拒绝
+    const p1 = fakeProvider("p1", () => new Promise<CompletionResult>(() => {}));
+    const p2 = fakeProvider("p2", () => Promise.resolve(okResult("p2")));
+    const gw = new ModelGateway({ routes: { planner: "p1" }, timeout_ms: 20 }).register(p1.provider).register(p2.provider);
+
+    const res = await gw.complete({ messages: [{ role: "user", content: "x" }], task: "planner" });
+    expect(JSON.parse(res.content).from).toBe("p2");
+    expect(p2.state.calls).toBe(1);
+  });
+
+  it("全部 provider 失败 → 抛出最后一个错误", async () => {
+    const p1 = fakeProvider("p1", () => Promise.reject(new Error("p1 down")));
+    const p2 = fakeProvider("p2", () => Promise.reject(new Error("p2 down")));
+    const gw = new ModelGateway({ routes: { planner: "p1" } }).register(p1.provider).register(p2.provider);
+
+    await expect(gw.complete({ messages: [{ role: "user", content: "x" }], task: "planner" })).rejects.toThrow("p2 down");
+    expect(p2.state.calls).toBe(1);
   });
 });

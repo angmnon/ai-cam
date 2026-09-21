@@ -126,7 +126,7 @@ export function analyzeDfm(
       if (minR != null && minR < 1e-6) {
         push("WARNING", "DFM-0105", `特征 ${f.id}（${f.type}）内角为尖角（无圆角），需 ≥ 刀具半径的圆角半径`, {
           feature_ids: [f.id],
-          details: { corner_radius_mm: 0 },
+          details: { corner_radius_mm: minR },
         });
       }
     }
@@ -182,9 +182,31 @@ function minEdgeDistance(
   return Math.min(dx, dy);
 }
 
-/** 内角圆角半径：v1 统一按尖角报告（源面为平面构成） */
-function cornerRadiusOf(_f: Feature): number | null {
-  return 0;
+/**
+ * 型腔/槽最小内圆角半径（mm）。
+ * v1 Feature 仅携带 bbox + dimensions 数值字典，不含轮廓拓扑边；
+ * 若识别器未在 dimensions 中给出内圆角半径，则视为 v1 几何无法解析，
+ * 返回 null —— 报告层跳过 DFM-0105，避免对每个型腔误报尖角。
+ */
+const CORNER_RADIUS_KEYS = [
+  "corner_radius_mm",
+  "inner_corner_radius_mm",
+  "fillet_radius_mm",
+  "inner_radius_mm",
+  "r_mm",
+] as const;
+
+function cornerRadiusOf(f: Feature): number | null {
+  const dims = f.dimensions;
+  if (!dims) return null;
+  let min: number | null = null;
+  for (const k of CORNER_RADIUS_KEYS) {
+    const v = dims[k];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0) {
+      min = min == null ? v : Math.min(min, v);
+    }
+  }
+  return min;
 }
 
 function fmt(v: number): string {

@@ -51,8 +51,8 @@ describe("postProcess（box 样本）", () => {
     }
     // 冷却：首 op FLOOD → M08 存在
     expect(lines.some((l) => /M08/.test(l))).toBe(true);
-    // 程序尾
-    const tail = lines.slice(-6).join("\n");
+    // 程序尾（P2-22：多了 G28 X0 Y0 回零行，切片多取一行）
+    const tail = lines.slice(-7).join("\n");
     expect(tail).toContain("M05");
     expect(tail).toContain("M30");
     expect(lines[lines.length - 1]).toBe("%");
@@ -81,5 +81,58 @@ describe("postProcess（box 样本）", () => {
       expect(l).not.toMatch(/NaN/);
       expect(l).not.toMatch(/Infinity/);
     }
+  });
+
+  describe("P2-20 未知 move type WARN 计数", () => {
+    it("未知 type move → metadata.unsupported_move_count=1 且不抛错", () => {
+      // 深拷贝避免污染共享 cam
+      const camClone = JSON.parse(JSON.stringify(cam)) as typeof cam;
+      const tp = camClone.toolpaths?.[0];
+      expect(tp).toBeDefined();
+      (tp!.moves as Array<{ type: string; x: number; y: number; z: number }>).push({ type: "WEIRD_MOVE", x: 0, y: 0, z: 0 });
+      // ISO_GENERIC drillingCycles=false → 逐行走 emitMove，必命中 default 分支
+      const nc = postProcess(camClone, ISO_GENERIC_PROFILE);
+      expect(nc.metadata.unsupported_move_count).toBe(1);
+      expect(nc.text).toContain("WARN UNSUPPORTED MOVE TYPE");
+      // 干净 cam 仍为 0（golden 不炸）
+      expect(postProcess(cam, ISO_GENERIC_PROFILE).metadata.unsupported_move_count).toBe(0);
+    });
+  });
+
+  describe("P2-21 冷却 fallback WARN 计数", () => {
+    it("未映射冷却 → coolant_fallback_count=1 且仍输出 M08", () => {
+      const camClone = JSON.parse(JSON.stringify(cam)) as typeof cam;
+      // 把首 op 冷却改成 coolantCodes 里没有的类型
+      (camClone.operations[0].parameters as { coolant: string }).coolant = "STEAM";
+      const nc = postProcess(camClone, FANUC_PROFILE);
+      expect(nc.metadata.coolant_fallback_count).toBe(1);
+      expect(nc.text).toContain("WARN COOLANT FALLBACK");
+      // 仍 fallback 出 M08（golden 不炸）
+      expect(nc.lines.some((l) => /M08/.test(l))).toBe(true);
+      // 干净 cam 为 0
+      expect(postProcess(cam, FANUC_PROFILE).metadata.coolant_fallback_count).toBe(0);
+    });
+  });
+
+  describe("P2-32 版本固化 metadata", () => {
+    it("默认 profile → tool_library_version/material_version/machine_firmware 均为 unknown", () => {
+      const nc = postProcess(cam, FANUC_PROFILE);
+      expect(nc.metadata.tool_library_version).toBe("unknown");
+      expect(nc.metadata.material_version).toBe("unknown");
+      expect(nc.metadata.machine_firmware).toBe("unknown");
+    });
+
+    it("profile 注入三版本 → metadata 透传", () => {
+      const prof = {
+        ...FANUC_PROFILE,
+        toolLibraryVersion: "tlb-3.2.1",
+        materialVersion: "AL6061-T6",
+        machineFirmware: "FANUC-0iMF-v9.1",
+      };
+      const nc = postProcess(cam, prof);
+      expect(nc.metadata.tool_library_version).toBe("tlb-3.2.1");
+      expect(nc.metadata.material_version).toBe("AL6061-T6");
+      expect(nc.metadata.machine_firmware).toBe("FANUC-0iMF-v9.1");
+    });
   });
 });

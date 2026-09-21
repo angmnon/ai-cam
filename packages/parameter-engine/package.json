@@ -21,6 +21,7 @@
   "dependencies": {
     "@ai-cam/cam-ir": "workspace:*",
     "@ai-cam/domain-schemas": "workspace:*",
+    "@ai-cam/error-codes": "workspace:*",
     "@ai-cam/master-data": "workspace:*"
   },
   "devDependencies": {

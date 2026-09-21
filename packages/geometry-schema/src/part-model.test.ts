@@ -50,6 +50,21 @@ describe("geometry-schema NormalizedPartModel", () => {
     );
   });
 
+  it("worker 错误对象携带 typed code（CAD_PARSE_FAILED / CAD_HEALING_FAILED）", () => {
+    try {
+      parseWorkerOutput(JSON.stringify({ status: "error", message: "STEP read failed" }));
+      throw new Error("expected to throw");
+    } catch (e) {
+      expect((e as { code?: string }).code).toBe("CAD_PARSE_FAILED");
+    }
+    try {
+      parseWorkerOutput(JSON.stringify({ status: "error", message: "BSRep healing failed: split face" }));
+      throw new Error("expected to throw");
+    } catch (e) {
+      expect((e as { code?: string }).code).toBe("CAD_HEALING_FAILED");
+    }
+  });
+
   it("parseWorkerOutput 能解析合法输出", () => {
     const model = parseWorkerOutput(JSON.stringify(BOX_SAMPLE));
     expect(model.volume_mm3).toBe(120000);

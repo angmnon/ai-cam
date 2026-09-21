@@ -86,6 +86,15 @@ describe("cam-ir", () => {
     expect(res.issues.some((i) => i.code === "REF_SELF")).toBe(true);
   });
 
+  it("P3-07 depends_on 成环（A depends B depends A）被拒绝（DEP_CYCLE）", () => {
+    const ir = baseIR();
+    // op2 depends op1；令 op1 反过来 depends op2，形成 op1 <-> op2 环
+    ir.operations[0].depends_on = ["op2"];
+    const res = validateCamIR(ir);
+    expect(res.ok).toBe(false);
+    expect(res.issues.some((i) => i.code === "DEP_CYCLE")).toBe(true);
+  });
+
   it("转速超过机床上限被拒绝", () => {
     const ir = baseIR();
     ir.operations[0].parameters.spindle_speed_rpm = 20000;

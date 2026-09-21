@@ -94,11 +94,30 @@ describe("特征分配（assign）", () => {
     expect(g.violations.some((v) => v.path === "fBig")).toBe(true);
   });
 
-  it("rotateGuard：未配置行程时给出 INFO 提示", () => {
+  it("rotateGuard：未配置行程时 ok:true，travel 提示归入 infos（INFO 不阻塞）", () => {
     const feats = [baseFeature("fZ", "PLANAR_FACE", ["+Z"])];
     const { assignments } = assignFeaturesToSetups(feats, "A", [0, 90, 180, 270]);
     const g = rotateGuard(feats, assignments, "A", [0, 90, 180, 270]);
-    expect(g.violations.some((v) => v.path === "travel")).toBe(true);
+    expect(g.ok).toBe(true);
+    expect(g.violations).toHaveLength(0);
+    expect(g.infos.some((v) => v.path === "travel")).toBe(true);
+  });
+
+  it("rotateGuard：配置行程且未超限 → ok:true，无 violations/infos", () => {
+    const feats = [baseFeature("fZ", "PLANAR_FACE", ["+Z"], { min: { x: 0, y: 0, z: 0 }, max: { x: 80, y: 50, z: 30 } })];
+    const { assignments } = assignFeaturesToSetups(feats, "A", [0, 90, 180, 270]);
+    const g = rotateGuard(feats, assignments, "A", [0, 90, 180, 270], { machineTravel: { x: 600, y: 500, z: 400 } });
+    expect(g.ok).toBe(true);
+    expect(g.violations).toHaveLength(0);
+    expect(g.infos).toHaveLength(0);
+  });
+
+  it("assignFeaturesToSetups：方向字面量经类型收窄匹配（B 轴 +X → 90°，guard 带空 infos）", () => {
+    const feats = [baseFeature("fX", "POCKET", ["+X"])];
+    const res = assignFeaturesToSetups(feats, "B", [0, 90, 180, 270]);
+    expect(res.guard.ok).toBe(true);
+    expect(res.guard.infos).toHaveLength(0);
+    expect(res.assignments[0].angle).toBe(90);
   });
 });
 

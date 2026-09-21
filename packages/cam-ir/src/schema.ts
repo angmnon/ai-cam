@@ -111,9 +111,6 @@ export const OperationTypes = [
 ] as const;
 export type OperationType = (typeof OperationTypes)[number];
 
-export const CutDirection = z.enum(["CLIMB", "CONVENTIONAL", "BIDIRECTIONAL"]);
-export type CutDirection = z.infer<typeof CutDirection>;
-
 /** 切削参数（_unit 后缀：mm, mm/min, rpm, deg） */
 export const CuttingParameters = z.object({
   spindle_speed_rpm: z.number().positive(),

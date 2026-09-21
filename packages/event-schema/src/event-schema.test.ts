@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { EventTypes, makeCloudEvent } from "./cloud-event.js";
+import { describe, expect, it, vi, afterEach } from "vitest";
+import { EventTypes, isEventType, makeCloudEvent, newId } from "./cloud-event.js";
 import { formatSse } from "./sse.js";
 
 describe("event-schema", () => {
@@ -29,5 +29,55 @@ describe("event-schema", () => {
     // data 必须是合法 JSON
     const dataLine = frame.split("\n").find((l) => l.startsWith("data: "))!;
     expect(() => JSON.parse(dataLine.slice(6))).not.toThrow();
+  });
+});
+
+describe("event type 严格枚举 (P3-04)", () => {
+  it("EventTypes 中所有值均通过 isEventType", () => {
+    for (const v of Object.values(EventTypes)) {
+      expect(isEventType(v)).toBe(true);
+    }
+  });
+
+  it("非法值被 isEventType 拒绝", () => {
+    expect(isEventType("job.foo")).toBe(false);
+    expect(isEventType("")).toBe(false);
+    expect(isEventType(undefined)).toBe(false);
+    expect(isEventType(123)).toBe(false);
+  });
+
+  it("makeCloudEvent 对非法 type 抛错", () => {
+    expect(() =>
+      // @ts-expect-error 故意传入非法类型，验证运行时守卫
+      makeCloudEvent("com.aicam.job-service", "job.not.a.real.event", "job_1"),
+    ).toThrow(/invalid cloud event type/);
+  });
+});
+
+describe("newId crypto 兜底 (P3-05)", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("正常环境返回 prefix 前缀 ID", () => {
+    const id = newId("evt");
+    expect(id.startsWith("evt_")).toBe(true);
+    expect(id.length).toBeGreaterThan(4);
+  });
+
+  it("globalThis.crypto 缺失时走兜底仍可用", () => {
+    vi.stubGlobal("crypto", undefined);
+    const a = newId("evt");
+    const b = newId("evt");
+    expect(a.startsWith("evt_")).toBe(true);
+    expect(b.startsWith("evt_")).toBe(true);
+    // 兜底 ID 不应退化为纯 uuid 形态，但彼此不同（时间戳+随机字节）
+    expect(a).not.toBe(b);
+  });
+
+  it("globalThis.crypto.randomUUID 缺失时走兜底", () => {
+    vi.stubGlobal("crypto", {});
+    const id = newId("evt");
+    expect(id.startsWith("evt_")).toBe(true);
   });
 });

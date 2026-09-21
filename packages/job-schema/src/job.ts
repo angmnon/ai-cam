@@ -2,6 +2,7 @@
  * CAM Job 领域模型。
  * 状态集合对齐 PRD §47 与架构文档 §7；状态机见 state-machine.ts。
  */
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 export const JobStatuses = [
@@ -92,7 +93,10 @@ export type JobRecord = z.infer<typeof JobRecordSchema>;
 /** @deprecated 兼容旧名；新代码请使用 JobRecord / JobRecordSchema */
 export type Job = JobRecord;
 
-/** Job 输入指纹，用于幂等与结果可复现 */
+/** P3-03: 哈希 salt 前缀，与未来算法/序列化版本绑定 */
+const JOB_INPUT_HASH_SALT = "aicam:job:input:v1:";
+
+/** Job 输入指纹，用于幂等与结果可复现（P3-03: sha256 hex，固定 64 位） */
 export function jobInputHash(input: JobInput): string {
   // 稳定序列化：字段固定顺序
   const canonical = JSON.stringify({
@@ -106,5 +110,5 @@ export function jobInputHash(input: JobInput): string {
     axis_mode: input.axis_mode ?? "3AXIS",
     fixture_mode: input.fixture_mode ?? "AUTO",
   });
-  return canonical;
+  return createHash("sha256").update(JOB_INPUT_HASH_SALT + canonical).digest("hex");
 }

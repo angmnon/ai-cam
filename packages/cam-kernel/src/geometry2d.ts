@@ -107,7 +107,9 @@ export function concentricRects(outer: Rect2D, toolR: number, stepover: number):
     cur = next;
     guard++;
   }
-  // 残余中心：若还放得下刀具则补一刀中心线（直线）
+  // 决策（P3-12）：v1 不补残余中心中心线。残余中心为边长 ≤ 2×toolR 的小矩形，
+  // 单条中心直线会新增刀路段并改变 pocket golden 输出；该残留留待 Phase 3+ 的
+  // adaptive 环切/螺旋中心策略统一处理。此处固化决策、不实现，避免悬挂 TODO。
   return rings;
 }
 

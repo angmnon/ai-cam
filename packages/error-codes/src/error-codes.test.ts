@@ -22,7 +22,43 @@ describe("error-codes", () => {
       retryable: false,
       request_id: "req_123",
     });
-    expect(err.status).toBe(500);
+    expect(err.status).toBe(409);
+  });
+
+  it("recommended_actions 默认为空数组", () => {
+    const err = new ApiError({ code: ErrorCodes.SYSTEM_INTERNAL, message: "x" });
+    expect(err.recommended_actions).toEqual([]);
+  });
+
+  it("recommended_actions 可在构造时传入", () => {
+    const err = new ApiError({
+      code: ErrorCodes.CAM_PARAMETER_OUT_OF_RANGE,
+      message: "feed rate too high",
+      recommended_actions: ["降低进给率", "检查刀具负载"],
+    });
+    expect(err.recommended_actions).toEqual(["降低进给率", "检查刀具负载"]);
+  });
+
+  it("CAM/SIM/NC 码有合理的非 500 HTTP 映射", () => {
+    const cases: Array<[string, number]> = [
+      [ErrorCodes.CAM_PARAMETER_OUT_OF_RANGE, 422],
+      [ErrorCodes.CAM_IR_INVALID, 422],
+      [ErrorCodes.CAM_TOOL_REACH_FAILED, 409],
+      [ErrorCodes.CAD_PARSE_FAILED, 422],
+      [ErrorCodes.CAM_NO_VALID_SETUP, 422],
+      [ErrorCodes.SIM_COLLISION_DETECTED, 409],
+      [ErrorCodes.SIM_GOUGE_DETECTED, 409],
+      [ErrorCodes.SIM_MACHINE_LIMIT_VIOLATED, 409],
+      [ErrorCodes.SIM_RESIDUAL_STOCK_EXCEEDED, 422],
+      [ErrorCodes.NC_VALIDATION_FAILED, 422],
+      [ErrorCodes.NC_MACHINE_LIMIT_EXCEEDED, 409],
+      [ErrorCodes.NC_UNKNOWN_COMMAND, 422],
+    ];
+    for (const [code, expected] of cases) {
+      const status = new ApiError({ code, message: "x" }).status;
+      expect(status).not.toBe(500);
+      expect(status).toBe(expected);
+    }
   });
 
   it("默认 HTTP 状态映射", () => {

@@ -44,6 +44,16 @@ export const DEFAULT_DFM_OPTIONS: Required<DfmOptions> = {
 
 const POCKET_TYPES = new Set(["POCKET", "OPEN_POCKET", "SLOT"]);
 
+/**
+ * 倒扣面判定阈值（DFM-0106，默认值保持 120° 不变）：
+ * 面法向与 +Z 轴夹角超过此角度（度）即视为倒扣面。
+ * 120° ⇔ 法向 Z 分量 < cos(120°) ≈ -0.5（法向朝下倾斜超过 30°）。
+ */
+export const OVERHANG_ANGLE_DEG = 120;
+
+/** 由 OVERHANG_ANGLE_DEG 导出的法向 Z 分量下界 */
+const overhangNormalZ = Math.cos((OVERHANG_ANGLE_DEG * Math.PI) / 180);
+
 interface Evidence {
   feature_ids?: string[];
   details?: Record<string, number>;
@@ -141,7 +151,7 @@ export function analyzeDfm(
 
   // DFM-0106 倒扣面（零件级）
   for (const face of part.faces) {
-    if (face.type === "PLANE" && face.normal && face.normal[2] < -0.5) {
+    if (face.type === "PLANE" && face.normal && face.normal[2] < overhangNormalZ) {
       const isBottom = Math.abs(face.bbox.max[2] - partBox.min[2]) < 0.1;
       if (!isBottom) {
         push("BLOCKER", "DFM-0106", `存在倒扣面（面 #${face.id} 法向朝下且非底面），需特殊工装或 5 轴`, {

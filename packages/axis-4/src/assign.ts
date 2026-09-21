@@ -35,6 +35,8 @@ export interface RotateGuardViolation {
 export interface RotateGuardResult {
   ok: boolean;
   violations: RotateGuardViolation[];
+  /** INFO 级提示（不阻塞流程，如未配置机床行程而跳过检查） */
+  infos: RotateGuardViolation[];
 }
 
 export function assignFeaturesToSetups(
@@ -47,8 +49,11 @@ export function assignFeaturesToSetups(
   const assignments: FeatureAssignment[] = [];
   const violations: RotateGuardViolation[] = [];
   for (const f of features) {
-    const dirs = (f.accessible_directions ?? []).length > 0 ? f.accessible_directions : ["+Z"];
-    const matches = specs.filter((s) => dirs.includes(s.plus_z_dir as never));
+    // accessible_directions 为方向字面量联合数组，plus_z_dir 为宽 string；
+    // 先展开收窄为 string[]，includes 直接成立，无需 as never 强转。
+    const rawDirs = f.accessible_directions ?? [];
+    const dirs: string[] = rawDirs.length > 0 ? [...rawDirs] : ["+Z"];
+    const matches = specs.filter((s) => dirs.includes(s.plus_z_dir));
     if (matches.length === 0) {
       violations.push({ path: f.id, message: `特征 ${f.id}(${f.type}) 的可访问方向 [${dirs.join(",")}] 与任何旋转角度都不匹配` });
       continue;
@@ -57,7 +62,7 @@ export function assignFeaturesToSetups(
   }
   // 角度合法性（调用方给定之外的角度不可能出现，但防误用）
   for (const a of angles) if (!valid.has(a)) violations.push({ path: "angles", message: `非法旋转角度 ${a}` });
-  return { assignments, guard: { ok: violations.length === 0, violations } };
+  return { assignments, guard: { ok: violations.length === 0, violations, infos: [] } };
 }
 
 export interface RotateGuardOptions {
@@ -74,9 +79,11 @@ export function rotateGuard(
 ): RotateGuardResult {
   const { guard } = assignFeaturesToSetups(features, axis, angles);
   const violations = [...guard.violations];
+  const infos: RotateGuardViolation[] = [];
   if (!opts.machineTravel) {
-    violations.push({ path: "travel", message: "未配置机床行程（machineTravel），行程检查跳过（INFO）" });
-    return { ok: false, violations };
+    // INFO 语义：未配置机床行程不阻塞（与 DFM「INFO 不阻塞」口径一致）
+    infos.push({ path: "travel", message: "未配置机床行程（machineTravel），行程检查跳过（INFO，不阻塞）" });
+    return { ok: true, violations, infos };
   }
   for (const f of features) {
     const as = assignments.find((a) => a.feature_id === f.id);
@@ -90,5 +97,5 @@ export function rotateGuard(
       violations.push({ path: f.id, message: `特征 ${f.id} 在角度 ${as.angle}° 变换后超出行程 [${t.min.x.toFixed(1)},${t.min.y.toFixed(1)},${t.min.z.toFixed(1)}]..[${t.max.x.toFixed(1)},${t.max.y.toFixed(1)},${t.max.z.toFixed(1)}]` });
     }
   }
-  return { ok: violations.length === 0, violations };
+  return { ok: violations.length === 0, violations, infos };
 }

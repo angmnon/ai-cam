@@ -3,6 +3,7 @@
  * 规则优先级：企业规则 > 材料规则 > 刀具约束 > AI 优化。
  */
 import { z } from "zod";
+import { ToolType } from "./tool.js";
 
 export const MaterialCategory = z.enum([
   "ALUMINUM",
@@ -37,18 +38,24 @@ export const Material = z.object({
 export type Material = z.infer<typeof Material>;
 
 /** 一条切削规则：给定刀具类型+材料，给出参数区间与推荐值 */
+// P3-08：区间交叉校验 min <= max
+const ParamRange = z
+  .object({ min: z.number(), max: z.number() })
+  .refine((r) => r.min <= r.max, { message: "range min must be <= max" });
+
 export const CuttingRule = z.object({
   id: z.string(),
   material_id: z.string(),
-  tool_type: z.string(),
+  // P3-08：自由 string 改为引用 ToolType 枚举
+  tool_type: ToolType,
   /** 切削线速度区间（m/min） */
-  vc_range_m_min: z.object({ min: z.number(), max: z.number() }),
+  vc_range_m_min: ParamRange,
   /** 每齿进给区间（mm/tooth） */
-  fz_range_mm: z.object({ min: z.number(), max: z.number() }),
+  fz_range_mm: ParamRange,
   /** 推荐轴向切深系数（×刀具直径） */
-  doc_ratio_recommended: z.object({ min: z.number(), max: z.number() }),
+  doc_ratio_recommended: ParamRange,
   /** 推荐径向切宽系数（×刀具直径） */
-  woc_ratio_recommended: z.object({ min: z.number(), max: z.number() }),
+  woc_ratio_recommended: ParamRange,
   /** 规则来源：MANUFACTURER / EXPERT / FACTORY / STANDARD */
   source: z.enum(["MANUFACTURER", "EXPERT", "FACTORY", "STANDARD"]),
   effective_from: z.string(),

@@ -43,22 +43,72 @@ export interface RecognizeOptions {
   recognizerVersion?: string;
 }
 
+/**
+ * 识别阈值（启发式常量，可调）。
+ *
+ * 汇总 v1 识别器中原本散落的魔法数；此处仅做命名提取，数值与历史默认完全一致，
+ * 因此 golden 回归不会漂移。调大/调小这些常量会改变识别结果，须同步 golden 用例。
+ * 运行期最常调的两项（tol / minArea）仍可通过 RecognizeOptions 覆盖，无需改这里。
+ */
+
+/** 默认几何容差（mm）：面/边/位置近似比较的默认宽度 */
+export const RECOG_TOLERANCE_MM = 0.15;
+
+/** 默认最小被识别面面积（mm²）：孔/凹腔/凸台/倒角等的面积下限 */
+export const MIN_RECOG_AREA_MM2 = 5;
+
+/** 竖直圆柱/竖直平面判定：轴向或法向 |z| 下限（高于此视为竖直） */
+const VERTICAL_AXIS_Z_MIN = 0.999;
+
+/** 侧壁判定：面法向 |z| 上限（低于此视为竖直侧壁） */
+const SIDE_FACE_NORMAL_Z_MAX = 0.1;
+
+/** 孔半径下限（mm）：小于此半径的竖直圆柱面不当作孔 */
+const HOLE_RADIUS_MIN_MM = 0.5;
+
+/** 孔半径上限（mm）：大于此半径的竖直圆柱面不当作孔 */
+const HOLE_RADIUS_MAX_MM = 50;
+
+/** 孔“位于零件内部”判定：相对零件 bbox 内缩的容差倍数（× tol） */
+const HOLE_INTERIOR_MARGIN_TOL = 2;
+
+/** 凹腔/台阶判定：相对零件顶面的最小凹深（mm） */
+const RECESS_DEPTH_MARGIN_MM = 0.05;
+
+/** 凸台墙悬空判定：墙底高出零件底面的最小距离（mm） */
+const BOSS_WALL_FREE_MARGIN_MM = 0.1;
+
+/** 长槽/开放槽判定：长短边比下限 */
+const SLOT_ASPECT_MIN = 2.5;
+
+/** 凸台判定：顶面 XY 投影面积占零件面积上限（小于此视为凸台，否则为台阶） */
+const BOSS_AREA_RATIO_MAX = 0.3;
+
+/** 外轮廓/整层台阶顶面最小面积（mm²） */
+const OUTER_PROFILE_MIN_AREA_MM2 = 50;
+
+/** 倒角判定：面法向 |z| 下限 */
+const CHAMFER_NORMAL_Z_MIN = 0.35;
+
+/** 倒角判定：面法向 |z| 上限 */
+const CHAMFER_NORMAL_Z_MAX = 0.94;
+
 export const DEFAULT_OPTIONS: Required<Pick<RecognizeOptions, "minArea" | "tol">> = {
-  minArea: 5,
-  tol: 0.15,
+  minArea: MIN_RECOG_AREA_MM2,
+  tol: RECOG_TOLERANCE_MM,
 };
 
 type FaceKind = "TOP" | "BOTTOM" | "SIDE" | "SLANT" | "VCYL" | "HCYL" | "OTHER";
 
 function faceKind(face: FaceInfo): FaceKind {
   if (face.type === "CYLINDER") {
-    if (face.axis && Math.abs(face.axis[2]) > 0.999) return "VCYL";
+    if (face.axis && Math.abs(face.axis[2]) > VERTICAL_AXIS_Z_MIN) return "VCYL";
     return "HCYL";
   }
   if (face.type !== "PLANE" || !face.normal) return "OTHER";
   const nz = Math.abs(face.normal[2]);
-  if (nz > 0.999) return face.normal[2] > 0 ? "TOP" : "BOTTOM";
-  if (nz < 0.1) return "SIDE";
+  if (nz > VERTICAL_AXIS_Z_MIN) return face.normal[2] > 0 ? "TOP" : "BOTTOM";
+  if (nz < SIDE_FACE_NORMAL_Z_MAX) return "SIDE";
   return "SLANT";
 }
 
@@ -100,7 +150,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
   for (const f of faces) {
     if (consumed.has(f.id)) continue;
     if (kindOf(f) !== "VCYL") continue;
-    if (f.radius_mm == null || f.radius_mm < 0.5 || f.radius_mm > 50) continue;
+    if (f.radius_mm == null || f.radius_mm < HOLE_RADIUS_MIN_MM || f.radius_mm > HOLE_RADIUS_MAX_MM) continue;
     if (f.area_mm2 < minArea) continue;
 
     const spanMin = f.bbox.min[2];
@@ -114,9 +164,11 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     const cy = f.center[1];
     // 孔必须是零件内部的特征：外圆柱（零件侧壁）的 bbox 与零件 bbox 齐平，排除
     const insideX =
-      cx - f.radius_mm > partBox.min[0] + tol * 2 && cx + f.radius_mm < partBox.max[0] - tol * 2;
+      cx - f.radius_mm > partBox.min[0] + tol * HOLE_INTERIOR_MARGIN_TOL &&
+      cx + f.radius_mm < partBox.max[0] - tol * HOLE_INTERIOR_MARGIN_TOL;
     const insideY =
-      cy - f.radius_mm > partBox.min[1] + tol * 2 && cy + f.radius_mm < partBox.max[1] - tol * 2;
+      cy - f.radius_mm > partBox.min[1] + tol * HOLE_INTERIOR_MARGIN_TOL &&
+      cy + f.radius_mm < partBox.max[1] - tol * HOLE_INTERIOR_MARGIN_TOL;
     if (!insideX || !insideY) continue;
     const bbox: Box3 = {
       min: [cx - f.radius_mm, cy - f.radius_mm, spanMin],
@@ -134,7 +186,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     consumed.add(f.id);
     // 孔底圆面也归入该特征（若存在）
     for (const g of faces) {
-      if (g.type === "PLANE" && g.normal && g.normal[2] > 0.999 && !consumed.has(g.id)) {
+      if (g.type === "PLANE" && g.normal && g.normal[2] > VERTICAL_AXIS_Z_MIN && !consumed.has(g.id)) {
         const gz = g.bbox.max[2];
         if (approx(gz, spanMin, tol) && Math.abs(g.center[0] - cx) < tol && Math.abs(g.center[1] - cy) < tol) {
           consumed.add(g.id);
@@ -150,7 +202,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     if (kindOf(f) !== "TOP") return false;
     if (f.area_mm2 < minArea) return false;
     if (!isPolygonal(f)) return false; // 排除圆孔底
-    return f.bbox.max[2] < zTop - 0.05;
+    return f.bbox.max[2] < zTop - RECESS_DEPTH_MARGIN_MM;
   });
   for (const bottom of recessed) {
     if (consumed.has(bottom.id)) continue;
@@ -183,9 +235,9 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     if (side.length >= 3 || adjacentPair) continue;
 
     let type: FeatureType;
-    if (!closed && aspect > 2.5) type = "SLOT";
+    if (!closed && aspect > SLOT_ASPECT_MIN) type = "SLOT";
     else if (!closed) type = "OPEN_POCKET";
-    else if (aspect > 2.5) type = "SLOT";
+    else if (aspect > SLOT_ASPECT_MIN) type = "SLOT";
     else type = "POCKET";
 
     features.push({
@@ -212,7 +264,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     const walls = faces.filter((w) => {
       if (consumed.has(w.id)) return false;
       if (kindOf(w) !== "SIDE") return false;
-      return approx(w.bbox.max[2], zTop, tol) && w.bbox.min[2] > zBottom + 0.1;
+      return approx(w.bbox.max[2], zTop, tol) && w.bbox.min[2] > zBottom + BOSS_WALL_FREE_MARGIN_MM;
     });
     if (walls.length === 0) continue;
     const wallMinZ = Math.min(...walls.map((w) => w.bbox.min[2]));
@@ -222,7 +274,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     const topBox = toBox3(top.bbox);
     const [lx, ly] = boxSize(topBox);
     // 占零件投影面积 <30% 视为凸台，否则为顶部台阶
-    const isBoss = ratio < 0.3;
+    const isBoss = ratio < BOSS_AREA_RATIO_MAX;
     features.push({
       id: nextId(),
       type: isBoss ? "BOSS" : "STEP",
@@ -237,7 +289,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
   }
 
   // ---------- 4) 外轮廓（剩余最大顶面，任意层高；整层台阶/基座主面） ----------
-  const remainingTop = faces.filter((f) => !consumed.has(f.id) && kindOf(f) === "TOP" && f.area_mm2 >= 50);
+  const remainingTop = faces.filter((f) => !consumed.has(f.id) && kindOf(f) === "TOP" && f.area_mm2 >= OUTER_PROFILE_MIN_AREA_MM2);
   remainingTop.sort((a, b) => b.area_mm2 - a.area_mm2);
   for (const f of remainingTop) {
     if (consumed.has(f.id)) continue;
@@ -260,10 +312,10 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     (f) =>
       !consumed.has(f.id) &&
       kindOf(f) === "TOP" &&
-      f.area_mm2 >= 50 &&
+      f.area_mm2 >= OUTER_PROFILE_MIN_AREA_MM2 &&
       isPolygonal(f) &&
-      f.bbox.max[2] > zBottom + 0.1 &&
-      f.bbox.max[2] < zTop - 0.05,
+      f.bbox.max[2] > zBottom + BOSS_WALL_FREE_MARGIN_MM &&
+      f.bbox.max[2] < zTop - RECESS_DEPTH_MARGIN_MM,
   );
   for (const f of mid) {
     if (consumed.has(f.id)) continue;
@@ -286,7 +338,7 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
     if (consumed.has(f.id)) continue;
     if (kindOf(f) === "SLANT" && f.area_mm2 >= minArea) {
       const nz = f.normal ? Math.abs(f.normal[2]) : 0;
-      const isChamfer = nz >= 0.35 && nz <= 0.94;
+      const isChamfer = nz >= CHAMFER_NORMAL_Z_MIN && nz <= CHAMFER_NORMAL_Z_MAX;
       const fb = toBox3(f.bbox);
       const [lx, ly] = boxSize(fb);
       features.push({
@@ -309,8 +361,4 @@ export function recognize(part: NormalizedPartModel, options: RecognizeOptions =
 
 export function featureBoxToArr(b: Box3): BBoxArr {
   return { min: [...b.min], max: [...b.max] };
-}
-
-export function featureTypeOf(t: FeatureType): string {
-  return t;
 }

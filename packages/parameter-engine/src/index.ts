@@ -3,8 +3,8 @@
  *
  * 确定性计算：Vc → RPM、fz → Feed、DOC/WOC（按刀具直径比例）、Plunge。
  * 约束层级：规则区间（RULE）→ 机床硬约束（MACHINE）→ 用户/AI 覆盖（USER）。
- * 策略：规则区间默认 clamp（可配置 reject）；机床硬约束超限 clamp；
- *       若 clamp 后低于规则下限则 reject（不可加工）。
+ * 策略：规则区间默认 clamp（可配置 reject）；机床硬约束超限一律 clamp（保守加工），
+ *       即使 clamp 后低于规则下限也不 reject，按保守加工放行并在决策中留痕说明。
  * 每个决策留痕（decisions[]），满足"排序/参数可解释、不突破硬约束"验收。
  */
 import { ErrorCodes, type ErrorCode } from "@ai-cam/error-codes";
@@ -52,11 +52,6 @@ export const PARAMETER_ENGINE_VERSION = "0.1.0";
 
 const mid = (a: number, b: number) => (a + b) / 2;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-/** 刀具类型 → 规则表中的 tool_type 键 */
-export function ruleToolType(toolType: Tool["type"]): string {
-  return toolType;
-}
 
 export function findCuttingRule(
   materialId: string,

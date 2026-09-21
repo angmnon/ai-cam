@@ -54,6 +54,8 @@ export const seedMachines: Machine[] = [
     created_at: NOW,
     updated_at: NOW,
   },
+  // V1 兼容说明（P3-16）：4AXIS 超出 V1 工艺规划/后处理的完整处理范围（V1 仅完整支持 3AXIS，
+  // 索引式四轴在 axis-4 中归入 4AXIS 映射）。保留该种子供前向兼容，不在 V1 流程中直接调度。
   {
     id: "mch_vmc850_4ax",
     organization_id: SEED_ORG_ID,
@@ -370,6 +372,8 @@ export const seedMachines: Machine[] = [
     updated_at: NOW,
   },
   // 北京精雕 JDGR50：五轴联动代表
+  // V1 兼容说明（P3-16）：5AXIS 超出 V1 工艺规划/后处理范围（V1 未实现五轴联动）。
+  // 保留该种子供前向兼容与展示，不在 V1 流程中直接调度。
   {
     id: "mch_jingdiao_jdgr50",
     organization_id: SEED_ORG_ID,
@@ -809,6 +813,9 @@ const R = (
   created_at: NOW,
 });
 
+// 刀具规则覆盖说明（P3-16）：当前仅为 FLAT_END_MILL / BALL_END_MILL / DRILL 配置材料规则；
+// BULL_NOSE、CHAMFER 等刀型无专用规则，命中时参数引擎走 DEFAULT 保守兜底
+// （见 parameter-engine：无规则时取 DEF 保守 vc/fz/DOC/WOC）。补刀型规则前保留该兜底。
 export const seedCuttingRules: CuttingRule[] = [
   R("cr_al6061_flat", "mat_al_6061", "FLAT_END_MILL", [200, 400], [0.03, 0.08], [0.5, 1.5], [0.3, 0.8]),
   R("cr_al6061_ball", "mat_al_6061", "BALL_END_MILL", [180, 350], [0.02, 0.06], [0.2, 0.6], [0.2, 0.5]),

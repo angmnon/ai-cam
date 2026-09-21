@@ -65,6 +65,48 @@ export function validateCamIR(input: unknown): CamIRValidationResult {
     }
   }
 
+  // P3-07 depends_on 环检测：DFS 三色标记（白=未访问 / 灰=栈中 / 黑=已完成）
+  {
+    const adjacency = new Map<string, string[]>();
+    for (const op of ir.operations) {
+      adjacency.set(op.id, op.depends_on);
+    }
+    const WHITE = 0;
+    const GRAY = 1;
+    const BLACK = 2;
+    const color = new Map<string, number>();
+    for (const op of ir.operations) {
+      color.set(op.id, WHITE);
+    }
+    const visit = (node: string, ancestors: string[]): void => {
+      color.set(node, GRAY);
+      const path = [...ancestors, node];
+      for (const dep of adjacency.get(node) ?? []) {
+        const state = color.get(dep);
+        if (state === GRAY) {
+          const cycleStart = path.indexOf(dep);
+          const cycle = cycleStart >= 0 ? path.slice(cycleStart) : [dep];
+          issues.push(
+            refIssue(
+              "ERROR",
+              "DEP_CYCLE",
+              `operations.${node}.depends_on`,
+              `dependency cycle detected: ${[...cycle, dep].join(" -> ")}`,
+            ),
+          );
+        } else if (state === WHITE) {
+          visit(dep, path);
+        }
+      }
+      color.set(node, BLACK);
+    };
+    for (const op of ir.operations) {
+      if (color.get(op.id) === WHITE) {
+        visit(op.id, []);
+      }
+    }
+  }
+
   // 硬边界：主轴转速不超过机床上限
   for (const op of ir.operations) {
     const maxRpm = ir.machine.max_spindle_rpm;

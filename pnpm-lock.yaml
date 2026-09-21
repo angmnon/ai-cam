@@ -745,22 +745,19 @@ importers:
       '@ai-cam/cam-ir':
         specifier: workspace:*
         version: link:../cam-ir
+      '@ai-cam/master-data':
+        specifier: workspace:*
+        version: link:../master-data
+    devDependencies:
       '@ai-cam/cam-kernel':
         specifier: workspace:*
         version: link:../cam-kernel
-      '@ai-cam/domain-schemas':
-        specifier: workspace:*
-        version: link:../domain-schemas
       '@ai-cam/feature-engine':
         specifier: workspace:*
         version: link:../feature-engine
       '@ai-cam/geometry-schema':
         specifier: workspace:*
         version: link:../geometry-schema
-      '@ai-cam/master-data':
-        specifier: workspace:*
-        version: link:../master-data
-    devDependencies:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

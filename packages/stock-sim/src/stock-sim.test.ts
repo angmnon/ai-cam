@@ -42,6 +42,46 @@ describe("VoxelGrid", () => {
     expect(pts[pts.length - 1]).toMatchObject({ x: 10, y: 0, z: 0 });
     expect(pts.length).toBeGreaterThan(2);
   });
+
+  it("stats() 数值与手动统计一致（fillBox + cutCylinder 后 filled/volume/topHeights + 缓存命中）", () => {
+    const voxel = 2;
+    const g = new VoxelGrid(0, 0, 0, 20, 20, 10, { voxelSize: voxel });
+    g.fillBox(0, 0, 0, 20, 20, 10);
+    // 切中心圆柱：半径 4，z 从底到顶（覆盖全部 k）
+    g.cutCylinder(10, 10, 0, 10, 4);
+
+    // 独立复算：枚举所有 (i,j,k)，按 cutCylinder 同一几何规则判定是否仍填充
+    const nx = 10, ny = 10, nz = 5;
+    const R = 4 + voxel * 0.5; // 与 cutCylinder 内部扩张一致
+    const r2 = R * R;
+    let manualFilled = 0;
+    const manualTop = new Map<string, number>();
+    for (let i = 0; i < nx; i++) {
+      for (let j = 0; j < ny; j++) {
+        const wx = (i + 0.5) * voxel;
+        const wy = (j + 0.5) * voxel;
+        const inCyl = (wx - 10) ** 2 + (wy - 10) ** 2 <= r2;
+        for (let k = 0; k < nz; k++) {
+          if (inCyl) continue; // 整列被切穿
+          manualFilled++;
+          const col = `${i}|${j}|0`;
+          const z = (k + 1) * voxel;
+          const prev = manualTop.get(col) ?? -Infinity;
+          if (z > prev) manualTop.set(col, z);
+        }
+      }
+    }
+
+    const s = g.stats();
+    expect(s.filled).toBe(manualFilled);
+    expect(s.volume_mm3).toBeCloseTo(manualFilled * voxel * voxel * voxel, 1);
+    expect(s.topHeights.size).toBe(manualTop.size);
+    for (const [col, z] of manualTop) {
+      expect(s.topHeights.get(col)).toBe(z);
+    }
+    // 缓存命中：未再修改时再次 stats() 返回同一对象引用（O(1)）
+    expect(g.stats()).toBe(s);
+  });
 });
 
 const raw = readFileSync(join(process.cwd(), "../../tests/golden/parts/box.json"), "utf8");

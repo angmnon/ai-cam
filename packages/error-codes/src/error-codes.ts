@@ -98,6 +98,8 @@ export interface ApiErrorOptions {
   retryable?: boolean;
   /** HTTP 状态码 */
   status?: number;
+  /** 面向调用方的建议处理动作 */
+  recommended_actions?: string[];
 }
 
 const DEFAULT_STATUS: Partial<Record<string, number>> = {
@@ -110,6 +112,7 @@ const DEFAULT_STATUS: Partial<Record<string, number>> = {
   FILE_TOO_LARGE: 413,
   FILE_INVALID_TYPE: 415,
   CAD_UNSUPPORTED_FORMAT: 415,
+  CAD_PARSE_FAILED: 422,
   MASTER_DATA_NOT_FOUND: 404,
   JOB_NOT_FOUND: 404,
   JOB_STATE_INVALID: 409,
@@ -121,6 +124,17 @@ const DEFAULT_STATUS: Partial<Record<string, number>> = {
   CAM_REVISION_NOT_FOUND: 404,
   CAM_FEATURE_NOT_FOUND: 404,
   CAM_TOOLPATH_GENERATION_FAILED: 422,
+  CAM_PARAMETER_OUT_OF_RANGE: 422,
+  CAM_IR_INVALID: 422,
+  CAM_NO_VALID_SETUP: 422,
+  CAM_TOOL_REACH_FAILED: 409,
+  SIM_COLLISION_DETECTED: 409,
+  SIM_GOUGE_DETECTED: 409,
+  SIM_MACHINE_LIMIT_VIOLATED: 409,
+  SIM_RESIDUAL_STOCK_EXCEEDED: 422,
+  NC_VALIDATION_FAILED: 422,
+  NC_MACHINE_LIMIT_EXCEEDED: 409,
+  NC_UNKNOWN_COMMAND: 422,
   RELEASE_NOT_FOUND: 404,
   RELEASE_STATE_INVALID: 409,
   SYSTEM_RATE_LIMITED: 429,
@@ -138,6 +152,7 @@ export class ApiError extends Error {
   readonly severity: ErrorSeverity;
   readonly retryable: boolean;
   readonly status: number;
+  readonly recommended_actions: string[];
   /** 由请求链路上层注入 */
   requestId?: string;
 
@@ -150,6 +165,7 @@ export class ApiError extends Error {
     this.severity = opts.severity ?? (opts.retryable ? "WARNING" : "ERROR");
     this.retryable = opts.retryable ?? false;
     this.status = opts.status ?? DEFAULT_STATUS[opts.code] ?? 500;
+    this.recommended_actions = opts.recommended_actions ?? [];
   }
 
   /** 转为 API 统一错误响应体（03_API接口规范 §2） */

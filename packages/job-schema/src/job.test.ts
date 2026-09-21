@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { JobInputSchema, JobRecordSchema, JobStatuses } from "./job.js";
+import { jobInputHash, JobInputSchema, JobRecordSchema, JobStatuses } from "./job.js";
 
 describe("job-schema zod (P2-02)", () => {
   it("合法 JobInput parse 通过（全可选字段省略）", () => {
@@ -114,5 +114,52 @@ describe("job-schema zod (P2-02)", () => {
     for (const s of JobStatuses) {
       expect(JobRecordSchema.shape.status.safeParse(s).success).toBe(true);
     }
+  });
+});
+
+describe("jobInputHash (P3-03)", () => {
+  const baseInput = {
+    part_id: "part_1",
+    machine_id: "m_vmc",
+    controller_id: "c_fanuc",
+    material_id: "mat_6061",
+  };
+
+  it("输出为固定 64 位 hex（sha256 摘要）", () => {
+    const h = jobInputHash(JobInputSchema.parse(baseInput));
+    expect(h).toMatch(/^[0-9a-f]{64}$/);
+    expect(h).toHaveLength(64);
+  });
+
+  it("相同输入得到相同哈希（幂等）", () => {
+    const a = jobInputHash(JobInputSchema.parse(baseInput));
+    const b = jobInputHash(JobInputSchema.parse({ ...baseInput }));
+    expect(a).toBe(b);
+  });
+
+  it("内容变化哈希随之变化", () => {
+    const a = jobInputHash(JobInputSchema.parse(baseInput));
+    const b = jobInputHash(
+      JobInputSchema.parse({ ...baseInput, part_id: "part_2" }),
+    );
+    expect(a).not.toBe(b);
+
+    const c = jobInputHash(
+      JobInputSchema.parse({ ...baseInput, axis_mode: "INDEXED_4AXIS" }),
+    );
+    expect(c).not.toBe(a);
+  });
+
+  it("默认值差异不影响哈希（省略 vs 显式 AUTO/3AXIS 等价）", () => {
+    const omitted = jobInputHash(JobInputSchema.parse(baseInput));
+    const explicit = jobInputHash(
+      JobInputSchema.parse({
+        ...baseInput,
+        stock_policy: "AUTO",
+        axis_mode: "3AXIS",
+        fixture_mode: "AUTO",
+      }),
+    );
+    expect(omitted).toBe(explicit);
   });
 });

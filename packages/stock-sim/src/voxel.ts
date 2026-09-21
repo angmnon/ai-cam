@@ -32,6 +32,10 @@ const KEY = (ix: number, iy: number, iz: number) => `${ix}|${iy}|${iz}`;
 export class VoxelGrid {
   readonly spec: VoxelGridSpec;
   private filled = new Map<string, boolean>();
+  /** 每列 (i,j) 当前最高填充体素的 k 索引（-1=空列）；fillBox/cutCylinder 增量维护，避免 stats() 全表 split("|") */
+  private topK = new Map<string, number>();
+  /** stats() 结果缓存；任何修改（fillBox/cutCylinder）后置 null 失效，命中时 O(1) 返回 */
+  private statsCache: VoxelStats | null = null;
 
   constructor(minX: number, minY: number, minZ: number, maxX: number, maxY: number, maxZ: number, opts: VoxelOptions = {}) {
     const v = opts.voxelSize ?? 2;
@@ -64,8 +68,13 @@ export class VoxelGrid {
         for (let k = k0; k <= k1; k++) {
           this.filled.set(KEY(i, j, k), true);
         }
+        // k 单调递增，本列新填到的最高 k = k1；与既有列顶取 max
+        const col = KEY(i, j, 0);
+        const prev = this.topK.get(col) ?? -1;
+        if (k1 > prev) this.topK.set(col, k1);
       }
     }
+    this.statsCache = null;
   }
 
   /** 扣除刀具圆柱扫掠：半径 R，z ∈ [zBot, zTop]（zBot=刀底切削深度），圆心 (cx, cy) */
@@ -80,6 +89,7 @@ export class VoxelGrid {
     const k0 = Math.max(0, Math.floor((zBot - s.minZ) / s.voxel));
     const k1 = Math.min(s.nz - 1, Math.ceil((zTop - s.minZ) / s.voxel));
     const r2 = R * R;
+    const touched: Array<[number, number]> = [];
     for (let i = i0; i <= i1; i++) {
       const wx = s.minX + (i + 0.5) * s.voxel;
       const dx = wx - cx;
@@ -87,11 +97,26 @@ export class VoxelGrid {
         const wy = s.minY + (j + 0.5) * s.voxel;
         const dy = wy - cy;
         if (dx * dx + dy * dy > r2) continue;
+        let removed = false;
         for (let k = k0; k <= k1; k++) {
-          this.filled.delete(KEY(i, j, k));
+          if (this.filled.delete(KEY(i, j, k))) removed = true;
         }
+        if (removed) touched.push([i, j]);
       }
     }
+    // 被删列可能列顶被切穿：逐列向下重找新顶（仅触达列，O(nz)），不全表扫描
+    for (const [i, j] of touched) this.recomputeColumnTop(i, j);
+    this.statsCache = null;
+  }
+
+  /** 删除后重算单列 (i,j) 的最高填充 k：从 nz-1 向下找首个仍填充体素；空列移除列记录 */
+  private recomputeColumnTop(i: number, j: number): void {
+    const s = this.spec;
+    const col = KEY(i, j, 0);
+    let k = s.nz - 1;
+    while (k >= 0 && !this.filled.has(KEY(i, j, k))) k--;
+    if (k < 0) this.topK.delete(col);
+    else this.topK.set(col, k);
   }
 
   /** 点是否落在某柱状区域内（供碰撞检测：刀具圆柱 vs 剩余毛坯） */
@@ -126,21 +151,23 @@ export class VoxelGrid {
     return this.anyInCylinder(cx, cy, zBot, zTop, holderRadius);
   }
 
-  /** 统计填充体素 */
+  /**
+   * 统计填充体素。O(1)：filled.size 直接取；topHeights 由增量维护的 topK 映射生成并缓存，
+   * 命中缓存时零遍历；任何 fillBox/cutCylinder 均会使缓存失效。
+   */
   stats(): VoxelStats {
+    if (this.statsCache) return this.statsCache;
     const s = this.spec;
     const topHeights = new Map<string, number>();
-    for (const key of this.filled.keys()) {
-      const [i, j, k] = key.split("|").map(Number);
-      const z = s.minZ + (k + 1) * s.voxel;
-      const prev = topHeights.get(KEY(i, j, 0)) ?? -Infinity;
-      if (z > prev) topHeights.set(KEY(i, j, 0), z);
+    for (const [col, k] of this.topK) {
+      topHeights.set(col, s.minZ + (k + 1) * s.voxel);
     }
-    return {
+    this.statsCache = {
       filled: this.filled.size,
       volume_mm3: this.filled.size * s.voxel * s.voxel * s.voxel,
       topHeights,
     };
+    return this.statsCache;
   }
 
   /** 某一列（XY 格）的剩余最高材料面（无材料返回 -Infinity） */

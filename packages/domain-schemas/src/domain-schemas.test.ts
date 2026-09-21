@@ -94,6 +94,42 @@ describe("domain-schemas", () => {
     expect(rule.vc_range_m_min.max).toBe(600);
   });
 
+  it("P3-08 CuttingRule.tool_type 非法枚举值被拒绝", () => {
+    expect(() =>
+      CuttingRule.parse({
+        id: "rule_bad_tool",
+        material_id: "mat_6061",
+        tool_type: "NOT_A_TOOL_TYPE",
+        vc_range_m_min: { min: 300, max: 600 },
+        fz_range_mm: { min: 0.02, max: 0.08 },
+        doc_ratio_recommended: { min: 0.5, max: 1.5 },
+        woc_ratio_recommended: { min: 0.05, max: 0.5 },
+        source: "EXPERT",
+        effective_from: "2026-01-01",
+        version: 1,
+        created_at: "2026-09-20T00:00:00Z",
+      }),
+    ).toThrow();
+  });
+
+  it("P3-08 CuttingRule 区间 min>max 被拒绝", () => {
+    expect(() =>
+      CuttingRule.parse({
+        id: "rule_bad_range",
+        material_id: "mat_6061",
+        tool_type: "FLAT_END_MILL",
+        vc_range_m_min: { min: 600, max: 300 },
+        fz_range_mm: { min: 0.02, max: 0.08 },
+        doc_ratio_recommended: { min: 0.5, max: 1.5 },
+        woc_ratio_recommended: { min: 0.05, max: 0.5 },
+        source: "EXPERT",
+        effective_from: "2026-01-01",
+        version: 1,
+        created_at: "2026-09-20T00:00:00Z",
+      }),
+    ).toThrow();
+  });
+
   it("Feature + FeatureGraph（置信度与可访问方向）", () => {
     const f = Feature.parse({
       id: "F1",

@@ -32,6 +32,20 @@ export const CAM_KERNEL_VERSION = "0.2.0";
  */
 export const PART_PROFILE_FEATURE_ID = "part_profile";
 
+/**
+ * P3-13：原散布在 planPart / maxDiaFor 的工艺魔法数，提取为命名常量（保持原默认值不变）。
+ */
+/** 默认顶面清面量（finish allowance）mm */
+const DEFAULT_FINISH_ALLOWANCE_MM = 0.05;
+/** 默认毛坯外扩余量（stock margin）mm */
+const DEFAULT_STOCK_MARGIN_MM = 5;
+/** 特征最小内切宽 → 推荐刀具直径的比例 */
+const MAX_TOOL_DIA_FRACTION = 0.7;
+/** 推荐刀具直径上限 mm */
+const MAX_TOOL_DIA_CAP_MM = 12;
+/** 装配工序公差 mm */
+const OPERATION_TOLERANCE_MM = 0.01;
+
 export interface PlannerOptions {
   /** 退刀平面高于零件顶面（默认 20mm） */
   safeClearance?: number;
@@ -116,8 +130,8 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
   const zTop = part.bbox_mm.max[2];
   const zBottom = part.bbox_mm.min[2];
   const safeZ = zTop + (options.safeClearance ?? 20);
-  const margin = options.stockMargin ?? 5;
-  const finish = options.finishAllowance ?? 0.05;
+  const margin = options.stockMargin ?? DEFAULT_STOCK_MARGIN_MM;
+  const finish = options.finishAllowance ?? DEFAULT_FINISH_ALLOWANCE_MM;
   const partRect = bboxRect(part);
   const stockRect = rect2(partRect.x0 - margin, partRect.y0 - margin, partRect.x1 + margin, partRect.y1 + margin);
 
@@ -137,7 +151,7 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
     return toolNumber.get(id)!;
   };
 
-  const maxDiaFor = (minW: number): number => Math.max(2, Math.min(minW * 0.7, 12));
+  const maxDiaFor = (minW: number): number => Math.max(2, Math.min(minW * MAX_TOOL_DIA_FRACTION, MAX_TOOL_DIA_CAP_MM));
 
   for (const f of features) {
     const rect = rectOf(f);
@@ -300,7 +314,7 @@ export function planPart(part: NormalizedPartModel, features: Feature[], options
       parameters: ctx.params,
       depends_on,
       safe_z_mm: safeZ,
-      tolerance_mm: 0.01,
+      tolerance_mm: OPERATION_TOLERANCE_MM,
     });
   }
 

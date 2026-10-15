@@ -3,10 +3,10 @@
  * P1-07：经 withOrgScope 绑定 app.org_id，RLS 强制多租户隔离；审批链审计落 release_approvals。
  */
 import { randomUUID } from "node:crypto";
-import type { Pool, PoolClient } from "pg";
+import type { PoolClient } from "pg";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import type { ReleaseStore, ReleaseRecord, ReleaseStatus } from "../../cam/release-store.js";
-import { withOrgScope } from "../org-scope.js";
+import { withOrgScope, type SqlDb } from "../org-scope.js";
 
 interface Row {
   id: string;
@@ -39,8 +39,9 @@ function rowToRelease(row: Row): ReleaseRecord {
     ...(row.approval_note ? { approval_note: row.approval_note } : {}),
     qr_token: row.qr_token ?? "",
     created_at: (row.created_at as Date)?.toISOString?.() ?? String(row.created_at),
-    ...(row.approved_at ? { approved_at: row.approved_at.toISOString() } : {}),
-    ...(row.released_at ? { released_at: row.released_at.toISOString() } : {}),
+    // PG 返回 Date、D1 返回 ISO 字符串（timestamptz→TEXT），两种后端都需兼容
+    ...(row.approved_at ? { approved_at: (row.approved_at as Date)?.toISOString?.() ?? String(row.approved_at) } : {}),
+    ...(row.released_at ? { released_at: (row.released_at as Date)?.toISOString?.() ?? String(row.released_at) } : {}),
   };
 }
 
@@ -51,10 +52,10 @@ async function auditApproval(client: PoolClient, releaseId: string, approverId: 
   );
 }
 
-export function createPgReleaseStore(pool: Pool): ReleaseStore {
+export function createPgReleaseStore(db: SqlDb): ReleaseStore {
   return {
     async create({ orgId, partId, camRevisionId, jobRunId, userId }): Promise<ReleaseRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows: existing } = await client.query<Row>(
           `SELECT * FROM releases WHERE part_id = $1 AND organization_id = $2 ORDER BY version_no DESC LIMIT 1`,
           [partId, orgId],
@@ -72,7 +73,7 @@ export function createPgReleaseStore(pool: Pool): ReleaseStore {
     },
 
     async list(orgId: string, partId: string): Promise<ReleaseRecord[]> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<Row>(
           `SELECT * FROM releases WHERE part_id = $1 AND organization_id = $2 ORDER BY version_no DESC`,
           [partId, orgId],
@@ -82,7 +83,7 @@ export function createPgReleaseStore(pool: Pool): ReleaseStore {
     },
 
     async get(orgId: string, partId: string, releaseId: string): Promise<ReleaseRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<Row>(`SELECT * FROM releases WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [releaseId, partId, orgId]);
         if (!rows[0]) throw new ApiError({ code: ErrorCodes.RELEASE_NOT_FOUND, message: "Release not found.", stage: "releases", retryable: false });
         return rowToRelease(rows[0]);
@@ -90,7 +91,7 @@ export function createPgReleaseStore(pool: Pool): ReleaseStore {
     },
 
     async approve({ orgId, partId, releaseId, approverId, note }): Promise<ReleaseRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows: cur } = await client.query<Row>(`SELECT * FROM releases WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [releaseId, partId, orgId]);
         const r = cur[0];
         if (!r) throw new ApiError({ code: ErrorCodes.RELEASE_NOT_FOUND, message: "Release not found.", stage: "releases", retryable: false });
@@ -105,7 +106,7 @@ export function createPgReleaseStore(pool: Pool): ReleaseStore {
     },
 
     async release({ orgId, partId, releaseId, approverId, note }): Promise<ReleaseRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows: cur } = await client.query<Row>(`SELECT * FROM releases WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [releaseId, partId, orgId]);
         const r = cur[0];
         if (!r) throw new ApiError({ code: ErrorCodes.RELEASE_NOT_FOUND, message: "Release not found.", stage: "releases", retryable: false });
@@ -119,7 +120,7 @@ export function createPgReleaseStore(pool: Pool): ReleaseStore {
     },
 
     async reject({ orgId, partId, releaseId, approverId, note }): Promise<ReleaseRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows: cur } = await client.query<Row>(`SELECT * FROM releases WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [releaseId, partId, orgId]);
         const r = cur[0];
         if (!r) throw new ApiError({ code: ErrorCodes.RELEASE_NOT_FOUND, message: "Release not found.", stage: "releases", retryable: false });

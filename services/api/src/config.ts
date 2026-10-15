@@ -78,7 +78,13 @@ function parsePasswordHash(raw: string | undefined): { salt: string; hashHex: st
   return { salt, hashHex };
 }
 
-export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
+/**
+ * 环境来源：VPS/dev 走 `process.env`；workerd（Cloudflare）走 `c.env`（含 vars + secrets + bindings）。
+ * 二者均为 `Record<string, string | undefined>` 形态，故统一接受该类型即可兼容。
+ */
+export type EnvSource = Record<string, string | undefined>;
+
+export function loadConfig(env: EnvSource = process.env as EnvSource): AppConfig {
   const driver = (env.STORAGE_DRIVER ?? "local") as AppConfig["storage"]["driver"];
   if (driver !== "local" && driver !== "r2") {
     throw new Error(`Unknown STORAGE_DRIVER: ${driver}`);
@@ -194,7 +200,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     admin: { email: adminEmail, password: adminPassword, orgId: adminOrgId },
     partsAnalyzer: {
       mode: partsMode,
-      fixturesDir: env.FIXTURES_DIR ?? resolve(process.cwd(), "../../tests/golden/parts"),
+      // workerd（Cloudflare Workers）下 process.cwd() 无有效值（函数但返回 undefined），
+      // resolve(undefined, …) 会抛 TypeError。用安全基目录兜底，避免边缘冷启动崩溃。
+      fixturesDir:
+        env.FIXTURES_DIR ??
+        resolve(
+          typeof process !== "undefined" && typeof process.cwd === "function" && typeof process.cwd() === "string"
+            ? process.cwd()
+            : "/",
+          "../../tests/golden/parts",
+        ),
       binaryPath: env.GEOMETRY_WORKER_BIN,
     },
     auth: {

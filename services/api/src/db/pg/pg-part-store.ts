@@ -5,10 +5,9 @@
  * - analysis 以 JSONB 落 part_analysis；内存版接口语义对齐。
  */
 import { randomUUID } from "node:crypto";
-import type { Pool } from "pg";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import type { PartStore, PartRecord, PartAnalysis, CreatePartInput, PartStatus } from "../../parts/part-store.js";
-import { withOrgScope } from "../org-scope.js";
+import { withOrgScope, type SqlDb } from "../org-scope.js";
 
 interface PartRow {
   id: string;
@@ -57,11 +56,11 @@ const SELECT_WITH_ANALYSIS = `
   FROM parts p
   LEFT JOIN part_analysis a ON a.part_id = p.id`;
 
-export function createPgPartStore(pool: Pool): PartStore {
+export function createPgPartStore(db: SqlDb): PartStore {
   return {
     async create(input: CreatePartInput): Promise<PartRecord> {
       const id = `part_${randomUUID().replaceAll("-", "")}`;
-      return withOrgScope(pool, input.orgId, async (client) => {
+      return withOrgScope(db, input.orgId, async (client) => {
         const { rows } = await client.query<PartRow>(
           `INSERT INTO parts (id, organization_id, filename, content_type, size_bytes, status, source_key, created_by)
            VALUES ($1,$2,$3,$4,$5,'PENDING',$6,$7)
@@ -73,7 +72,7 @@ export function createPgPartStore(pool: Pool): PartStore {
     },
 
     async get(orgId: string, partId: string): Promise<PartRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<PartRow>(`${SELECT_WITH_ANALYSIS} WHERE p.id = $1 AND p.organization_id = $2`, [partId, orgId]);
         const row = rows[0];
         if (!row) {
@@ -85,7 +84,7 @@ export function createPgPartStore(pool: Pool): PartStore {
     },
 
     async list(orgId: string, opts: { status?: PartStatus; offset: number; limit: number }) {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const where: string[] = ["p.organization_id = $1"];
         const params: unknown[] = [orgId];
         if (opts.status) {
@@ -99,7 +98,7 @@ export function createPgPartStore(pool: Pool): PartStore {
           `${SELECT_WITH_ANALYSIS}
            WHERE ${where.join(" AND ")}
            ORDER BY p.created_at DESC
-           OFFSET $${limitIdx} LIMIT $${offsetIdx}`,
+           LIMIT $${offsetIdx} OFFSET $${limitIdx}`,
           params,
         );
         const countParams = [orgId, ...(opts.status ? [opts.status] : [])];
@@ -110,7 +109,7 @@ export function createPgPartStore(pool: Pool): PartStore {
     },
 
     async setAnalysis(orgId: string, partId: string, analysis: PartAnalysis): Promise<PartRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         // 租户校验（RLS 已兜底，此处保持接口语义一致）
         const chk = await client.query<PartRow>(`${SELECT_WITH_ANALYSIS} WHERE p.id = $1 AND p.organization_id = $2`, [partId, orgId]);
         if (!chk.rows[0]) throw new ApiError({ code: ErrorCodes.PART_NOT_FOUND, message: `Part not found: ${partId}`, stage: "parts" });
@@ -127,7 +126,7 @@ export function createPgPartStore(pool: Pool): PartStore {
     },
 
     async fail(orgId: string, partId: string, failure: { code: string; message: string; stage?: string }): Promise<PartRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const chk = await client.query<PartRow>(`${SELECT_WITH_ANALYSIS} WHERE p.id = $1 AND p.organization_id = $2`, [partId, orgId]);
         if (!chk.rows[0]) throw new ApiError({ code: ErrorCodes.PART_NOT_FOUND, message: `Part not found: ${partId}`, stage: "parts" });
         await client.query(`UPDATE parts SET status = 'FAILED', updated_at = now() WHERE id = $1 AND organization_id = $2`, [partId, orgId]);

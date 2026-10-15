@@ -4,13 +4,12 @@
  * - 状态机跳转复用 @ai-cam/job-schema 的 transition()；进度/失败事件仍经 EventBus 发布。
  */
 import { randomUUID } from "node:crypto";
-import type { Pool } from "pg";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import { EventTypes } from "@ai-cam/event-schema";
 import { type Job, type JobStatus, jobInputHash, transition } from "@ai-cam/job-schema";
 import type { EventBus } from "../../bus/event-bus.js";
 import type { JobStore } from "../../jobs/job-store.js";
-import { withOrgScope } from "../org-scope.js";
+import { withOrgScope, type SqlDb } from "../org-scope.js";
 
 const PROGRESS_BY_STATUS: Record<string, number> = {
   DRAFT: 5,
@@ -60,11 +59,11 @@ function rowToJob(row: JobRow): Job {
   };
 }
 
-export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
+export function createPgJobStore(db: SqlDb, bus: EventBus): JobStore {
   return {
     async create({ orgId, userId, input, idempotencyKey }): Promise<Job> {
       const inputHash = jobInputHash(input);
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         if (idempotencyKey) {
           const dup = await client.query<JobRow>(
             `SELECT * FROM cam_jobs WHERE organization_id = $1 AND input_hash = $2`,
@@ -95,7 +94,7 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
     },
 
     async get(orgId: string, jobId: string): Promise<Job> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<JobRow>(`SELECT * FROM cam_jobs WHERE id = $1 AND organization_id = $2`, [jobId, orgId]);
         if (!rows[0]) {
           throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: `Job not found: ${jobId}`, stage: "jobs" });
@@ -105,7 +104,7 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
     },
 
     async list(orgId: string, opts: { status?: JobStatus; offset: number; limit: number }) {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const where: string[] = ["organization_id = $1"];
         const params: unknown[] = [orgId];
         if (opts.status) {
@@ -119,7 +118,7 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
           `SELECT * FROM cam_jobs
            WHERE ${where.join(" AND ")}
            ORDER BY created_at DESC
-           OFFSET $${limitIdx} LIMIT $${offsetIdx}`,
+           LIMIT $${offsetIdx} OFFSET $${limitIdx}`,
           params,
         );
         const countParams = [orgId, ...(opts.status ? [opts.status] : [])];
@@ -132,7 +131,7 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
     async transitionTo(orgId: string, jobId: string, to: JobStatus): Promise<Job> {
       const job = await this.get(orgId, jobId);
       transition(job.status, to); // 非法跳转抛 StateTransitionError → 由路由转 ApiError
-      const updated = await withOrgScope(pool, orgId, async (client) => {
+      const updated = await withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<JobRow>(
           `UPDATE cam_jobs SET status = $1, version = version + 1, updated_at = now()
            WHERE id = $2 AND organization_id = $3 RETURNING *`,
@@ -155,7 +154,7 @@ export function createPgJobStore(pool: Pool, bus: EventBus): JobStore {
     async fail(orgId: string, jobId: string, failure: { code: string; message: string; stage?: string; retryable: boolean }): Promise<Job> {
       const job = await this.get(orgId, jobId);
       transition(job.status, "FAILED");
-      const updated = await withOrgScope(pool, orgId, async (client) => {
+      const updated = await withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<JobRow>(
           `UPDATE cam_jobs SET status = 'FAILED', version = version + 1, updated_at = now(), failure = $1
            WHERE id = $2 AND organization_id = $3 RETURNING *`,

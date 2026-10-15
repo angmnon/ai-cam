@@ -21,8 +21,16 @@ const consoleLogger: Logger = {
 /** 从当前文件位置向上找仓库根（含 infra/db/migrations 目录），兼容 src 与 dist 布局 */
 export function findMigrationsDir(explicit?: string): string {
   if (explicit) return isAbsolute(explicit) ? explicit : resolve(process.cwd(), explicit);
-  const here = fileURLToPath(import.meta.url);
-  let dir = dirname(here);
+  // 边缘/FaaS（Cloudflare Workers / workerd）下 import.meta.url 可能为 undefined，
+  // fileURLToPath(undefined) 会抛 TypeError，故需 try/catch 兜底。
+  let here = "";
+  try {
+    here = fileURLToPath(import.meta.url);
+  } catch {
+    here = "";
+  }
+  const cwdBase = typeof process !== "undefined" && typeof process.cwd === "function" && typeof process.cwd() === "string" ? process.cwd() : "/";
+  let dir = here ? dirname(here) : cwdBase;
   for (let i = 0; i < 8; i++) {
     const candidate = join(dir, "infra", "db", "migrations");
     try {
@@ -33,7 +41,7 @@ export function findMigrationsDir(explicit?: string): string {
     }
   }
   // 兜底：相对 cwd
-  return resolve(process.cwd(), "infra", "db", "migrations");
+  return resolve(cwdBase, "infra", "db", "migrations");
 }
 
 async function ensureLedger(client: PoolClient): Promise<void> {
@@ -48,11 +56,29 @@ async function ensureLedger(client: PoolClient): Promise<void> {
 /** 应用指定目录下全部 .sql 迁移（按文件名排序），返回已应用/跳过清单 */
 export async function runMigrations(pool: Pool, options: { dir?: string; logger?: Logger } = {}): Promise<{ applied: string[]; skipped: string[] }> {
   const logger = options.logger ?? consoleLogger;
+  // 边缘/FaaS（Cloudflare Workers / workerd）无有效 process.cwd() 也无本地文件系统，
+  // 且迁移 SQL 不会打包进 Worker bundle。迁移改由外部一次性执行，此处安全跳过。
+  // 注意：workerd 下 process.cwd 可能是“函数但返回 undefined”，故需同时校验返回类型。
+  const cwdOk =
+    typeof process !== "undefined" &&
+    typeof process.cwd === "function" &&
+    typeof process.cwd() === "string";
+  if (!cwdOk) {
+    logger.warn("跳过数据库迁移：运行环境无本地文件系统（边缘/FaaS）。请通过独立脚本对数据库执行迁移。");
+    return { applied: [], skipped: [] };
+  }
   const dir = findMigrationsDir(options.dir);
-  mkdirSync(dir, { recursive: true });
-  const files = readdirSync(dir)
-    .filter((f) => f.endsWith(".sql"))
-    .sort();
+  // 边缘/FaaS 无本地文件系统（且迁移 SQL 不会打包进 Worker bundle），无法访问目录时安全跳过。
+  let files: string[];
+  try {
+    mkdirSync(dir, { recursive: true });
+    files = readdirSync(dir)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+  } catch {
+    logger.warn(`跳过数据库迁移：无法访问迁移目录 ${dir}（边缘/FaaS 无文件系统）。请通过独立脚本对数据库执行迁移。`);
+    return { applied: [], skipped: [] };
+  }
 
   const applied: string[] = [];
   const skipped: string[] = [];

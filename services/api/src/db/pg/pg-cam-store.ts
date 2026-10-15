@@ -3,10 +3,9 @@
  * P1-07：经 withOrgScope 绑定 app.org_id，RLS 强制多租户隔离。
  */
 import { randomUUID } from "node:crypto";
-import type { Pool } from "pg";
 import type { CamIR } from "@ai-cam/cam-ir";
 import type { CamStore, CamRevision } from "../../cam/cam-store.js";
-import { withOrgScope } from "../org-scope.js";
+import { withOrgScope, type SqlDb } from "../org-scope.js";
 
 interface Row {
   id: string;
@@ -34,10 +33,10 @@ function rowToRevision(row: Row): CamRevision {
   };
 }
 
-export function createPgCamStore(pool: Pool): CamStore {
+export function createPgCamStore(db: SqlDb): CamStore {
   return {
     async create({ orgId, partId, userId, cam }): Promise<CamRevision> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows: existing } = await client.query<Row>(
           `SELECT * FROM cam_revisions WHERE part_id = $1 AND organization_id = $2 ORDER BY revision_no DESC`,
           [partId, orgId],
@@ -54,7 +53,7 @@ export function createPgCamStore(pool: Pool): CamStore {
     },
 
     async latest(orgId: string, partId: string): Promise<CamRevision | null> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<Row>(
           `SELECT * FROM cam_revisions WHERE part_id = $1 AND organization_id = $2 ORDER BY created_at DESC LIMIT 1`,
           [partId, orgId],
@@ -64,7 +63,7 @@ export function createPgCamStore(pool: Pool): CamStore {
     },
 
     async list(orgId: string, partId: string): Promise<CamRevision[]> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<Row>(
           `SELECT * FROM cam_revisions WHERE part_id = $1 AND organization_id = $2 ORDER BY created_at DESC`,
           [partId, orgId],

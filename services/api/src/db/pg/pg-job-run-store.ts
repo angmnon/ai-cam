@@ -3,11 +3,10 @@
  * P1-07：经 withOrgScope 绑定 app.org_id，RLS 强制多租户隔离。
  */
 import { randomUUID } from "node:crypto";
-import type { Pool } from "pg";
 import type { SimulationReport } from "@ai-cam/stock-sim";
 import { ApiError, ErrorCodes } from "@ai-cam/error-codes";
 import type { JobRunStore, JobRun, NcProgramRecord, ValidationReportRecord, SimulationRecord } from "../../cam/job-run-store.js";
-import { withOrgScope } from "../org-scope.js";
+import { withOrgScope, type SqlDb } from "../org-scope.js";
 
 interface RunRow {
   id: string;
@@ -35,10 +34,10 @@ function rowToRun(row: RunRow): JobRun {
   };
 }
 
-export function createPgJobRunStore(pool: Pool): JobRunStore {
+export function createPgJobRunStore(db: SqlDb): JobRunStore {
   return {
     async createRun({ orgId, partId, userId, run }): Promise<JobRun> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const id = `jobrun_${randomUUID().replaceAll("-", "")}`;
         const { rows } = await client.query<RunRow>(
           `INSERT INTO job_runs (id, organization_id, part_id, status, pipeline, engine_version, created_by)
@@ -51,7 +50,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async createNc({ orgId, partId, jobRunId, nc }): Promise<NcProgramRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const id = `nc_${randomUUID().replaceAll("-", "")}`;
         const { rows } = await client.query(
           `INSERT INTO nc_programs (id, organization_id, part_id, job_run_id, program_number, dialect, controller_id, nc_text, line_count, move_count, tool_changes, engine_version)
@@ -64,7 +63,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async createValidation({ orgId, partId, jobRunId, ncProgramId, report }): Promise<ValidationReportRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const id = `val_${randomUUID().replaceAll("-", "")}`;
         const { rows } = await client.query(
           `INSERT INTO validation_reports (id, organization_id, part_id, job_run_id, nc_program_id, status, layers, report, validator_version)
@@ -77,7 +76,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async createSimulation({ orgId, partId, jobRunId, report }): Promise<SimulationRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         await client.query(`UPDATE job_runs SET simulation_json = $1 WHERE id = $2 AND organization_id = $3 AND part_id = $4`, [
           JSON.stringify(report),
           jobRunId,
@@ -96,7 +95,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async latestRun(orgId: string, partId: string): Promise<JobRun | null> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<RunRow>(
           `SELECT * FROM job_runs WHERE part_id = $1 AND organization_id = $2 ORDER BY created_at DESC LIMIT 1`,
           [partId, orgId],
@@ -106,7 +105,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async getRun(orgId: string, partId: string, jobRunId: string): Promise<JobRun> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<RunRow>(`SELECT * FROM job_runs WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [jobRunId, partId, orgId]);
         if (!rows[0]) throw new ApiError({ code: ErrorCodes.JOB_NOT_FOUND, message: "Job run not found.", stage: "jobs", retryable: false });
         return rowToRun(rows[0]);
@@ -114,7 +113,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async getNc(orgId: string, partId: string, jobRunId: string): Promise<NcProgramRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<NcProgramRecord>(
           `SELECT * FROM nc_programs WHERE job_run_id = $1 AND part_id = $2 AND organization_id = $3 ORDER BY created_at DESC LIMIT 1`,
           [jobRunId, partId, orgId],
@@ -125,7 +124,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async getValidation(orgId: string, partId: string, jobRunId: string): Promise<ValidationReportRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<ValidationReportRecord>(
           `SELECT * FROM validation_reports WHERE job_run_id = $1 AND part_id = $2 AND organization_id = $3 ORDER BY created_at DESC LIMIT 1`,
           [jobRunId, partId, orgId],
@@ -136,7 +135,7 @@ export function createPgJobRunStore(pool: Pool): JobRunStore {
     },
 
     async getSimulation(orgId: string, partId: string, jobRunId: string): Promise<SimulationRecord> {
-      return withOrgScope(pool, orgId, async (client) => {
+      return withOrgScope(db, orgId, async (client) => {
         const { rows } = await client.query<RunRow>(`SELECT * FROM job_runs WHERE id = $1 AND part_id = $2 AND organization_id = $3`, [jobRunId, partId, orgId]);
         if (!rows[0] || !rows[0].simulation_json) throw new ApiError({ code: ErrorCodes.SIM_RUN_FAILED, message: "Simulation report not found.", stage: "sim", retryable: false });
         return { id: `sim_${jobRunId}`, organization_id: orgId, part_id: partId, job_run_id: jobRunId, report: rows[0].simulation_json, created_at: new Date().toISOString() };

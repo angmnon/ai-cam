@@ -13,6 +13,16 @@ out/
 .env
 .env.local
 .env.*.local
+!.env.example
+
+# 调试残留 / 凭据快照（切勿入库：内含明文密码与会话 cookie）
+.cookies.txt
+*_cookies.txt
+.login-body.json
+*_body.json
+.ai-plan-resp.txt
+*.har
+*.curl.txt
 
 # Data (local dev uploads / db volumes)
 data/

@@ -1,0 +1,72 @@
+# =============================================================
+# AI CNC CAM — Cloudflare Workers（API 控制面）
+# -------------------------------------------------------------
+# 决策固化 2026-10-03（用户拍板）：
+#   域名    mades.ai/app/Gcode/*   （zone 路径路由，非 custom_domain）
+#   数据库  Neon PostgreSQL（pooled, us-east-2）
+#   外部算力 腾讯云（仅承载 OCCT geometry-worker，C++ 二进制上不了 Workers）
+#   2D/3D   走 MCP Gateway（gw.mcphubs.app），本地不自建引擎
+#   路线    迁移用 infra/db/migrations（Postgres 版）；D1 路线已废弃并清理
+#
+# ✅ Fastify → Hono 移植已完成（2026-10-08）：main 指向 services/api/src/worker.ts。
+#    业务层（stores / auth-backend / llm / security / event-schema / db）零改复用；
+#    HTTP 层（DI / auth / RBAC / metrics / SSE / 错误映射）全部用 Hono 重写（hono-app.ts +
+#    hono-middlewares.ts + hono-routes.ts + hono-env.ts）。VPS 容器兜底仍保留 Fastify
+#    入口（src/index.ts + src/app.ts），本 worker 文件仅边缘 T2 部署路径。
+#    在 Hono 落地前执行 `wrangler deploy` 必然失败（fastify 依赖 workerd 不支持的 Node API）。
+# =============================================================
+
+name = "ai-cam-api"
+main = "services/api/src/worker.ts"
+compatibility_date = "2026-10-03"
+compatibility_flags = ["nodejs_compat"]
+
+# ---------- 路由 ----------
+# 路径路由：pattern 支持 host/path 形式。
+# 前置条件：mades.ai zone 必须挂在本账号下，且其根路由未被其它 worker 抢占，
+#           否则 wrangler 会报 route conflict。
+[[routes]]
+pattern = "mades.ai/app/Gcode/*"
+zone_name = "mades.ai"
+
+# ---------- 静态前端 ----------
+# apps/web 走 Cloudflare Pages：构建 `pnpm --filter @ai-cam/web build`，
+# 产物目录 dist，无需本文件的 worker 参与。
+
+# ---------- 绑定（CF 资源已建 2026-10-08 via API） ----------
+# KV / R2 / Queue 已创建并回填真实 id；Hyperdrive 待 Neon pooled DSN（用户提供后建 + 填 id）。
+# 注：worker.ts 经 c.env.AI_CAM_DB(Hyperdrive) 注入 DATABASE_URL → PG 路径必需，故 Hyperdrive 建好前 deploy 不可用。
+[[kv_namespaces]]
+binding = "AI_CAM_KV"
+id = "bb00008096aa4a3fbe01de92f7b25e2c"              # 登录失败限流 / 配置缓存
+
+[[r2_buckets]]
+binding = "AI_CAM_FILES"
+bucket_name = "ai-cam-files"              # STEP/DWG 源 + NC 产物
+
+[[hyperdrive]]
+binding = "AI_CAM_DB"
+id = "e80ab940edc7485385d6ea4b01020414"   # Neon non-pooled 上游（避免 double-pool），建 2026-10-15
+
+[[queues.producers]]
+queue = "ai-cam-jobs"
+binding = "AI_CAM_JOBS"                   # 异步任务（长刀路 / 仿真）
+
+# NOTE 2026-10-15：原 [[durable_objects.bindings]] EventHub 已移除——源码从未实现/导出
+#   EventHub 类（仅 hono-env.ts 留有 unknown 类型占位，运行时未使用），wrangler deploy
+#   会因 "class EventHub not exported" (code 10061) 失败。SSE 进度推送当前走内存总线，
+#   DO 绑定留待后续真正实现 EventHub 后再加回。
+
+# ---------- Secrets（wrangler secret put，绝不进版本库）----------
+# JWT_SECRET
+# DATABASE_URL        <- Neon pooled DSN
+# GATEWAY_TENANT_JWT  <- 调 gw.mcphubs.app 的租户令牌（仅服务端持有，不下发浏览器）
+# METRICS_TOKEN
+# AUDIT_SINK=pg
+# LLM_API_KEY / DEEPSEEK_API_KEY / OPENAI_API_KEY（三选一）
+# GEOMETRY_WORKER_URL  + GEOMETRY_WORKER_TOKEN   <- 腾讯云 OCCT 服务
+# GATEWAY_BASE_URL=https://gw.mcphubs.app
+
+# ---------- Cron（UTC）----------
+# [triggers]
+# crons = ["17 3 * * *"]   # 备份导出 R2 / 过期 job 清理

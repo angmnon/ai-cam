@@ -62,3 +62,29 @@ pnpm --filter @ai-cam/web dev   # 启动 Viewer（默认 :5173）
   3. **需要持久化 / 严格投递语义时**：再引入 Kafka / NATS / Cloudflare Queues（与 Phase 4 之后的异步 Job 队列合并设计）。
 - **迁移前置条件**：① `EventBus` 接口已稳定（`publish(subject, event)` + `subscribe(handler)`），实现可替换；② SSE 路由的 subject 校验已存在（仅允许 `job_*`）；③ 多副本后需考虑 sticky session / 跨副本订阅路由。
 - **不启动的理由**：当前部署形态为单 API 进程 + 内存/PG 持久层；水平扩容未提上日程，过早引入 Redis 会增加运维成本与故障面。
+
+---
+
+## 部署（Cloudflare Edge Worker / `mades.ai/app/Gcode/*`）
+
+本仓库的 **Hono on Cloudflare Workers** 入口为 `services/api/src/worker.ts`（Fastify 入口 `src/index.ts` 仅供 VPS 容器部署）。
+边缘部署步骤（其他系统复制用）：
+
+1. 安装依赖：`pnpm install`
+2. Cloudflare 侧创建资源（可复用或新建）：
+   - KV `AI_CAM_KV`、R2 `ai-cam-files`、Queue `ai-cam-jobs`
+   - **Hyperdrive** `ai-cam-db` → 指向 Neon **非 pooled** 端点（避免 Double-Pool）
+3. 注入密钥（**不进仓库**，每账号重建）：
+   ```bash
+   printf '%s' "$(openssl rand -hex 32)" | npx wrangler secret put JWT_SECRET
+   printf '%s' "<DEEPSEEK_API_KEY>"        | npx wrangler secret put DEEPSEEK_API_KEY
+   ```
+4. 部署：`CLOUDFLARE_API_TOKEN=<token> npx wrangler deploy`（`wrangler.toml` 已声明 `AI_CAM_DB`/`AI_CAM_KV`/`AI_CAM_FILES`/`AI_CAM_JOBS`）
+5. **一次性**对 Neon 跑迁移（边缘 Worker 自动跳过迁移，因无本地文件系统）：
+   ```bash
+   DATABASE_URL=<neon-non-pooled> node --experimental-strip-types services/api/src/db/migrate.ts
+   ```
+6. 验证：`curl https://mades.ai/app/Gcode/` → 结构化 `401 AUTH_UNAUTHORIZED` 即健康。
+
+> 注意：部署时 `NODE_ENV` 在 Worker 上为 `development`；如需强制 `JWT_SECRET` 校验，在 `wrangler.toml` 加 `[vars] NODE_ENV = "production"`。
+
